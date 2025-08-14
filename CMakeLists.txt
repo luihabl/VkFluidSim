@@ -58,6 +58,8 @@ CPMAddPackage("gh:fmtlib/fmt#11.2.0")
 # executable
 add_executable(vfs
 src/main.cpp
+src/gfx.cpp
+src/platform.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

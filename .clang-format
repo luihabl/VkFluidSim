@@ -1,0 +1,10 @@
+---
+BasedOnStyle: Chromium
+AccessModifierOffset: -4
+AlignAfterOpenBracket: Align
+ColumnLimit: 100
+IncludeBlocks: Regroup
+IndentWidth: 4
+PointerAlignment: Left
+SortIncludes: 'true'
+Standard: Cpp11

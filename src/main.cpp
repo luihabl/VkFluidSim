@@ -1,23 +1,23 @@
 #include <cstdio>
 
 #include "SDL3/SDL_events.h"
-#include "game.h"
 #include "gfx/gfx.h"
 #include "platform.h"
+#include "world.h"
 
 int main() {
     auto platform = vfs::Platform{};
 
-    auto game = vfs::Game{};
+    auto world = vfs::World{};
 
     platform.Init({
         .name = "Vulkan fluid sim",
         .w = 1600,
         .h = 800,
-        .init = [&game](vfs::Platform& p) { game.Init(p); },
-        .update = [&game](vfs::Platform& p) { game.Update(p); },
-        .clean = [&game](vfs::Platform& p) { game.Clean(); },
-        .handler = [&game](vfs::Platform& p, SDL_Event& e) { game.HandleEvent(p, e); },
+        .init = [&world](vfs::Platform& p) { world.Init(p); },
+        .update = [&world](vfs::Platform& p) { world.Update(p); },
+        .clean = [&world](vfs::Platform& p) { world.Clean(); },
+        .handler = [&world](vfs::Platform& p, SDL_Event& e) { world.HandleEvent(p, e); },
     });
 
     platform.Run();

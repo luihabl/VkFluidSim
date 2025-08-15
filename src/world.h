@@ -2,7 +2,7 @@
 #include "gfx/gfx.h"
 #include "platform.h"
 namespace vfs {
-class Game {
+class World {
 public:
     using Event = SDL_Event;
 

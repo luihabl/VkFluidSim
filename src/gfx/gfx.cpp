@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "SDL3/SDL_video.h"
+#include "gfx/common.h"
 #include "vk_util.h"
 
 #define VMA_IMPLEMENTATION
@@ -54,6 +55,92 @@ void Device::DestroyImage(AllocatedImage& img) {
         vkDestroyImageView(core.device, img.view, NULL);
         vmaDestroyImage(allocator, img.image, img.allocation);
         img.image = VK_NULL_HANDLE;
+    }
+}
+
+u32 Device::CurrentFrameIndex() {
+    return frame_number % gfx::FRAME_COUNT;
+}
+
+Device::FrameData& Device::CurrentFrame() {
+    return frames[CurrentFrameIndex()];
+}
+
+VkCommandBuffer Device::BeginFrame() {
+    swapchain.BeginFrame(core, CurrentFrameIndex());
+
+    auto& frame = CurrentFrame();
+    auto cmd = frame.cmd_buffer;
+    VK_CHECK(vkResetCommandBuffer(cmd, 0));
+
+    auto cmd_begin_info =
+        vk::util::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
+
+    return cmd;
+}
+
+void Device::EndFrame(VkCommandBuffer cmd, AllocatedImage& draw_img, const glm::vec4& clear_color) {
+    u32 swapchain_img_index;
+    auto swapchain_img =
+        swapchain.AcquireNextImage(core, CurrentFrameIndex(), &swapchain_img_index);
+    if (swapchain_img == VK_NULL_HANDLE) {
+        return;
+    }
+
+    swapchain.ResetFences(core, CurrentFrameIndex());
+
+    // clear swapchain image
+    {
+        auto clear_range = vk::util::ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+        vk::util::TransitionImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_GENERAL);
+        const auto clear_color_val = VkClearColorValue{
+            clear_color.r,
+            clear_color.g,
+            clear_color.b,
+            clear_color.a,
+        };
+
+        vkCmdClearColorImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_GENERAL, &clear_color_val, 1,
+                             &clear_range);
+    }
+
+    // copy draw image to swapchain image
+    {
+        vk::util::TransitionImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_GENERAL,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        vk::util::TransitionImage(cmd, draw_img.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+        vk::util::CopyImage(
+            cmd, draw_img.image, swapchain_img,
+            VkExtent2D{.width = draw_img.extent.width, .height = draw_img.extent.height},
+            swapchain.GetExtent());
+    }
+
+    // present
+    {
+        vk::util::TransitionImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VK_CHECK(vkEndCommandBuffer(cmd));
+        swapchain.SubmitAndPresent(cmd, graphics_queue, frame_number, swapchain_img_index);
+    }
+
+    frame_number++;
+}
+
+void Device::InitCommandBuffers() {
+    auto command_pool_info = vk::util::CommandPoolCreateInfo(
+        graphics_queue_family, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
+    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
+        auto& frame = frames[i];
+        VK_CHECK(vkCreateCommandPool(core.device, &command_pool_info, NULL, &frame.cmd_pool));
+        auto cmd_buf_alloc_info = vk::util::CommandBufferAllocateInfo(frame.cmd_pool, 1);
+        VK_CHECK(vkAllocateCommandBuffers(core.device, &cmd_buf_alloc_info, &frame.cmd_buffer));
     }
 }
 
@@ -140,12 +227,19 @@ void Device::Init(const Config& config) {
 
     swapchain.InitSyncStructs(core);
     swapchain.Create(core, w, h);
+
+    InitCommandBuffers();
 }
 
 void Device::Clean() {
     vkDeviceWaitIdle(core.device);
 
     swapchain.Destroy(core);
+
+    for (auto& frame : frames) {
+        vkDestroyCommandPool(core.device, frame.cmd_pool, NULL);
+    }
+
     DestroyImage(draw_img);
     vmaDestroyAllocator(allocator);
 }

@@ -1,5 +1,7 @@
 #include "swapchain.h"
 
+#include <vulkan/vk_enum_string_helper.h>
+
 #include <cstddef>
 
 #include "gfx/common.h"
@@ -73,6 +75,10 @@ void Swapchain::BeginFrame(const CoreCtx& ctx, u32 frame_index) {
     VK_CHECK(vkWaitForFences(ctx.device, 1, &frames[frame_index].render_fence, true, ONE_SEC_NS));
 }
 
+void Swapchain::ResetFences(const CoreCtx& ctx, u32 frame_index) {
+    VK_CHECK(vkResetFences(ctx.device, 1, &frames[frame_index].render_fence));
+}
+
 VkImage Swapchain::AcquireNextImage(const CoreCtx& ctx, u32 frame_index, u32* out_index) {
     auto& frame = frames[frame_index];
 
@@ -84,6 +90,43 @@ VkImage Swapchain::AcquireNextImage(const CoreCtx& ctx, u32 frame_index, u32* ou
         *out_index = swapchain_img_idx;
 
     return images[swapchain_img_idx];
+}
+
+VkExtent2D Swapchain::GetExtent() {
+    return extent;
+}
+
+bool Swapchain::SubmitAndPresent(VkCommandBuffer cmd,
+                                 VkQueue queue,
+                                 u32 frame_index,
+                                 u32 swapchain_idx) {
+    auto& frame = frames[frame_index];
+    auto cmd_submit_info = vk::util::CommandBufferSubmitInfo(cmd);
+    auto wait_info = vk::util::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                                   frame.swapchain_semaphore);
+    auto signal_info = vk::util::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                                                     render_semaphores[swapchain_idx]);
+    auto submit = vk::util::SubmitInfo2(&cmd_submit_info, &signal_info, &wait_info);
+
+    VK_CHECK(vkQueueSubmit2(queue, 1, &submit, frame.render_fence));
+
+    auto present_info = vk::util::PresentInfoKHR();
+    present_info.pSwapchains = &swapchain;
+    present_info.swapchainCount = 1;
+    present_info.pWaitSemaphores = &render_semaphores[swapchain_idx];
+    present_info.waitSemaphoreCount = 1;
+    present_info.pImageIndices = &swapchain_idx;
+
+    auto e = vkQueuePresentKHR(queue, &present_info);
+    if (e != VK_SUCCESS) {
+        // set as resize requested
+        if (e != VK_SUBOPTIMAL_KHR) {
+            fmt::println("Swapchain failed to present: {}", string_VkResult(e));
+        }
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace gfx

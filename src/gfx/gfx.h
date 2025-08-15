@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include <array>
+#include <glm/glm.hpp>
 
 #include "gfx/common.h"
 #include "gfx/swapchain.h"
@@ -25,11 +26,19 @@ struct Device {
     };
 
     void Init(const Config& config);
-    AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip);
-    void DestroyImage(AllocatedImage& img);
     void Clean();
 
+    VkCommandBuffer BeginFrame();
+    void EndFrame(VkCommandBuffer cmd, AllocatedImage& draw_img, const glm::vec4& clear_color);
+
+    AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip);
+    void DestroyImage(AllocatedImage& img);
+
 private:
+    void InitCommandBuffers();
+    FrameData& CurrentFrame();
+    u32 CurrentFrameIndex();
+
     CoreCtx core;
     VkQueue graphics_queue;
     uint32_t graphics_queue_family;

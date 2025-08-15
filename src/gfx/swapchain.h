@@ -15,7 +15,12 @@ struct Swapchain {
     void Destroy(const CoreCtx& ctx);
 
     void BeginFrame(const CoreCtx& ctx, u32 frame_index);
-    VkImage AcquireNextImage(const CoreCtx& ctx, u32 frame_index, u32* out_index = nullptr);
+    VkImage AcquireNextImage(const CoreCtx& ctx,
+                             u32 frame_index,
+                             u32* out_swapchain_index = nullptr);
+    void ResetFences(const CoreCtx& ctx, u32 frame_index);
+    VkExtent2D GetExtent();
+    bool SubmitAndPresent(VkCommandBuffer cmd, VkQueue queue, u32 frame_index, u32 swapchain_idx);
 
 private:
     struct FrameData {

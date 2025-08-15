@@ -60,6 +60,7 @@ add_executable(vfs
 src/main.cpp
 src/gfx/gfx.cpp
 src/gfx/swapchain.cpp
+src/gfx/vk_util.cpp
 src/platform.cpp
 )
 

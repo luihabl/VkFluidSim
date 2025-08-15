@@ -206,4 +206,16 @@ inline auto RenderingInfo(VkExtent2D extent,
     };
 }
 
+void TransitionImage(VkCommandBuffer cmd,
+                     VkImage image,
+                     VkImageLayout curr_layout,
+                     VkImageLayout new_layout);
+
+void CopyImage(VkCommandBuffer cmd,
+               VkImage src,
+               VkImage dst,
+               VkExtent2D src_size,
+               VkExtent2D dst_size,
+               bool linear_filter = true);
+
 };  // namespace vk::util

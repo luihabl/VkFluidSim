@@ -1,14 +1,14 @@
 #include <cstdio>
 
 #include "SDL3/SDL_events.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "platform.h"
 
 int main() {
     auto platform = vfs::Platform{};
     platform.Init(1600, 800, "Vulkan fluid sim");
 
-    auto gfx = vfs::GfxDevice{};
+    auto gfx = gfx::Device{};
     gfx.Init({.name = "vulkan fluid sim", .validation_layers = true, .window = platform.window});
 
     platform.Run(

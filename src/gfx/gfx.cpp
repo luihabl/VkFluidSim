@@ -3,12 +3,61 @@
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
 
+#include <cstdint>
+#include <vulkan/vulkan.hpp>
+
+#include "SDL3/SDL_video.h"
+#include "vk_util.h"
+
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-namespace vfs {
+namespace gfx {
 
-void GfxDevice::Init(const GfxConfig& config) {
+AllocatedImage Device::CreateImage(VkExtent3D size,
+                                   VkFormat format,
+                                   VkImageUsageFlags usage,
+                                   bool mip) {
+    auto img = AllocatedImage{
+        .format = format,
+        .extent = size,
+    };
+
+    auto img_info = vk::util::ImageCreateInfo(format, usage, size);
+
+    if (mip) {
+        // TODO: check this
+        img_info.mipLevels = (uint32_t)std::floor(std::log2(std::max(size.width, size.height))) + 1;
+    }
+
+    auto alloc_info = VmaAllocationCreateInfo{
+        .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+        .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    };
+
+    VK_CHECK(vmaCreateImage(allocator, &img_info, &alloc_info, &img.image, &img.allocation, NULL));
+
+    auto aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (format == VK_FORMAT_D32_SFLOAT) {
+        aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+
+    auto view_info = vk::util::ImageViewCreateInfo(format, img.image, aspect_flag);
+    view_info.subresourceRange.levelCount = img_info.mipLevels;
+    VK_CHECK(vkCreateImageView(core.device, &view_info, NULL, &img.view));
+
+    return img;
+}
+
+void Device::DestroyImage(AllocatedImage& img) {
+    if (img.image != VK_NULL_HANDLE) {
+        vkDestroyImageView(core.device, img.view, NULL);
+        vmaDestroyImage(allocator, img.image, img.allocation);
+        img.image = VK_NULL_HANDLE;
+    }
+}
+
+void Device::Init(const Config& config) {
     vkb::InstanceBuilder builder;
     auto instance_result = builder.set_app_name(config.name)
                                .request_validation_layers(config.validation_layers)
@@ -17,10 +66,10 @@ void GfxDevice::Init(const GfxConfig& config) {
                                .build();
 
     vkb::Instance vkb_instance = instance_result.value();
-    instance = vkb_instance.instance;
-    debug_messenger = vkb_instance.debug_messenger;
+    core.instance = vkb_instance.instance;
+    core.debug_messenger = vkb_instance.debug_messenger;
 
-    SDL_Vulkan_CreateSurface(config.window, instance, NULL, &surface);
+    SDL_Vulkan_CreateSurface(config.window, core.instance, NULL, &core.surface);
 
     auto features13 = VkPhysicalDeviceVulkan13Features{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
@@ -36,15 +85,15 @@ void GfxDevice::Init(const GfxConfig& config) {
     auto physical_device = selector.set_minimum_version(1, 3)
                                .set_required_features_13(features13)
                                .set_required_features_12(features12)
-                               .set_surface(surface)
+                               .set_surface(core.surface)
                                .select()
                                .value();
 
     auto device_builder = vkb::DeviceBuilder{physical_device};
     auto vkb_device = device_builder.build().value();
 
-    device = vkb_device.device;
-    chosen_gpu = physical_device.physical_device;
+    core.device = vkb_device.device;
+    core.chosen_gpu = physical_device.physical_device;
 
     VkPhysicalDeviceProperties device_props;
     vkGetPhysicalDeviceProperties(physical_device, &device_props);
@@ -73,16 +122,31 @@ void GfxDevice::Init(const GfxConfig& config) {
     graphics_queue_family = vkb_device.get_queue_index(vkb::QueueType::graphics).value();
 
     auto allocator_create_info = VmaAllocatorCreateInfo{
-        .physicalDevice = chosen_gpu,
-        .device = device,
-        .instance = instance,
+        .physicalDevice = core.chosen_gpu,
+        .device = core.device,
+        .instance = core.instance,
         .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
     };
 
     vmaCreateAllocator(&allocator_create_info, &allocator);
+
+    int w, h;
+    SDL_GetWindowSize(config.window, &w, &h);
+    draw_img = CreateImage({.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1},
+                           VK_FORMAT_R16G16B16A16_SFLOAT,
+                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                               VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                           false);
+
+    swapchain.InitSyncStructs(core);
+    swapchain.Create(core, w, h);
 }
 
-void GfxDevice::Clean() {
+void Device::Clean() {
+    vkDeviceWaitIdle(core.device);
+
+    swapchain.Destroy(core);
+    DestroyImage(draw_img);
     vmaDestroyAllocator(allocator);
 }
-}  // namespace vfs
+}  // namespace gfx

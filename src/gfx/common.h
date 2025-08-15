@@ -1,0 +1,44 @@
+#pragma once
+
+#include <fmt/core.h>
+#include <fmt/std.h>
+#include <vk_mem_alloc.h>
+#include <vulkan/vulkan.h>
+
+#define VK_CHECK(x)                                                                       \
+    do {                                                                                  \
+        VkResult err = x;                                                                 \
+        if (err) {                                                                        \
+            fmt::println("VK_CHECK error[{}:{}]: {}", __FILE_NAME__, __LINE__, (int)err); \
+            fmt::println("On call: {}", #x);                                              \
+            fmt::println("Aborting...");                                                  \
+            abort();                                                                      \
+        }                                                                                 \
+    } while (0)
+
+namespace gfx {
+
+constexpr unsigned FRAME_COUNT = 2;
+using f32 = float;
+using f64 = double;
+using i32 = int32_t;
+using i64 = int64_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+
+struct CoreCtx {
+    VkDevice device;
+    VkInstance instance;
+    VkDebugUtilsMessengerEXT debug_messenger;
+    VkPhysicalDevice chosen_gpu;
+    VkSurfaceKHR surface;
+};
+
+struct AllocatedImage {
+    VkImage image;
+    VkImageView view;
+    VkExtent3D extent;
+    VkFormat format;
+    VmaAllocation allocation;
+};
+}  // namespace gfx

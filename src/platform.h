@@ -8,16 +8,25 @@
 namespace vfs {
 
 struct Platform {
-    using EventHandler = std::function<void(Platform*, SDL_Event*)>;
-    using UpdateFunc = std::function<void(Platform*)>;
+    using EventHandler = std::function<void(Platform&, SDL_Event&)>;
+    using PlatformFunc = std::function<void(Platform&)>;
+
+    struct Config {
+        int w;
+        int h;
+        std::string name;
+        EventHandler handler;
+        PlatformFunc init;
+        PlatformFunc update;
+        PlatformFunc clean;
+    };
 
     SDL_Window* window;
-    std::string name;
-    int w, h;
+    Config config;
     bool quit = false;
 
-    void Init(int w, int h, const char* name);
-    void Run(EventHandler&& handler, UpdateFunc&& update);
+    void Init(Config&& config);
+    void Run();
     void Clean();
 };
 

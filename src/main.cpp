@@ -1,24 +1,24 @@
 #include <cstdio>
 
 #include "SDL3/SDL_events.h"
+#include "game.h"
 #include "gfx/gfx.h"
 #include "platform.h"
 
 int main() {
     auto platform = vfs::Platform{};
-    platform.Init(1600, 800, "Vulkan fluid sim");
 
-    auto gfx = gfx::Device{};
-    gfx.Init({.name = "vulkan fluid sim", .validation_layers = true, .window = platform.window});
+    auto game = vfs::Game{};
 
-    platform.Run(
-        [](vfs::Platform* platform, SDL_Event* e) {
-            if (e->type == SDL_EVENT_KEY_DOWN && e->key.key == SDLK_Q) {
-                platform->quit = true;
-            }
-        },
-        [](vfs::Platform* platform) {
+    platform.Init({
+        .name = "Vulkan fluid sim",
+        .w = 1600,
+        .h = 800,
+        .init = [&game](vfs::Platform& p) { game.Init(p); },
+        .update = [&game](vfs::Platform& p) { game.Update(p); },
+        .clean = [&game](vfs::Platform& p) { game.Clean(); },
+        .handler = [&game](vfs::Platform& p, SDL_Event& e) { game.HandleEvent(p, e); },
+    });
 
-        });
-    gfx.Clean();
+    platform.Run();
 }

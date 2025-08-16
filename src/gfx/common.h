@@ -34,7 +34,7 @@ struct CoreCtx {
     VkSurfaceKHR surface;
 };
 
-struct AllocatedImage {
+struct Image {
     VkImage image;
     VkImageView view;
     VkExtent3D extent;

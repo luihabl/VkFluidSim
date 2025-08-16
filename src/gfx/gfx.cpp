@@ -15,11 +15,11 @@
 
 namespace gfx {
 
-AllocatedImage Device::CreateImage(VkExtent3D size,
-                                   VkFormat format,
-                                   VkImageUsageFlags usage,
-                                   bool mip) {
-    auto img = AllocatedImage{
+Image Device::CreateImage(VkExtent3D size,
+                          VkFormat format,
+                          VkImageUsageFlags usage,
+                          bool mip) const {
+    auto img = Image{
         .format = format,
         .extent = size,
     };
@@ -50,7 +50,7 @@ AllocatedImage Device::CreateImage(VkExtent3D size,
     return img;
 }
 
-void Device::DestroyImage(AllocatedImage& img) {
+void Device::DestroyImage(Image& img) const {
     if (img.image != VK_NULL_HANDLE) {
         vkDestroyImageView(core.device, img.view, NULL);
         vmaDestroyImage(allocator, img.image, img.allocation);
@@ -81,7 +81,11 @@ VkCommandBuffer Device::BeginFrame() {
     return cmd;
 }
 
-void Device::EndFrame(VkCommandBuffer cmd, AllocatedImage& draw_img, const glm::vec4& clear_color) {
+VkExtent2D Device::GetSwapchainExtent() {
+    return swapchain.GetExtent();
+};
+
+void Device::EndFrame(VkCommandBuffer cmd, const Image& draw_img) {
     u32 swapchain_img_index;
     auto swapchain_img =
         swapchain.AcquireNextImage(core, CurrentFrameIndex(), &swapchain_img_index);
@@ -97,10 +101,10 @@ void Device::EndFrame(VkCommandBuffer cmd, AllocatedImage& draw_img, const glm::
         vk::util::TransitionImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_UNDEFINED,
                                   VK_IMAGE_LAYOUT_GENERAL);
         const auto clear_color_val = VkClearColorValue{
-            clear_color.r,
-            clear_color.g,
-            clear_color.b,
-            clear_color.a,
+            swapchain_img_clear_color.r,
+            swapchain_img_clear_color.g,
+            swapchain_img_clear_color.b,
+            swapchain_img_clear_color.a,
         };
 
         vkCmdClearColorImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_GENERAL, &clear_color_val, 1,
@@ -126,7 +130,7 @@ void Device::EndFrame(VkCommandBuffer cmd, AllocatedImage& draw_img, const glm::
         vk::util::TransitionImage(cmd, swapchain_img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         VK_CHECK(vkEndCommandBuffer(cmd));
-        swapchain.SubmitAndPresent(cmd, graphics_queue, frame_number, swapchain_img_index);
+        swapchain.SubmitAndPresent(cmd, graphics_queue, CurrentFrameIndex(), swapchain_img_index);
     }
 
     frame_number++;
@@ -219,14 +223,10 @@ void Device::Init(const Config& config) {
 
     int w, h;
     SDL_GetWindowSize(config.window, &w, &h);
-    draw_img = CreateImage({.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1},
-                           VK_FORMAT_R16G16B16A16_SFLOAT,
-                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                               VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                           false);
 
-    swapchain.InitSyncStructs(core);
     swapchain.Create(core, w, h);
+    swapchain.InitSyncStructs(core);
+    swapchain_img_clear_color = glm::vec4(0.0f);
 
     InitCommandBuffers();
 }
@@ -240,7 +240,6 @@ void Device::Clean() {
         vkDestroyCommandPool(core.device, frame.cmd_pool, NULL);
     }
 
-    DestroyImage(draw_img);
     vmaDestroyAllocator(allocator);
 }
 }  // namespace gfx

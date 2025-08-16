@@ -1,6 +1,9 @@
 #pragma once
+
 #include "gfx/gfx.h"
 #include "platform.h"
+#include "renderer.h"
+
 namespace vfs {
 class World {
 public:
@@ -13,5 +16,6 @@ public:
 
 private:
     gfx::Device gfx;
+    Renderer renderer;
 };
 }  // namespace vfs

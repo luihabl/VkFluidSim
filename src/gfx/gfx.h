@@ -29,10 +29,14 @@ struct Device {
     void Clean();
 
     VkCommandBuffer BeginFrame();
-    void EndFrame(VkCommandBuffer cmd, AllocatedImage& draw_img, const glm::vec4& clear_color);
+    void EndFrame(VkCommandBuffer cmd, const Image& draw_img);
 
-    AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip);
-    void DestroyImage(AllocatedImage& img);
+    Image CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip) const;
+    void DestroyImage(Image& img) const;
+
+    const CoreCtx& GetCoreCtx() { return core; }
+
+    VkExtent2D GetSwapchainExtent();
 
 private:
     void InitCommandBuffers();
@@ -44,8 +48,8 @@ private:
     uint32_t graphics_queue_family;
     VmaAllocator allocator;
 
-    AllocatedImage draw_img;
     Swapchain swapchain;
+    glm::vec4 swapchain_img_clear_color;
 
     std::array<FrameData, gfx::FRAME_COUNT> frames;
     uint32_t frame_number = 0;

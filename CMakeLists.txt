@@ -63,6 +63,7 @@ src/gfx/swapchain.cpp
 src/gfx/vk_util.cpp
 src/platform.cpp
 src/world.cpp
+src/renderer.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

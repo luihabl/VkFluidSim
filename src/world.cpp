@@ -4,17 +4,19 @@ namespace vfs {
 void World::Init(Platform& platform) {
     gfx.Init({
         .name = "Vulkan fluid sim",
-        .window = platform.window,
+        .window = platform.GetWindow(),
         .validation_layers = true,
     });
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
+
+    sprite_pipeline.Init(gfx.GetCoreCtx());
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
     if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_Q) {
-        platform.quit = true;
+        platform.ScheduleQuit();
     }
 }
 

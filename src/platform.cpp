@@ -3,9 +3,37 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
+#include <filesystem>
+
 #include "SDL3/SDL_version.h"
 
 namespace vfs {
+
+namespace {
+Platform* platform_instance = nullptr;
+}
+
+Platform::Path Platform::Assets::ResourceFolder() {
+    if (platform_instance) {
+        return platform_instance->GetConfig().resources_path;
+    }
+
+    fmt::println("No platform instance set");
+    return {};
+}
+
+Platform::Path Platform::Assets::ResourcePath(const char* resource) {
+    if (platform_instance) {
+        return platform_instance->ResourcePath(resource);
+    }
+
+    fmt::println("No platform instance set");
+    return {};
+}
+
+void Platform::Assets::SetPlatformInstance(Platform* p) {
+    platform_instance = p;
+}
 
 void Platform::Init(Config&& config_) {
     config = std::move(config_);
@@ -41,5 +69,9 @@ void Platform::Run() {
 }
 
 void Platform::Clean() {}
+
+Platform::Path Platform::ResourcePath(const char* resource) const {
+    return config.resources_path / resource;
+}
 
 }  // namespace vfs

@@ -78,4 +78,252 @@ void CopyImage(VkCommandBuffer cmd,
     vkCmdBlitImage2(cmd, &blit_info);
 }
 
+VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path) {
+    std::ifstream file(path, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        return VK_NULL_HANDLE;
+    }
+
+    auto size = (size_t)file.tellg();
+    if (size == 0) {
+        return VK_NULL_HANDLE;
+    }
+
+    auto buffer = std::vector<uint32_t>(size / sizeof(uint32_t));
+
+    file.seekg(0);
+    file.read((char*)buffer.data(), size);
+    file.close();
+
+    auto create_info = VkShaderModuleCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .pNext = NULL,
+        .codeSize = buffer.size() * sizeof(uint32_t),
+        .pCode = buffer.data(),
+    };
+
+    VkShaderModule shader;
+    if (vkCreateShaderModule(ctx.device, &create_info, NULL, &shader) != VK_SUCCESS) {
+        return VK_NULL_HANDLE;
+    }
+
+    return shader;
+}
+
+PipelineBuilder::PipelineBuilder() {
+    Clear();
+}
+
+void PipelineBuilder::Clear() {
+    input_assembly = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext = NULL,
+    };
+
+    rasterizer = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext = NULL,
+    };
+
+    color_blend_attachment = {};
+
+    multisampling = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = NULL,
+    };
+
+    pipeline_layout = {};
+
+    depth_stencil = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = NULL,
+    };
+
+    render_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .pNext = NULL,
+    };
+
+    shader_stages.resize(0);
+}
+
+VkPipeline PipelineBuilder::Build(VkDevice device) {
+    auto view_port_state = VkPipelineViewportStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .viewportCount = 1,
+        .scissorCount = 1,
+    };
+
+    auto color_blending = VkPipelineColorBlendStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY,
+        .attachmentCount = 1,
+        .pAttachments = &color_blend_attachment,
+    };
+
+    auto vertex_input_info = VkPipelineVertexInputStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = NULL,
+    };
+
+    VkDynamicState state[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    auto dynamic_info = VkPipelineDynamicStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .pDynamicStates = state,
+        .dynamicStateCount = 2,
+    };
+
+    auto pipeline_info = VkGraphicsPipelineCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = &render_info,
+
+        .stageCount = (uint32_t)shader_stages.size(),
+        .pStages = shader_stages.data(),
+        .pVertexInputState = &vertex_input_info,
+        .pInputAssemblyState = &input_assembly,
+        .pViewportState = &view_port_state,
+        .pRasterizationState = &rasterizer,
+        .pMultisampleState = &multisampling,
+        .pColorBlendState = &color_blending,
+        .pDepthStencilState = &depth_stencil,
+        .layout = pipeline_layout,
+        .pDynamicState = &dynamic_info,
+    };
+
+    VkPipeline pipeline;
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline) !=
+        VK_SUCCESS) {
+        fmt::println("Failed to create pipeline");
+        return VK_NULL_HANDLE;
+    } else {
+        return pipeline;
+    }
+}
+
+PipelineBuilder& PipelineBuilder::SetShaders(VkShaderModule vertex_shader,
+                                             VkShaderModule frag_shader) {
+    shader_stages.resize(0);
+    shader_stages.push_back(
+        PipelineShaderStageCreateInfo(vertex_shader, VK_SHADER_STAGE_VERTEX_BIT));
+    shader_stages.push_back(
+        PipelineShaderStageCreateInfo(frag_shader, VK_SHADER_STAGE_FRAGMENT_BIT));
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetInputTopology(VkPrimitiveTopology topo) {
+    input_assembly.topology = topo;
+    input_assembly.primitiveRestartEnable = VK_FALSE;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetPolygonMode(VkPolygonMode mode) {
+    rasterizer.polygonMode = mode;
+    rasterizer.lineWidth = 1.0f;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face) {
+    rasterizer.cullMode = cull_mode;
+    rasterizer.frontFace = front_face;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetMultisamplingDisabled() {
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.minSampleShading = 1.0f;
+    multisampling.pSampleMask = NULL;
+    multisampling.alphaToCoverageEnable = VK_FALSE;
+    multisampling.alphaToOneEnable = VK_FALSE;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetBlendingDisabled() {
+    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_FALSE;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetBlendingAdditive() {
+    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_TRUE;
+    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetBlendingAlphaBlend() {
+    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_TRUE;
+    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetColorAttachmentFormat(VkFormat format) {
+    color_attachment_format = format;
+    render_info.colorAttachmentCount = 1;
+    render_info.pColorAttachmentFormats = &color_attachment_format;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetDepthFormat(VkFormat format) {
+    render_info.depthAttachmentFormat = format;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetDepthTestDisabled() {
+    depth_stencil.depthTestEnable = VK_FALSE;
+    depth_stencil.depthWriteEnable = VK_FALSE;
+    depth_stencil.depthCompareOp = VK_COMPARE_OP_NEVER;
+    depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil.stencilTestEnable = VK_FALSE;
+    depth_stencil.front = {};
+    depth_stencil.back = {};
+    depth_stencil.minDepthBounds = 0.0f;
+    depth_stencil.maxDepthBounds = 1.0f;
+
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetDepthTest(bool enable_depth_write, VkCompareOp op) {
+    depth_stencil.depthTestEnable = VK_TRUE;
+    depth_stencil.depthWriteEnable = enable_depth_write;
+    depth_stencil.depthCompareOp = op;
+    depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil.stencilTestEnable = VK_FALSE;
+    depth_stencil.front = {};
+    depth_stencil.back = {};
+    depth_stencil.minDepthBounds = 0.0f;
+    depth_stencil.maxDepthBounds = 1.0f;
+
+    return *this;
+}
+
 }  // namespace vk::util

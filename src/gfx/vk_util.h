@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "gfx/common.h"
+
 namespace vk::util {
 
 inline auto SemaphoreCreateInfo(VkFenceCreateFlags flags = 0) {
@@ -217,5 +219,38 @@ void CopyImage(VkCommandBuffer cmd,
                VkExtent2D src_size,
                VkExtent2D dst_size,
                bool linear_filter = true);
+
+VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path);
+
+class PipelineBuilder {
+public:
+    PipelineBuilder();
+    VkPipeline Build(VkDevice device);
+    void Clear();
+
+    PipelineBuilder& SetShaders(VkShaderModule vertex_shader, VkShaderModule frag_shader);
+    PipelineBuilder& SetInputTopology(VkPrimitiveTopology topo);
+    PipelineBuilder& SetPolygonMode(VkPolygonMode mode);
+    PipelineBuilder& SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face);
+    PipelineBuilder& SetMultisamplingDisabled();
+    PipelineBuilder& SetBlendingDisabled();
+    PipelineBuilder& SetBlendingAlphaBlend();
+    PipelineBuilder& SetBlendingAdditive();
+    PipelineBuilder& SetColorAttachmentFormat(VkFormat format);
+    PipelineBuilder& SetDepthFormat(VkFormat format);
+    PipelineBuilder& SetDepthTest(bool enable_depth_write, VkCompareOp op);
+    PipelineBuilder& SetDepthTestDisabled();
+
+private:
+    std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
+    VkPipelineInputAssemblyStateCreateInfo input_assembly;
+    VkPipelineRasterizationStateCreateInfo rasterizer;
+    VkPipelineColorBlendAttachmentState color_blend_attachment;
+    VkPipelineMultisampleStateCreateInfo multisampling;
+    VkPipelineLayout pipeline_layout;
+    VkPipelineDepthStencilStateCreateInfo depth_stencil;
+    VkPipelineRenderingCreateInfo render_info;
+    VkFormat color_attachment_format;
+};
 
 };  // namespace vk::util

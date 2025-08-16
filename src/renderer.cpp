@@ -59,6 +59,9 @@ void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd) {
         vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, &depth_attachment);
 
     vkCmdBeginRendering(cmd, &render_info);
+
+    // add stuff
+
     vkCmdEndRendering(cmd);
 }
 

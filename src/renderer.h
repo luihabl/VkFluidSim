@@ -2,6 +2,7 @@
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"
+#include "pipeline.h"
 
 namespace vfs {
 class Renderer {
@@ -16,5 +17,6 @@ private:
     gfx::Image draw_img;
     gfx::Image depth_img;
     glm::vec4 clear_color;
+    SpriteDrawPipeline sprite_pipeline;
 };
 }  // namespace vfs

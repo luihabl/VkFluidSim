@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <span>
+
 #include "gfx/common.h"
 
 namespace vk::util {
@@ -222,8 +224,13 @@ void CopyImage(VkCommandBuffer cmd,
 
 VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path);
 
+VkPipelineLayout CreatePipelineLayout(const gfx::CoreCtx& ctx,
+                                      std::span<VkDescriptorSetLayout> desc_set_layouts,
+                                      std::span<VkPushConstantRange> push_const_ranges);
+
 class PipelineBuilder {
 public:
+    PipelineBuilder(VkPipelineLayout layout);
     PipelineBuilder();
     VkPipeline Build(VkDevice device);
     void Clear();
@@ -232,6 +239,7 @@ public:
     PipelineBuilder& SetInputTopology(VkPrimitiveTopology topo);
     PipelineBuilder& SetPolygonMode(VkPolygonMode mode);
     PipelineBuilder& SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face);
+    PipelineBuilder& SetCullDisabled();
     PipelineBuilder& SetMultisamplingDisabled();
     PipelineBuilder& SetBlendingDisabled();
     PipelineBuilder& SetBlendingAlphaBlend();

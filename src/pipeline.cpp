@@ -5,10 +5,56 @@
 #include "platform.h"
 
 namespace vfs {
-void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx) {
+void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
     auto frag = vk::util::LoadShaderModule(
-        ctx, Platform::Assets::ResourcePath("shaders/sprite.frag.spv").c_str());
+        ctx, Platform::Info::ResourcePath("shaders/sprite.frag.spv").c_str());
     auto vert = vk::util::LoadShaderModule(
-        ctx, Platform::Assets::ResourcePath("shaders/sprite.vert.spv").c_str());
+        ctx, Platform::Info::ResourcePath("shaders/sprite.vert.spv").c_str());
+
+    // TODO: FILL THIS!!! Add the descriptor layouts hrere
+    layout = vk::util::CreatePipelineLayout(ctx, {}, {});
+
+    pipeline = vk::util::PipelineBuilder(layout)
+                   .SetShaders(vert, frag)
+                   .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                   .SetPolygonMode(VK_POLYGON_MODE_FILL)
+                   .SetCullDisabled()
+                   .SetMultisamplingDisabled()
+                   .SetDepthTestDisabled()
+                   .SetBlendingAlphaBlend()  // Check if this is OK
+                   .SetColorAttachmentFormat(draw_img_format)
+                   .Build(ctx.device);
+
+    vkDestroyShaderModule(ctx.device, frag, nullptr);
+    vkDestroyShaderModule(ctx.device, vert, nullptr);
 }
+
+void SpriteDrawPipeline::Draw(VkCommandBuffer cmd, gfx::Device& gfx, const gfx::Image& draw_img) {
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    const auto viewport = VkViewport{
+        .x = 0,
+        .y = 0,
+        .width = (float)draw_img.extent.width,
+        .height = (float)draw_img.extent.height,
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    const auto scissor = VkRect2D{
+        .offset = {0, 0},
+        .extent = {.width = draw_img.extent.width, .height = draw_img.extent.height},
+    };
+
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+    vkCmdDraw(cmd, 3, 1, 0, 0);
+}
+
+void SpriteDrawPipeline::Clean(const gfx::CoreCtx& ctx) {
+    vkDestroyPipeline(ctx.device, pipeline, nullptr);
+}
+
 }  // namespace vfs

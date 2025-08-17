@@ -38,6 +38,8 @@ void Renderer::Init(const gfx::Device& gfx, int w, int h) {
     //      ...
 
     clear_color = {0.0f, 0.0f, 0.5f, 1.0f};
+
+    sprite_pipeline.Init(gfx.GetCoreCtx(), draw_img.format);
 }
 
 void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd) {
@@ -52,15 +54,15 @@ void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd) {
         clear_color.a,
     };
 
-    auto depth_attachment = vk::util::DepthRenderingAttachmentInfo(
-        depth_img.view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    // auto depth_attachment = vk::util::DepthRenderingAttachmentInfo(
+    //     depth_img.view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     auto render_info =
-        vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, &depth_attachment);
+        vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, nullptr);
 
     vkCmdBeginRendering(cmd, &render_info);
 
-    // add stuff
+    sprite_pipeline.Draw(cmd, gfx, draw_img);
 
     vkCmdEndRendering(cmd);
 }
@@ -68,6 +70,7 @@ void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd) {
 void Renderer::Clean(const gfx::Device& gfx) {
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
+    sprite_pipeline.Clean(gfx.GetCoreCtx());
 }
 
 }  // namespace vfs

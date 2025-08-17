@@ -1,7 +1,6 @@
 #pragma once
 
 #include "gfx/gfx.h"
-#include "pipeline.h"
 #include "platform.h"
 #include "renderer.h"
 
@@ -18,6 +17,5 @@ public:
 private:
     gfx::Device gfx;
     Renderer renderer;
-    SpriteDrawPipeline sprite_pipeline;
 };
 }  // namespace vfs

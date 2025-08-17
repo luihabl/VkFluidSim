@@ -1,5 +1,7 @@
 #include "vk_util.h"
 
+#include "gfx/common.h"
+
 namespace vk::util {
 
 void TransitionImage(VkCommandBuffer cmd,
@@ -109,6 +111,26 @@ VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path) {
     }
 
     return shader;
+}
+
+VkPipelineLayout CreatePipelineLayout(const gfx::CoreCtx& ctx,
+                                      std::span<VkDescriptorSetLayout> desc_set_layouts,
+                                      std::span<VkPushConstantRange> push_const_ranges) {
+    auto layout_info = vk::util::PipelineLayoutCreateInfo();
+    layout_info.pSetLayouts = desc_set_layouts.data();
+    layout_info.setLayoutCount = desc_set_layouts.size();
+    layout_info.pPushConstantRanges = push_const_ranges.data();
+    layout_info.pushConstantRangeCount = push_const_ranges.size();
+
+    VkPipelineLayout layout;
+    VK_CHECK(vkCreatePipelineLayout(ctx.device, &layout_info, nullptr, &layout));
+
+    return layout;
+}
+
+PipelineBuilder::PipelineBuilder(VkPipelineLayout layout) {
+    Clear();
+    pipeline_layout = layout;
 }
 
 PipelineBuilder::PipelineBuilder() {
@@ -234,6 +256,11 @@ PipelineBuilder& PipelineBuilder::SetCullMode(VkCullModeFlags cull_mode, VkFront
     rasterizer.cullMode = cull_mode;
     rasterizer.frontFace = front_face;
 
+    return *this;
+}
+
+PipelineBuilder& PipelineBuilder::SetCullDisabled() {
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
     return *this;
 }
 

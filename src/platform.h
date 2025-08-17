@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "SDL3/SDL_video.h"
@@ -27,10 +28,11 @@ public:
         Path resources_path = ".";
     };
 
-    struct Assets {
+    struct Info {
+        static void SetPlatformInstance(Platform* platform);
         static Path ResourcePath(const char* resource);
         static Path ResourceFolder();
-        static void SetPlatformInstance(Platform* platform);
+        static const Config* GetConfig();
     };
 
     void Init(Config&& config);

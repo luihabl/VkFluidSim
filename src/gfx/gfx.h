@@ -34,7 +34,7 @@ struct Device {
     Image CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip) const;
     void DestroyImage(Image& img) const;
 
-    const CoreCtx& GetCoreCtx() { return core; }
+    const CoreCtx& GetCoreCtx() const { return core; }
 
     VkExtent2D GetSwapchainExtent();
 

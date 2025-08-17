@@ -18,7 +18,6 @@ int main(int argc, char* argv[]) {
     using namespace vfs;
 
     auto platform = vfs::Platform{};
-    Platform::Assets::SetPlatformInstance(&platform);
 
     auto world = vfs::World{};
 
@@ -32,6 +31,8 @@ int main(int argc, char* argv[]) {
         .handler = [&world](auto& p, auto& e) { world.HandleEvent(p, e); },
         .resources_path = GetResourcesFolder(argc, argv),
     });
+
+    Platform::Info::SetPlatformInstance(&platform);
 
     platform.Run();
 }

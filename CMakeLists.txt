@@ -6,7 +6,7 @@ set(FETCHCONTENT_QUIET OFF CACHE BOOL "" FORCE)
 project(vfs)
 
 include(cmake/cpm.cmake)
-#add_subdirectory(resources/shaders)
+add_subdirectory(assets/shaders)
 
 # external libraries
 find_package(Vulkan REQUIRED)
@@ -68,6 +68,8 @@ src/pipeline.cpp
 )
 
 target_include_directories(vfs PUBLIC src)
+
+add_dependencies(vfs shaders)
 
 # link stuff
 target_link_libraries(vfs

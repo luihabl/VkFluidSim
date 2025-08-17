@@ -10,8 +10,6 @@ void World::Init(Platform& platform) {
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
-
-    sprite_pipeline.Init(gfx.GetCoreCtx());
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {

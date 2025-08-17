@@ -13,7 +13,11 @@ namespace {
 Platform* platform_instance = nullptr;
 }
 
-Platform::Path Platform::Assets::ResourceFolder() {
+void Platform::Info::SetPlatformInstance(Platform* p) {
+    platform_instance = p;
+}
+
+Platform::Path Platform::Info::ResourceFolder() {
     if (platform_instance) {
         return platform_instance->GetConfig().resources_path;
     }
@@ -22,7 +26,7 @@ Platform::Path Platform::Assets::ResourceFolder() {
     return {};
 }
 
-Platform::Path Platform::Assets::ResourcePath(const char* resource) {
+Platform::Path Platform::Info::ResourcePath(const char* resource) {
     if (platform_instance) {
         return platform_instance->ResourcePath(resource);
     }
@@ -31,8 +35,13 @@ Platform::Path Platform::Assets::ResourcePath(const char* resource) {
     return {};
 }
 
-void Platform::Assets::SetPlatformInstance(Platform* p) {
-    platform_instance = p;
+const Platform::Config* Platform::Info::GetConfig() {
+    if (platform_instance) {
+        return &platform_instance->GetConfig();
+    }
+
+    fmt::println("No platform instance set");
+    return nullptr;
 }
 
 void Platform::Init(Config&& config_) {

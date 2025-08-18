@@ -1,22 +1,26 @@
 #version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
 
 layout (location = 0) out vec3 out_color;
 
+struct Vertex {
+    vec3 pos;
+    vec4 color;
+};
+
+layout(buffer_reference, scalar) readonly buffer VertexBuffer{ 
+	Vertex vertices[];
+};
+
+layout( push_constant ) uniform constants {	
+	mat4 matrix;
+	VertexBuffer vertex_buffer;
+} push_constants;
+
 void main() {
+    Vertex v = push_constants.vertex_buffer.vertices[gl_VertexIndex];
 
-    const vec3 pos[3] = vec3[3](
-        vec3( 1.0f, 1.0f, 0.0f),
-		vec3(-1.0f, 1.0f, 0.0f),
-		vec3( 0.0f,-1.0f, 0.0f)
-    );
-
-
-    const vec3 colors[3] = vec3[3](
-        vec3( 1.0f, 0.0f, 0.0f), // r
-		vec3( 0.0f, 1.0f, 0.0f), // g
-		vec3( 0.0f, 0.0f, 1.0f)  // b
-    );
-
-    gl_Position = vec4(pos[gl_VertexIndex], 1.0f);
-    out_color = colors[gl_VertexIndex];
+    gl_Position = push_constants.matrix * vec4(v.pos, 1.0f);
+    out_color = v.color.xyz;
 }

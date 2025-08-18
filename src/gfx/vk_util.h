@@ -225,8 +225,8 @@ void CopyImage(VkCommandBuffer cmd,
 VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path);
 
 VkPipelineLayout CreatePipelineLayout(const gfx::CoreCtx& ctx,
-                                      std::span<VkDescriptorSetLayout> desc_set_layouts,
-                                      std::span<VkPushConstantRange> push_const_ranges);
+                                      std::span<const VkDescriptorSetLayout> desc_set_layouts,
+                                      std::span<const VkPushConstantRange> push_const_ranges);
 
 class PipelineBuilder {
 public:

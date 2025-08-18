@@ -8,7 +8,7 @@ namespace vfs {
 class Renderer {
 public:
     void Init(const gfx::Device& gfx, int w, int h);
-    void Draw(gfx::Device& gfx, VkCommandBuffer cmd);
+    void Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::GPUMesh& mesh);
     void Clean(const gfx::Device& gfx);
 
     const gfx::Image& GetDrawImage() { return draw_img; }

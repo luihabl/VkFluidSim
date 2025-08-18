@@ -1,5 +1,7 @@
 #include "pipeline.h"
 
+#include <array>
+
 #include "gfx/common.h"
 #include "gfx/vk_util.h"
 #include "platform.h"
@@ -12,7 +14,14 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
         ctx, Platform::Info::ResourcePath("shaders/sprite.vert.spv").c_str());
 
     // TODO: FILL THIS!!! Add the descriptor layouts hrere
-    layout = vk::util::CreatePipelineLayout(ctx, {}, {});
+
+    auto push_constant_range = VkPushConstantRange{
+        .offset = 0,
+        .size = sizeof(PushConstants),
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+    };
+
+    layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
 
     pipeline = vk::util::PipelineBuilder(layout)
                    .SetShaders(vert, frag)
@@ -29,7 +38,10 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
     vkDestroyShaderModule(ctx.device, vert, nullptr);
 }
 
-void SpriteDrawPipeline::Draw(VkCommandBuffer cmd, gfx::Device& gfx, const gfx::Image& draw_img) {
+void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
+                              gfx::Device& gfx,
+                              const gfx::Image& draw_img,
+                              const gfx::GPUMesh& mesh) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
     const auto viewport = VkViewport{
@@ -50,7 +62,15 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd, gfx::Device& gfx, const gfx::
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vkCmdDraw(cmd, 3, 1, 0, 0);
+    PushConstants push_constants;
+    push_constants.matrix = glm::mat4{1.f};
+    push_constants.vertex_buffer = mesh.vertex_addr;
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
+                       &push_constants);
+
+    vkCmdBindIndexBuffer(cmd, mesh.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
 }
 
 void SpriteDrawPipeline::Clean(const gfx::CoreCtx& ctx) {

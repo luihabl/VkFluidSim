@@ -18,13 +18,15 @@
 
 namespace gfx {
 
-constexpr unsigned FRAME_COUNT = 2;
 using f32 = float;
 using f64 = double;
 using i32 = int32_t;
 using i64 = int64_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
+
+constexpr u64 ONE_SEC_NS = 1000000000;
+constexpr u32 FRAME_COUNT = 2;
 
 struct CoreCtx {
     VkDevice device;
@@ -41,4 +43,11 @@ struct Image {
     VkFormat format;
     VmaAllocation allocation;
 };
+
+struct Buffer {
+    VkBuffer buffer;
+    VmaAllocation alloc;
+    VmaAllocationInfo info;
+};
+
 }  // namespace gfx

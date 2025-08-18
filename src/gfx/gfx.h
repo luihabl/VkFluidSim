@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 
 #include "gfx/common.h"
+#include "gfx/immediate.h"
 #include "gfx/swapchain.h"
 #include "vk_mem_alloc.h"
 
@@ -34,9 +35,14 @@ struct Device {
     Image CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip) const;
     void DestroyImage(Image& img) const;
 
+    Buffer CreateBuffer(size_t size, VkBufferUsageFlags usage, VmaMemoryUsage mem_usage) const;
+    void DestroyBuffer(Buffer& buf) const;
+
     const CoreCtx& GetCoreCtx() const { return core; }
 
     VkExtent2D GetSwapchainExtent();
+
+    void ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) const;
 
 private:
     void InitCommandBuffers();
@@ -50,6 +56,8 @@ private:
 
     Swapchain swapchain;
     glm::vec4 swapchain_img_clear_color;
+
+    ImmediateRunner immediate_runner;
 
     std::array<FrameData, gfx::FRAME_COUNT> frames;
     uint32_t frame_number = 0;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/gfx.h"
+#include "gfx/mesh.h"
 #include "platform.h"
 #include "renderer.h"
 
@@ -17,5 +18,8 @@ public:
 private:
     gfx::Device gfx;
     Renderer renderer;
+
+    gfx::GPUMesh test_mesh;
+    void SetInitialData();
 };
 }  // namespace vfs

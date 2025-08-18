@@ -114,8 +114,8 @@ VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path) {
 }
 
 VkPipelineLayout CreatePipelineLayout(const gfx::CoreCtx& ctx,
-                                      std::span<VkDescriptorSetLayout> desc_set_layouts,
-                                      std::span<VkPushConstantRange> push_const_ranges) {
+                                      std::span<const VkDescriptorSetLayout> desc_set_layouts,
+                                      std::span<const VkPushConstantRange> push_const_ranges) {
     auto layout_info = vk::util::PipelineLayoutCreateInfo();
     layout_info.pSetLayouts = desc_set_layouts.data();
     layout_info.setLayoutCount = desc_set_layouts.size();

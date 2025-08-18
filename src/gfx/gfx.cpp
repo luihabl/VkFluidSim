@@ -58,6 +58,29 @@ void Device::DestroyImage(Image& img) const {
     }
 }
 
+Buffer Device::CreateBuffer(size_t size, VkBufferUsageFlags usage, VmaMemoryUsage mem_usage) const {
+    auto buffer_info = VkBufferCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = NULL,
+        .size = size,
+        .usage = usage,
+    };
+
+    auto vma_alloc_info = VmaAllocationCreateInfo{
+        .usage = mem_usage,
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+    };
+
+    Buffer buffer;
+    VK_CHECK(vmaCreateBuffer(allocator, &buffer_info, &vma_alloc_info, &buffer.buffer,
+                             &buffer.alloc, &buffer.info));
+    return buffer;
+}
+
+void Device::DestroyBuffer(Buffer& buf) const {
+    vmaDestroyBuffer(allocator, buf.buffer, buf.alloc);
+}
+
 u32 Device::CurrentFrameIndex() {
     return frame_number % gfx::FRAME_COUNT;
 }
@@ -171,6 +194,7 @@ void Device::Init(const Config& config) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
     features12.bufferDeviceAddress = true;
     features12.descriptorIndexing = true;
+    features12.scalarBlockLayout = true;
 
     auto selector = vkb::PhysicalDeviceSelector{vkb_instance};
     auto physical_device = selector.set_minimum_version(1, 3)
@@ -229,10 +253,18 @@ void Device::Init(const Config& config) {
     swapchain_img_clear_color = glm::vec4(0.0f);
 
     InitCommandBuffers();
+
+    immediate_runner.Init(core, graphics_queue_family, graphics_queue);
+}
+
+void Device::ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) const {
+    immediate_runner.Submit(core, std::move(function));
 }
 
 void Device::Clean() {
     vkDeviceWaitIdle(core.device);
+
+    immediate_runner.Clean(core);
 
     swapchain.Destroy(core);
 

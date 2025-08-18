@@ -61,6 +61,8 @@ src/main.cpp
 src/gfx/gfx.cpp
 src/gfx/swapchain.cpp
 src/gfx/vk_util.cpp
+src/gfx/mesh.cpp
+src/gfx/immediate.cpp
 src/platform.cpp
 src/world.cpp
 src/renderer.cpp

@@ -4,7 +4,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <optional>
 #include <string>
 
 #include "SDL3/SDL_video.h"

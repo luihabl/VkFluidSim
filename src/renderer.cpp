@@ -42,7 +42,7 @@ void Renderer::Init(const gfx::Device& gfx, int w, int h) {
     sprite_pipeline.Init(gfx.GetCoreCtx(), draw_img.format);
 }
 
-void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd) {
+void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::GPUMesh& mesh) {
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -62,7 +62,7 @@ void Renderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd) {
 
     vkCmdBeginRendering(cmd, &render_info);
 
-    sprite_pipeline.Draw(cmd, gfx, draw_img);
+    sprite_pipeline.Draw(cmd, gfx, draw_img, mesh);
 
     vkCmdEndRendering(cmd);
 }

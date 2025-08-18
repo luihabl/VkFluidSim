@@ -9,8 +9,6 @@
 
 namespace gfx {
 
-constexpr u64 ONE_SEC_NS = 1000000000;
-
 void Swapchain::Create(const CoreCtx& ctx, u32 w, u32 h) {
     auto sc_builder = vkb::SwapchainBuilder(ctx.chosen_gpu, ctx.device, ctx.surface);
 

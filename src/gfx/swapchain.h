@@ -3,7 +3,6 @@
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.h>
 
-#include <cstdint>
 #include <vector>
 
 #include "gfx/common.h"

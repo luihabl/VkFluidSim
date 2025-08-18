@@ -17,7 +17,8 @@ public:
     void Draw(VkCommandBuffer cmd,
               gfx::Device& gfx,
               const gfx::Image& draw_img,
-              const gfx::GPUMesh& mesh);
+              const gfx::GPUMesh& mesh,
+              const glm::mat4& transform);
 
 private:
     VkPipeline pipeline;

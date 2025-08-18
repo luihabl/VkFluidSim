@@ -21,6 +21,8 @@ layout( push_constant ) uniform constants {
 void main() {
     Vertex v = push_constants.vertex_buffer.vertices[gl_VertexIndex];
 
-    gl_Position = push_constants.matrix * vec4(v.pos, 1.0f);
+    vec3 offset = vec3(0.0f, 50.0f * gl_InstanceIndex, 0.0f);
+
+    gl_Position = push_constants.matrix * vec4(v.pos + offset, 1.0f);
     out_color = v.color.xyz;
 }

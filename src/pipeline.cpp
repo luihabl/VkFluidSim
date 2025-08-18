@@ -41,7 +41,8 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
 void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
                               gfx::Device& gfx,
                               const gfx::Image& draw_img,
-                              const gfx::GPUMesh& mesh) {
+                              const gfx::GPUMesh& mesh,
+                              const glm::mat4& tranform) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
     const auto viewport = VkViewport{
@@ -63,14 +64,14 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     PushConstants push_constants;
-    push_constants.matrix = glm::mat4{1.f};
+    push_constants.matrix = tranform;
     push_constants.vertex_buffer = mesh.vertex_addr;
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
                        &push_constants);
 
     vkCmdBindIndexBuffer(cmd, mesh.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
+    vkCmdDrawIndexed(cmd, mesh.index_count, 4, 0, 0, 0);
 }
 
 void SpriteDrawPipeline::Clean(const gfx::CoreCtx& ctx) {

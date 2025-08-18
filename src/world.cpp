@@ -1,6 +1,9 @@
 #include "world.h"
 
+#include <glm/ext.hpp>
+
 #include "gfx/mesh.h"
+#include "platform.h"
 
 namespace vfs {
 void World::Init(Platform& platform) {
@@ -16,28 +19,38 @@ void World::Init(Platform& platform) {
     SetInitialData();
 }
 
+void DrawCircleFill(gfx::CPUMesh& mesh,
+                    const glm::vec3& center,
+                    float radius,
+                    const glm::vec4& color,
+                    int steps) {
+    float cx = center.x;
+    float cy = center.y;
+
+    for (int i = 0; i < steps; i++) {
+        float angle0 = (float)i * 2 * M_PI / (float)steps;
+        float angle1 = (float)(i + 1) * 2 * M_PI / (float)steps;
+
+        auto p0 = glm::vec3(cx, cy, 0.0f);
+        auto p1 = glm::vec3(cx + radius * sinf(angle0), cy + radius * cosf(angle0), 0.0f);
+        auto p2 = glm::vec3(cx + radius * sinf(angle1), cy + radius * cosf(angle1), 0.0f);
+
+        const unsigned int n = (unsigned int)mesh.vertices.size();
+        mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1});
+        mesh.vertices.insert(mesh.vertices.end(), {{.pos = p0, .color = color},
+                                                   {.pos = p1, .color = color},
+                                                   {.pos = p2, .color = color}});
+    }
+}
+
 void World::SetInitialData() {
     gfx::CPUMesh mesh;
 
-    mesh.vertices.resize(4);
-    mesh.vertices[0].pos = {0.5, -0.5, 0};
-    mesh.vertices[1].pos = {0.5, 0.5, 0};
-    mesh.vertices[2].pos = {-0.5, -0.5, 0};
-    mesh.vertices[3].pos = {-0.5, 0.5, 0};
+    float w = Platform::Info::GetConfig()->w;
+    float h = Platform::Info::GetConfig()->h;
 
-    mesh.vertices[0].color = {0, 0, 0, 1};
-    mesh.vertices[1].color = {0.5, 0.5, 0.5, 1};
-    mesh.vertices[2].color = {1, 0, 0, 1};
-    mesh.vertices[3].color = {0, 1, 0, 1};
-
-    mesh.indices.resize(6);
-    mesh.indices[0] = 0;
-    mesh.indices[1] = 1;
-    mesh.indices[2] = 2;
-
-    mesh.indices[3] = 2;
-    mesh.indices[4] = 1;
-    mesh.indices[5] = 3;
+    DrawCircleFill(mesh, glm::vec3(w / 2, h / 2, 0.0f), 10.0f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+                   50);
 
     test_mesh = gfx::UploadMesh(gfx, mesh);
 }
@@ -53,7 +66,14 @@ void World::Update(Platform& platform) {
 
     auto cmd = gfx.BeginFrame();
 
-    renderer.Draw(gfx, cmd, test_mesh);
+    auto proj = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
+                           0.0f, 1.0f);
+
+    static float t = 0.0f;
+    auto transform = glm::translate(proj, glm::vec3(500.0f * std::sin(t), 0.0f, 0.0f));
+    t += 0.01f;
+
+    renderer.Draw(gfx, cmd, test_mesh, transform);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 }

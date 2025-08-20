@@ -3,6 +3,7 @@ find_program(GLSL_VALIDATOR glslangValidator)
 set(SHADER_FILES
     sprite.frag
     sprite.vert
+    particles.comp
 )
 
 foreach(GLSL ${SHADER_FILES})

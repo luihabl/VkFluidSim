@@ -228,26 +228,26 @@ VkPipelineLayout CreatePipelineLayout(const gfx::CoreCtx& ctx,
                                       std::span<const VkDescriptorSetLayout> desc_set_layouts,
                                       std::span<const VkPushConstantRange> push_const_ranges);
 
-class PipelineBuilder {
+class GraphicsPipelineBuilder {
 public:
-    PipelineBuilder(VkPipelineLayout layout);
-    PipelineBuilder();
+    GraphicsPipelineBuilder(VkPipelineLayout layout);
+    GraphicsPipelineBuilder();
     VkPipeline Build(VkDevice device);
     void Clear();
 
-    PipelineBuilder& SetShaders(VkShaderModule vertex_shader, VkShaderModule frag_shader);
-    PipelineBuilder& SetInputTopology(VkPrimitiveTopology topo);
-    PipelineBuilder& SetPolygonMode(VkPolygonMode mode);
-    PipelineBuilder& SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face);
-    PipelineBuilder& SetCullDisabled();
-    PipelineBuilder& SetMultisamplingDisabled();
-    PipelineBuilder& SetBlendingDisabled();
-    PipelineBuilder& SetBlendingAlphaBlend();
-    PipelineBuilder& SetBlendingAdditive();
-    PipelineBuilder& SetColorAttachmentFormat(VkFormat format);
-    PipelineBuilder& SetDepthFormat(VkFormat format);
-    PipelineBuilder& SetDepthTest(bool enable_depth_write, VkCompareOp op);
-    PipelineBuilder& SetDepthTestDisabled();
+    GraphicsPipelineBuilder& SetShaders(VkShaderModule vertex_shader, VkShaderModule frag_shader);
+    GraphicsPipelineBuilder& SetInputTopology(VkPrimitiveTopology topo);
+    GraphicsPipelineBuilder& SetPolygonMode(VkPolygonMode mode);
+    GraphicsPipelineBuilder& SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face);
+    GraphicsPipelineBuilder& SetCullDisabled();
+    GraphicsPipelineBuilder& SetMultisamplingDisabled();
+    GraphicsPipelineBuilder& SetBlendingDisabled();
+    GraphicsPipelineBuilder& SetBlendingAlphaBlend();
+    GraphicsPipelineBuilder& SetBlendingAdditive();
+    GraphicsPipelineBuilder& SetColorAttachmentFormat(VkFormat format);
+    GraphicsPipelineBuilder& SetDepthFormat(VkFormat format);
+    GraphicsPipelineBuilder& SetDepthTest(bool enable_depth_write, VkCompareOp op);
+    GraphicsPipelineBuilder& SetDepthTestDisabled();
 
 private:
     std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
@@ -260,5 +260,9 @@ private:
     VkPipelineRenderingCreateInfo render_info;
     VkFormat color_attachment_format;
 };
+
+VkPipeline BuildComputePipeline(VkDevice device, VkPipelineLayout layout, VkShaderModule shader);
+
+VkDeviceAddress GetBufferAddress(VkDevice device, const gfx::Buffer& buffer);
 
 };  // namespace vk::util

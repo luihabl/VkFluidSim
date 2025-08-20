@@ -3,6 +3,7 @@
 #include <glm/ext.hpp>
 
 #include "gfx/mesh.h"
+#include "pipeline.h"
 #include "platform.h"
 
 namespace vfs {
@@ -15,7 +16,7 @@ void World::Init(Platform& platform) {
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
-
+    comp_pipeline.Init(gfx.GetCoreCtx());
     SetInitialData();
 }
 
@@ -53,6 +54,44 @@ void World::SetInitialData() {
                    50);
 
     test_mesh = gfx::UploadMesh(gfx, mesh);
+
+    auto sz = sizeof(ComputePipeline::DataPoint) * 10;
+
+    b1 = gfx.CreateBuffer(sz,
+                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                              VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                          VMA_MEMORY_USAGE_GPU_ONLY);
+    b2 = gfx.CreateBuffer(sz,
+                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                              VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                          VMA_MEMORY_USAGE_GPU_ONLY);
+
+    in_buf = &b1;
+    out_buf = &b2;
+
+    auto staging =
+        gfx.CreateBuffer(sz, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+    void* data = staging.info.pMappedData;
+
+    for (int i = 0; i < sz; i++) {
+        ((char*)data)[i] = 0;
+    }
+
+    gfx.ImmediateSubmit([&](VkCommandBuffer cmd) {
+        auto cpy_info = VkBufferCopy{
+            .dstOffset = 0,
+            .srcOffset = 0,
+            .size = sz,
+        };
+
+        vkCmdCopyBuffer(cmd, staging.buffer, b1.buffer, 1, &cpy_info);
+        vkCmdCopyBuffer(cmd, staging.buffer, b2.buffer, 1, &cpy_info);
+    });
+
+    gfx.DestroyBuffer(staging);
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
@@ -70,16 +109,40 @@ void World::Update(Platform& platform) {
                            0.0f, 1.0f);
 
     static float t = 0.0f;
-    auto transform = glm::translate(proj, glm::vec3(500.0f * std::sin(t), 0.0f, 0.0f));
+    auto transform = proj;
     t += 0.01f;
 
-    renderer.Draw(gfx, cmd, test_mesh, transform);
+    std::swap(in_buf, out_buf);
+
+    comp_pipeline.Compute(cmd, gfx, *in_buf, *out_buf);
+
+    auto mem_barrier = VkMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+    };
+
+    auto dep_info = VkDependencyInfo{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &mem_barrier,
+        .memoryBarrierCount = 1,
+
+    };
+
+    vkCmdPipelineBarrier2(cmd, &dep_info);
+
+    renderer.Draw(gfx, cmd, test_mesh, *out_buf, transform);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 }
 
 void World::Clean() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
+    comp_pipeline.Clean(gfx.GetCoreCtx());
+    gfx.DestroyBuffer(b1);
+    gfx.DestroyBuffer(b2);
     gfx::DestroyMesh(gfx, test_mesh);
     renderer.Clean(gfx);
     gfx.Clean();

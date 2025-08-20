@@ -71,7 +71,7 @@ Buffer Device::CreateBuffer(size_t size, VkBufferUsageFlags usage, VmaMemoryUsag
         .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
     };
 
-    Buffer buffer;
+    Buffer buffer{.size = (u32)size};
     VK_CHECK(vmaCreateBuffer(allocator, &buffer_info, &vma_alloc_info, &buffer.buffer,
                              &buffer.alloc, &buffer.info));
     return buffer;

@@ -13,15 +13,27 @@ layout(buffer_reference, scalar) readonly buffer VertexBuffer{
 	Vertex vertices[];
 };
 
+struct Data {
+    float x;
+    float v;
+};
+
+layout(buffer_reference, scalar) readonly buffer DataBuffer{ 
+	Data data[];
+};
+
+
 layout( push_constant ) uniform constants {	
 	mat4 matrix;
 	VertexBuffer vertex_buffer;
+	DataBuffer pos_buffer;
 } push_constants;
 
 void main() {
     Vertex v = push_constants.vertex_buffer.vertices[gl_VertexIndex];
+    Data d = push_constants.pos_buffer.data[gl_InstanceIndex];
 
-    vec3 offset = vec3(0.0f, 50.0f * gl_InstanceIndex, 0.0f);
+    vec3 offset = vec3(50.0f * d.x, 25.0f * gl_InstanceIndex - 300.0f, 0.0f);
 
     gl_Position = push_constants.matrix * vec4(v.pos + offset, 1.0f);
     out_color = v.color.xyz;

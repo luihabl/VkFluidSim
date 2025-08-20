@@ -48,6 +48,7 @@ struct Buffer {
     VkBuffer buffer;
     VmaAllocation alloc;
     VmaAllocationInfo info;
+    u32 size{0};
 };
 
 }  // namespace gfx

@@ -128,16 +128,16 @@ VkPipelineLayout CreatePipelineLayout(const gfx::CoreCtx& ctx,
     return layout;
 }
 
-PipelineBuilder::PipelineBuilder(VkPipelineLayout layout) {
+GraphicsPipelineBuilder::GraphicsPipelineBuilder(VkPipelineLayout layout) {
     Clear();
     pipeline_layout = layout;
 }
 
-PipelineBuilder::PipelineBuilder() {
+GraphicsPipelineBuilder::GraphicsPipelineBuilder() {
     Clear();
 }
 
-void PipelineBuilder::Clear() {
+void GraphicsPipelineBuilder::Clear() {
     input_assembly = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .pNext = NULL,
@@ -170,7 +170,7 @@ void PipelineBuilder::Clear() {
     shader_stages.resize(0);
 }
 
-VkPipeline PipelineBuilder::Build(VkDevice device) {
+VkPipeline GraphicsPipelineBuilder::Build(VkDevice device) {
     auto view_port_state = VkPipelineViewportStateCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .pNext = NULL,
@@ -227,9 +227,8 @@ VkPipeline PipelineBuilder::Build(VkDevice device) {
     }
 }
 
-PipelineBuilder& PipelineBuilder::SetShaders(VkShaderModule vertex_shader,
-                                             VkShaderModule frag_shader) {
-    shader_stages.resize(0);
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetShaders(VkShaderModule vertex_shader,
+                                                             VkShaderModule frag_shader) {
     shader_stages.push_back(
         PipelineShaderStageCreateInfo(vertex_shader, VK_SHADER_STAGE_VERTEX_BIT));
     shader_stages.push_back(
@@ -238,33 +237,34 @@ PipelineBuilder& PipelineBuilder::SetShaders(VkShaderModule vertex_shader,
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetInputTopology(VkPrimitiveTopology topo) {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetInputTopology(VkPrimitiveTopology topo) {
     input_assembly.topology = topo;
     input_assembly.primitiveRestartEnable = VK_FALSE;
 
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetPolygonMode(VkPolygonMode mode) {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetPolygonMode(VkPolygonMode mode) {
     rasterizer.polygonMode = mode;
     rasterizer.lineWidth = 1.0f;
 
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face) {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetCullMode(VkCullModeFlags cull_mode,
+                                                              VkFrontFace front_face) {
     rasterizer.cullMode = cull_mode;
     rasterizer.frontFace = front_face;
 
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetCullDisabled() {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetCullDisabled() {
     rasterizer.cullMode = VK_CULL_MODE_NONE;
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetMultisamplingDisabled() {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetMultisamplingDisabled() {
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     multisampling.minSampleShading = 1.0f;
@@ -275,7 +275,7 @@ PipelineBuilder& PipelineBuilder::SetMultisamplingDisabled() {
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetBlendingDisabled() {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetBlendingDisabled() {
     color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                             VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     color_blend_attachment.blendEnable = VK_FALSE;
@@ -283,7 +283,7 @@ PipelineBuilder& PipelineBuilder::SetBlendingDisabled() {
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetBlendingAdditive() {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetBlendingAdditive() {
     color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                             VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     color_blend_attachment.blendEnable = VK_TRUE;
@@ -297,7 +297,7 @@ PipelineBuilder& PipelineBuilder::SetBlendingAdditive() {
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetBlendingAlphaBlend() {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetBlendingAlphaBlend() {
     color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                             VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     color_blend_attachment.blendEnable = VK_TRUE;
@@ -311,7 +311,7 @@ PipelineBuilder& PipelineBuilder::SetBlendingAlphaBlend() {
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetColorAttachmentFormat(VkFormat format) {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetColorAttachmentFormat(VkFormat format) {
     color_attachment_format = format;
     render_info.colorAttachmentCount = 1;
     render_info.pColorAttachmentFormats = &color_attachment_format;
@@ -319,13 +319,13 @@ PipelineBuilder& PipelineBuilder::SetColorAttachmentFormat(VkFormat format) {
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetDepthFormat(VkFormat format) {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetDepthFormat(VkFormat format) {
     render_info.depthAttachmentFormat = format;
 
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetDepthTestDisabled() {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetDepthTestDisabled() {
     depth_stencil.depthTestEnable = VK_FALSE;
     depth_stencil.depthWriteEnable = VK_FALSE;
     depth_stencil.depthCompareOp = VK_COMPARE_OP_NEVER;
@@ -339,7 +339,8 @@ PipelineBuilder& PipelineBuilder::SetDepthTestDisabled() {
     return *this;
 }
 
-PipelineBuilder& PipelineBuilder::SetDepthTest(bool enable_depth_write, VkCompareOp op) {
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetDepthTest(bool enable_depth_write,
+                                                               VkCompareOp op) {
     depth_stencil.depthTestEnable = VK_TRUE;
     depth_stencil.depthWriteEnable = enable_depth_write;
     depth_stencil.depthCompareOp = op;
@@ -351,6 +352,35 @@ PipelineBuilder& PipelineBuilder::SetDepthTest(bool enable_depth_write, VkCompar
     depth_stencil.maxDepthBounds = 1.0f;
 
     return *this;
+}
+
+VkPipeline BuildComputePipeline(VkDevice device,
+                                VkPipelineLayout layout,
+                                VkShaderModule shader_mod) {
+    auto shader = PipelineShaderStageCreateInfo(shader_mod, VK_SHADER_STAGE_COMPUTE_BIT);
+
+    auto pipeline_info = VkComputePipelineCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .layout = layout,
+        .stage = shader,
+    };
+
+    VkPipeline pipeline;
+    VK_CHECK(
+        vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline));
+
+    return pipeline;
+}
+
+VkDeviceAddress GetBufferAddress(VkDevice device, const gfx::Buffer& buffer) {
+    auto device_addr_info = VkBufferDeviceAddressInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+        .pNext = NULL,
+        .buffer = buffer.buffer,
+    };
+
+    return vkGetBufferDeviceAddress(device, &device_addr_info);
 }
 
 }  // namespace vk::util

@@ -11,6 +11,7 @@ public:
     void Draw(gfx::Device& gfx,
               VkCommandBuffer cmd,
               const gfx::GPUMesh& mesh,
+              const gfx::Buffer& buf,
               const glm::mat4& transform);
     void Clean(const gfx::Device& gfx);
 

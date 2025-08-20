@@ -1,0 +1,32 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+struct Data {
+    float x;
+    float v;
+};
+
+layout(buffer_reference, scalar) readonly buffer DataBuffer{ 
+	Data data[];
+};
+
+layout( push_constant ) uniform constants {	
+    float time;
+    float dt;
+    uint data_buffer_size;
+	DataBuffer in_data_buffer;
+	DataBuffer out_data_buffer;
+} pc;
+
+void main() {
+    uint gi  = gl_GlobalInvocationID.x;
+    
+    if(gi < pc.data_buffer_size) {
+        Data d_in = pc.in_data_buffer.data[gi];
+        pc.out_data_buffer.data[gi].x = 10.0f * sin((gi+1)*pc.time / 5.0f);
+        pc.out_data_buffer.data[gi].v = 0.0f;
+    }
+}

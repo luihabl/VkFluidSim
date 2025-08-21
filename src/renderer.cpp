@@ -71,10 +71,10 @@ void Renderer::Draw(gfx::Device& gfx,
     vkCmdEndRendering(cmd);
 }
 
-void Renderer::Clean(const gfx::Device& gfx) {
+void Renderer::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
-    sprite_pipeline.Clean(gfx.GetCoreCtx());
+    sprite_pipeline.Clear(gfx.GetCoreCtx());
 }
 
 }  // namespace vfs

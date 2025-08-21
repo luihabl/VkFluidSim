@@ -15,7 +15,7 @@ public:
     void Init(Platform& platform);
     void Update(Platform& platform);
     void HandleEvent(Platform& platform, const Event& e);
-    void Clean();
+    void Clear();
 
 private:
     gfx::Device gfx;

@@ -77,7 +77,7 @@ void Platform::Run() {
         config.clean(*this);
 }
 
-void Platform::Clean() {}
+void Platform::Clear() {}
 
 Platform::Path Platform::ResourcePath(const char* resource) const {
     return config.resources_path / resource;

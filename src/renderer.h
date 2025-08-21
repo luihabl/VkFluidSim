@@ -13,7 +13,7 @@ public:
               const gfx::GPUMesh& mesh,
               const gfx::Buffer& buf,
               const glm::mat4& transform);
-    void Clean(const gfx::Device& gfx);
+    void Clear(const gfx::Device& gfx);
 
     const gfx::Image& GetDrawImage() { return draw_img; }
 

@@ -1,8 +1,10 @@
 #include "pipeline.h"
 
 #include <array>
+#include <cstddef>
 
 #include "gfx/common.h"
+#include "gfx/descriptor.h"
 #include "gfx/vk_util.h"
 #include "platform.h"
 
@@ -36,6 +38,22 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
 
     vkDestroyShaderModule(ctx.device, frag, nullptr);
     vkDestroyShaderModule(ctx.device, vert, nullptr);
+
+    desc_pool.Init(ctx,
+                   {{
+                       VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                       VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                   }},
+                   256, 256);
+
+    auto desc_layout = gfx::DescriptorLayoutBuilder{}
+                           .Add(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                           .Add(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                           .Build(ctx, VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT);
+
+    auto desc_set = desc_pool.Alloc(ctx, desc_layout);
+
+    vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
 }
 
 void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
@@ -76,7 +94,8 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
     vkCmdDrawIndexed(cmd, mesh.index_count, 10, 0, 0, 0);
 }
 
-void SpriteDrawPipeline::Clean(const gfx::CoreCtx& ctx) {
+void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
+    desc_pool.Clear(ctx);
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
@@ -120,7 +139,7 @@ void ComputePipeline::Compute(VkCommandBuffer cmd,
     vkCmdDispatch(cmd, sz, 1, 1);
 }
 
-void ComputePipeline::Clean(const gfx::CoreCtx& ctx) {
+void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 

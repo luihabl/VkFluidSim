@@ -108,9 +108,7 @@ void World::Update(Platform& platform) {
     auto proj = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
                            0.0f, 1.0f);
 
-    static float t = 0.0f;
     auto transform = proj;
-    t += 0.01f;
 
     std::swap(in_buf, out_buf);
 
@@ -138,14 +136,14 @@ void World::Update(Platform& platform) {
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 }
 
-void World::Clean() {
+void World::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
-    comp_pipeline.Clean(gfx.GetCoreCtx());
+    comp_pipeline.Clear(gfx.GetCoreCtx());
     gfx.DestroyBuffer(b1);
     gfx.DestroyBuffer(b2);
     gfx::DestroyMesh(gfx, test_mesh);
-    renderer.Clean(gfx);
-    gfx.Clean();
+    renderer.Clear(gfx);
+    gfx.Clear();
 }
 
 }  // namespace vfs

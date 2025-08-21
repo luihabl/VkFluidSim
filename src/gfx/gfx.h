@@ -27,7 +27,7 @@ struct Device {
     };
 
     void Init(const Config& config);
-    void Clean();
+    void Clear();
 
     VkCommandBuffer BeginFrame();
     void EndFrame(VkCommandBuffer cmd, const Image& draw_img);

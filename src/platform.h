@@ -36,7 +36,7 @@ public:
 
     void Init(Config&& config);
     void Run();
-    void Clean();
+    void Clear();
     Path ResourcePath(const char* resource) const;
 
     SDL_Window* GetWindow() const { return window; }

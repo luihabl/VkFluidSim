@@ -36,7 +36,7 @@ void ImmediateRunner::Submit(const CoreCtx& ctx,
     VK_CHECK(vkWaitForFences(ctx.device, 1, &fence, true, 200 * ONE_SEC_NS));
 }
 
-void ImmediateRunner::Clean(const CoreCtx& ctx) {
+void ImmediateRunner::Clear(const CoreCtx& ctx) {
     vkDestroyCommandPool(ctx.device, cmd_pool, NULL);
     vkDestroyFence(ctx.device, fence, NULL);
 }

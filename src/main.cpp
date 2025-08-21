@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         .h = 800,
         .init = [&world](auto& p) { world.Init(p); },
         .update = [&world](auto& p) { world.Update(p); },
-        .clean = [&world](auto& p) { world.Clean(); },
+        .clean = [&world](auto& p) { world.Clear(); },
         .handler = [&world](auto& p, auto& e) { world.HandleEvent(p, e); },
         .resources_path = GetResourcesFolder(argc, argv),
     });

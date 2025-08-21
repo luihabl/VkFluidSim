@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/common.h"
+#include "gfx/descriptor.h"
 #include "gfx/gfx.h"
 #include "gfx/mesh.h"
 
@@ -14,7 +15,7 @@ public:
     };
 
     void Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format);
-    void Clean(const gfx::CoreCtx& ctx);
+    void Clear(const gfx::CoreCtx& ctx);
     void Draw(VkCommandBuffer cmd,
               gfx::Device& gfx,
               const gfx::Image& draw_img,
@@ -25,6 +26,7 @@ public:
 private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
+    gfx::DescriptorPoolAlloc desc_pool;
 };
 
 class ComputePipeline {
@@ -47,7 +49,7 @@ public:
                  gfx::Device& gfx,
                  const gfx::Buffer& in,
                  const gfx::Buffer& out);
-    void Clean(const gfx::CoreCtx& ctx);
+    void Clear(const gfx::CoreCtx& ctx);
 
 private:
     VkPipeline pipeline;

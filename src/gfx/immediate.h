@@ -6,7 +6,7 @@ class ImmediateRunner {
 public:
     void Init(const CoreCtx& ctx, u32 queue_family, VkQueue queue);
     void Submit(const CoreCtx& ctx, std::function<void(VkCommandBuffer)>&& function) const;
-    void Clean(const CoreCtx& ctx);
+    void Clear(const CoreCtx& ctx);
 
 private:
     VkFence fence;

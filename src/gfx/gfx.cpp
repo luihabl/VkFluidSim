@@ -261,10 +261,10 @@ void Device::ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) co
     immediate_runner.Submit(core, std::move(function));
 }
 
-void Device::Clean() {
+void Device::Clear() {
     vkDeviceWaitIdle(core.device);
 
-    immediate_runner.Clean(core);
+    immediate_runner.Clear(core);
 
     swapchain.Destroy(core);
 

@@ -9,6 +9,7 @@
 #include "platform.h"
 
 namespace vfs {
+
 void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
     auto frag = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/sprite.frag.spv").c_str());
@@ -39,6 +40,8 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
     vkDestroyShaderModule(ctx.device, frag, nullptr);
     vkDestroyShaderModule(ctx.device, vert, nullptr);
 
+    // > TEST !!!
+
     desc_pool.Init(ctx,
                    {{
                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -54,6 +57,8 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
     auto desc_set = desc_pool.Alloc(ctx, desc_layout);
 
     vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
+
+    // > TEST !!!
 }
 
 void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,

@@ -57,24 +57,24 @@ void World::SetInitialData() {
 
     auto sz = sizeof(ComputePipeline::DataPoint) * 10;
 
-    b1 = gfx.CreateBuffer(sz,
-                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                              VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                          VMA_MEMORY_USAGE_GPU_ONLY);
-    b2 = gfx.CreateBuffer(sz,
-                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                              VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                          VMA_MEMORY_USAGE_GPU_ONLY);
+    b1 = gfx::Buffer::Create(
+        gfx.GetCoreCtx(), sz,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY);
+    b2 = gfx::Buffer::Create(
+        gfx.GetCoreCtx(), sz,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY);
 
     in_buf = &b1;
     out_buf = &b2;
 
-    auto staging =
-        gfx.CreateBuffer(sz, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+    auto staging = gfx::Buffer::Create(gfx.GetCoreCtx(), sz, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                       VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void* data = staging.info.pMappedData;
+    void* data = staging.Map();
 
     for (int i = 0; i < sz; i++) {
         ((char*)data)[i] = 0;
@@ -91,7 +91,7 @@ void World::SetInitialData() {
         vkCmdCopyBuffer(cmd, staging.buffer, b2.buffer, 1, &cpy_info);
     });
 
-    gfx.DestroyBuffer(staging);
+    staging.Destroy();
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
@@ -139,8 +139,8 @@ void World::Update(Platform& platform) {
 void World::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     comp_pipeline.Clear(gfx.GetCoreCtx());
-    gfx.DestroyBuffer(b1);
-    gfx.DestroyBuffer(b2);
+    b1.Destroy();
+    b2.Destroy();
     gfx::DestroyMesh(gfx, test_mesh);
     renderer.Clear(gfx);
     gfx.Clear();

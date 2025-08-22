@@ -36,7 +36,8 @@ Image Device::CreateImage(VkExtent3D size,
         .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
     };
 
-    VK_CHECK(vmaCreateImage(allocator, &img_info, &alloc_info, &img.image, &img.allocation, NULL));
+    VK_CHECK(
+        vmaCreateImage(core.allocator, &img_info, &alloc_info, &img.image, &img.allocation, NULL));
 
     auto aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
     if (format == VK_FORMAT_D32_SFLOAT) {
@@ -53,32 +54,9 @@ Image Device::CreateImage(VkExtent3D size,
 void Device::DestroyImage(Image& img) const {
     if (img.image != VK_NULL_HANDLE) {
         vkDestroyImageView(core.device, img.view, NULL);
-        vmaDestroyImage(allocator, img.image, img.allocation);
+        vmaDestroyImage(core.allocator, img.image, img.allocation);
         img.image = VK_NULL_HANDLE;
     }
-}
-
-Buffer Device::CreateBuffer(size_t size, VkBufferUsageFlags usage, VmaMemoryUsage mem_usage) const {
-    auto buffer_info = VkBufferCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext = NULL,
-        .size = size,
-        .usage = usage,
-    };
-
-    auto vma_alloc_info = VmaAllocationCreateInfo{
-        .usage = mem_usage,
-        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
-    };
-
-    Buffer buffer{.size = (u32)size};
-    VK_CHECK(vmaCreateBuffer(allocator, &buffer_info, &vma_alloc_info, &buffer.buffer,
-                             &buffer.alloc, &buffer.info));
-    return buffer;
-}
-
-void Device::DestroyBuffer(Buffer& buf) const {
-    vmaDestroyBuffer(allocator, buf.buffer, buf.alloc);
 }
 
 u32 Device::CurrentFrameIndex() {
@@ -243,7 +221,7 @@ void Device::Init(const Config& config) {
         .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
     };
 
-    vmaCreateAllocator(&allocator_create_info, &allocator);
+    vmaCreateAllocator(&allocator_create_info, &core.allocator);
 
     int w, h;
     SDL_GetWindowSize(config.window, &w, &h);
@@ -272,6 +250,6 @@ void Device::Clear() {
         vkDestroyCommandPool(core.device, frame.cmd_pool, NULL);
     }
 
-    vmaDestroyAllocator(allocator);
+    vmaDestroyAllocator(core.allocator);
 }
 }  // namespace gfx

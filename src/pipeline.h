@@ -6,6 +6,17 @@
 #include "gfx/mesh.h"
 
 namespace vfs {
+
+struct GlobalUniformData {
+    float dt = 1.0f / 120.0f;
+    float g = 0.0f;
+    float mass = 1.0f;
+    float damping_factor = 0.05f;
+    float target_density = 10.0f;
+    float pressure_multiplier = 500.0f;
+    float smoothing_radius = 0.35f;
+};
+
 class SpriteDrawPipeline {
 public:
     struct PushConstants {

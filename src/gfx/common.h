@@ -34,6 +34,7 @@ struct CoreCtx {
     VkDebugUtilsMessengerEXT debug_messenger;
     VkPhysicalDevice chosen_gpu;
     VkSurfaceKHR surface;
+    VmaAllocator allocator;
 };
 
 struct Image {
@@ -47,8 +48,20 @@ struct Image {
 struct Buffer {
     VkBuffer buffer;
     VmaAllocation alloc;
-    VmaAllocationInfo info;
+    // VmaAllocationInfo info;
+    void* mapped = nullptr;
+    VmaAllocator allocator;
     u32 size{0};
+
+    void* GetMapped();
+    void* Map();
+    void Unmap();
+
+    static Buffer Create(const CoreCtx& ctx,
+                         size_t size,
+                         VkBufferUsageFlags usage,
+                         VmaMemoryUsage mem_usage);
+    void Destroy();
 };
 
 }  // namespace gfx

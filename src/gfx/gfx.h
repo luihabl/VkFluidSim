@@ -35,9 +35,6 @@ struct Device {
     Image CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip) const;
     void DestroyImage(Image& img) const;
 
-    Buffer CreateBuffer(size_t size, VkBufferUsageFlags usage, VmaMemoryUsage mem_usage) const;
-    void DestroyBuffer(Buffer& buf) const;
-
     const CoreCtx& GetCoreCtx() const { return core; }
 
     VkExtent2D GetSwapchainExtent();
@@ -52,7 +49,6 @@ private:
     CoreCtx core;
     VkQueue graphics_queue;
     uint32_t graphics_queue_family;
-    VmaAllocator allocator;
 
     Swapchain swapchain;
     glm::vec4 swapchain_img_clear_color;

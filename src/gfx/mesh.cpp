@@ -1,5 +1,7 @@
 #include "mesh.h"
 
+#include "gfx/common.h"
+
 namespace gfx {
 GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
     const size_t vertex_buf_size = mesh.vertices.size() * sizeof(Vertex);
@@ -11,10 +13,10 @@ GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
     gpu_mesh.vertex_count = mesh.vertices.size();
 
     gpu_mesh.vertices =
-        gfx.CreateBuffer(vertex_buf_size,
-                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                         VMA_MEMORY_USAGE_GPU_ONLY);
+        Buffer::Create(gfx.GetCoreCtx(), vertex_buf_size,
+                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                           VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                       VMA_MEMORY_USAGE_GPU_ONLY);
 
     auto device_addr_info = VkBufferDeviceAddressInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
@@ -24,14 +26,15 @@ GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
 
     gpu_mesh.vertex_addr = vkGetBufferDeviceAddress(gfx.GetCoreCtx().device, &device_addr_info);
 
-    gpu_mesh.indices = gfx.CreateBuffer(
-        index_buf_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
+    gpu_mesh.indices =
+        Buffer::Create(gfx.GetCoreCtx(), index_buf_size,
+                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                       VMA_MEMORY_USAGE_GPU_ONLY);
 
-    auto staging = gfx.CreateBuffer(vertex_buf_size + index_buf_size,
-                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+    auto staging = Buffer::Create(gfx.GetCoreCtx(), vertex_buf_size + index_buf_size,
+                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void* data = staging.info.pMappedData;
+    void* data = staging.Map();
 
     memcpy(data, mesh.vertices.data(), vertex_buf_size);
     memcpy((char*)data + vertex_buf_size, mesh.indices.data(), index_buf_size);
@@ -54,13 +57,13 @@ GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
         vkCmdCopyBuffer(cmd, staging.buffer, gpu_mesh.indices.buffer, 1, &index_copy);
     });
 
-    gfx.DestroyBuffer(staging);
+    staging.Destroy();
 
     return gpu_mesh;
 }
 
 void DestroyMesh(const gfx::Device& gfx, GPUMesh& mesh) {
-    gfx.DestroyBuffer(mesh.indices);
-    gfx.DestroyBuffer(mesh.vertices);
+    mesh.indices.Destroy();
+    mesh.vertices.Destroy();
 }
 }  // namespace gfx

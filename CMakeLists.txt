@@ -64,6 +64,7 @@ src/gfx/vk_util.cpp
 src/gfx/mesh.cpp
 src/gfx/immediate.cpp
 src/gfx/descriptor.cpp
+src/gfx/common.cpp
 src/platform.cpp
 src/world.cpp
 src/renderer.cpp

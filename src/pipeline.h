@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "gfx/common.h"
 #include "gfx/descriptor.h"
 #include "gfx/gfx.h"
@@ -37,7 +39,6 @@ public:
 private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
-    gfx::DescriptorPoolAlloc desc_pool;
 };
 
 class ComputePipeline {
@@ -65,6 +66,16 @@ public:
 private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
+
+    void UpdateUniformBuffers();
+
+    // Descriptor sets
+    gfx::DescriptorPoolAlloc desc_pool;
+    VkDescriptorSetLayout desc_layout;
+    std::array<VkDescriptorSet, gfx::FRAME_COUNT> desc_sets;
+    std::array<gfx::Buffer, gfx::FRAME_COUNT> uniform_buffers;
+    GlobalUniformData uniform_constant_data;
+    uint32_t current_frame{0};
 };
 
 }  // namespace vfs

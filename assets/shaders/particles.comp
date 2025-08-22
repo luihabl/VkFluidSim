@@ -4,6 +4,17 @@
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
+layout (binding = 0) uniform UBO {
+    float dt;
+    float g;
+    float mass;
+    float damping_factor;
+    float target_density;
+    float pressure_multiplier;
+    float smoothing_radius;
+} ubo;
+
+
 struct Data {
     float x;
     float v;
@@ -26,7 +37,7 @@ void main() {
     
     if(gi < pc.data_buffer_size) {
         Data d_in = pc.in_data_buffer.data[gi];
-        pc.out_data_buffer.data[gi].x = 10.0f * sin((gi+1)*pc.time / 5.0f);
+        pc.out_data_buffer.data[gi].x = ubo.target_density * sin(10*pc.time / 5.0f + gi / 2.0f);
         pc.out_data_buffer.data[gi].v = 0.0f;
     }
 }

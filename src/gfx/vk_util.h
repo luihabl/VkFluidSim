@@ -210,6 +210,36 @@ inline auto RenderingInfo(VkExtent2D extent,
     };
 }
 
+inline auto WriteDescriptorSet(VkDescriptorSet dst_set,
+                               VkDescriptorType type,
+                               uint32_t binding,
+                               VkDescriptorBufferInfo* buffer_info,
+                               uint32_t descriptorCount = 1) {
+    return VkWriteDescriptorSet{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = dst_set,
+        .descriptorType = type,
+        .dstBinding = binding,
+        .pBufferInfo = buffer_info,
+        .descriptorCount = descriptorCount,
+    };
+}
+
+inline auto WriteDescriptorSet(VkDescriptorSet dst_set,
+                               VkDescriptorType type,
+                               uint32_t binding,
+                               VkDescriptorImageInfo* img_info,
+                               uint32_t descriptorCount = 1) {
+    return VkWriteDescriptorSet{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = dst_set,
+        .descriptorType = type,
+        .dstBinding = binding,
+        .pImageInfo = img_info,
+        .descriptorCount = descriptorCount,
+    };
+}
+
 void TransitionImage(VkCommandBuffer cmd,
                      VkImage image,
                      VkImageLayout curr_layout,

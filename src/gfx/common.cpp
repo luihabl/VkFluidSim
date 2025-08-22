@@ -33,6 +33,8 @@ Buffer Buffer::Create(const CoreCtx& ctx,
 
     auto vma_alloc_info = VmaAllocationCreateInfo{
         .usage = mem_usage,
+        // TODO: check if it's necessary to use VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT
+        .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
     };
 
     Buffer buffer{};
@@ -40,7 +42,22 @@ Buffer Buffer::Create(const CoreCtx& ctx,
     buffer.allocator = ctx.allocator;
     VK_CHECK(vmaCreateBuffer(ctx.allocator, &buffer_info, &vma_alloc_info, &buffer.buffer,
                              &buffer.alloc, nullptr));
+
+    buffer.desc_info = {
+        .buffer = buffer.buffer,
+        .offset = 0,
+        .range = VK_WHOLE_SIZE,
+    };
+
     return buffer;
+}
+
+void Buffer::SetDescriptorInfo(VkDeviceSize size, VkDeviceSize offset) {
+    desc_info = {
+        .buffer = buffer,
+        .offset = offset,
+        .range = size,
+    };
 }
 
 void Buffer::Destroy() {

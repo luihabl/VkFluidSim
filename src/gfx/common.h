@@ -48,19 +48,20 @@ struct Image {
 struct Buffer {
     VkBuffer buffer;
     VmaAllocation alloc;
-    // VmaAllocationInfo info;
-    void* mapped = nullptr;
+    void* mapped{nullptr};
     VmaAllocator allocator;
+    VkDescriptorBufferInfo desc_info;
     u32 size{0};
 
     void* GetMapped();
     void* Map();
     void Unmap();
+    void SetDescriptorInfo(VkDeviceSize size, VkDeviceSize offset);
 
     static Buffer Create(const CoreCtx& ctx,
                          size_t size,
                          VkBufferUsageFlags usage,
-                         VmaMemoryUsage mem_usage);
+                         VmaMemoryUsage mem_usage = VMA_MEMORY_USAGE_AUTO);
     void Destroy();
 };
 

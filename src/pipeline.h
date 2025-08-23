@@ -23,7 +23,7 @@ class SpriteDrawPipeline {
 public:
     struct PushConstants {
         glm::mat4 matrix;
-        VkDeviceAddress vertex_buffer;
+        // VkDeviceAddress vertex_buffer;
         VkDeviceAddress pos_buffer;
     };
 
@@ -67,7 +67,7 @@ private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
 
-    void UpdateUniformBuffers();
+    void UpdateUniformBuffers(uint32_t frame);
 
     // Descriptor sets
     gfx::DescriptorPoolAlloc desc_pool;

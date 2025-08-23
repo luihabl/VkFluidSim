@@ -2,16 +2,9 @@
 #extension GL_EXT_buffer_reference : require
 #extension GL_EXT_scalar_block_layout : require
 
+layout (location = 0) in vec3 in_pos;
+layout (location = 1) in vec4 in_color;
 layout (location = 0) out vec3 out_color;
-
-struct Vertex {
-    vec3 pos;
-    vec4 color;
-};
-
-layout(buffer_reference, scalar) readonly buffer VertexBuffer{ 
-	Vertex vertices[];
-};
 
 struct Data {
     float x;
@@ -25,16 +18,14 @@ layout(buffer_reference, scalar) readonly buffer DataBuffer{
 
 layout( push_constant ) uniform constants {	
 	mat4 matrix;
-	VertexBuffer vertex_buffer;
 	DataBuffer pos_buffer;
 } push_constants;
 
 void main() {
-    Vertex v = push_constants.vertex_buffer.vertices[gl_VertexIndex];
     Data d = push_constants.pos_buffer.data[gl_InstanceIndex];
 
-    vec3 offset = vec3(50.0f * d.x, 25.0f * gl_InstanceIndex - 300.0f, 0.0f);
+    vec3 offset = vec3(50.0f * d.x, 15.0f * gl_InstanceIndex - 300.0f, 0.0f);
 
-    gl_Position = push_constants.matrix * vec4(v.pos + offset, 1.0f);
-    out_color = v.color.xyz;
+    gl_Position = push_constants.matrix * vec4(in_pos + offset, 1.0f);
+    out_color = in_color.xyz;
 }

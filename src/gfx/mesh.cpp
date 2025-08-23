@@ -14,7 +14,7 @@ GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
 
     gpu_mesh.vertices =
         Buffer::Create(gfx.GetCoreCtx(), vertex_buf_size,
-                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                        VMA_MEMORY_USAGE_GPU_ONLY);
 

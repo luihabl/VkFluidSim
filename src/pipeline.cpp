@@ -5,6 +5,7 @@
 
 #include "gfx/common.h"
 #include "gfx/descriptor.h"
+#include "gfx/mesh.h"
 #include "gfx/vk_util.h"
 #include "platform.h"
 
@@ -26,16 +27,20 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
 
     layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
 
-    pipeline = vk::util::GraphicsPipelineBuilder(layout)
-                   .SetShaders(vert, frag)
-                   .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                   .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                   .SetCullDisabled()
-                   .SetMultisamplingDisabled()
-                   .SetDepthTestDisabled()
-                   .SetBlendingAlphaBlend()  // Check if this is OK
-                   .SetColorAttachmentFormat(draw_img_format)
-                   .Build(ctx.device);
+    pipeline =
+        vk::util::GraphicsPipelineBuilder(layout)
+            .SetShaders(vert, frag)
+            .AddVertexBinding(0, sizeof(gfx::Vertex))
+            .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
+            .AddVertexAttribute(0, 1, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(gfx::Vertex, color))
+            .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetPolygonMode(VK_POLYGON_MODE_FILL)
+            .SetCullDisabled()
+            .SetMultisamplingDisabled()
+            .SetDepthTestDisabled()
+            .SetBlendingAlphaBlend()  // Check if this is OK
+            .SetColorAttachmentFormat(draw_img_format)
+            .Build(ctx.device);
 
     vkDestroyShaderModule(ctx.device, frag, nullptr);
     vkDestroyShaderModule(ctx.device, vert, nullptr);
@@ -69,11 +74,13 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
 
     PushConstants push_constants;
     push_constants.matrix = tranform;
-    push_constants.vertex_buffer = mesh.vertex_addr;
+    // push_constants.vertex_buffer = mesh.vertex_addr;
     push_constants.pos_buffer = vk::util::GetBufferAddress(gfx.GetCoreCtx().device, buf);
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
                        &push_constants);
 
+    VkDeviceSize offsets[1]{0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertices.buffer, offsets);
     vkCmdBindIndexBuffer(cmd, mesh.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(cmd, mesh.index_count, 10, 0, 0, 0);
@@ -112,6 +119,9 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
                                nullptr);
     }
 
+    UpdateUniformBuffers(0);
+    UpdateUniformBuffers(1);
+
     auto shader = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/particles.comp.spv").c_str());
 
@@ -127,26 +137,24 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
     vkDestroyShaderModule(ctx.device, shader, nullptr);
 }
 
-void ComputePipeline::UpdateUniformBuffers() {
+void ComputePipeline::UpdateUniformBuffers(uint32_t frame) {
     uniform_constant_data = GlobalUniformData{
         .dt = 1.0f / 120.0f,
         .g = 0.0f,
         .mass = 1.0f,
         .damping_factor = 0.05f,
-        .target_density = 1.0f,
+        .target_density = 10.0f,
         .pressure_multiplier = 500.0f,
         .smoothing_radius = 0.35f,
     };
 
-    memcpy(uniform_buffers[current_frame].Map(), &uniform_constant_data, sizeof(GlobalUniformData));
+    memcpy(uniform_buffers[frame].Map(), &uniform_constant_data, sizeof(GlobalUniformData));
 }
 
 void ComputePipeline::Compute(VkCommandBuffer cmd,
                               gfx::Device& gfx,
                               const gfx::Buffer& in,
                               const gfx::Buffer& out) {
-    UpdateUniformBuffers();
-
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
                             &desc_sets[current_frame], 0, 0);

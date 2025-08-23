@@ -190,6 +190,10 @@ VkPipeline GraphicsPipelineBuilder::Build(VkDevice device) {
     auto vertex_input_info = VkPipelineVertexInputStateCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext = NULL,
+        .pVertexBindingDescriptions = vert_input_bindings.data(),
+        .vertexBindingDescriptionCount = (uint32_t)vert_input_bindings.size(),
+        .pVertexAttributeDescriptions = vert_attributes.data(),
+        .vertexAttributeDescriptionCount = (uint32_t)vert_attributes.size(),
     };
 
     VkDynamicState state[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
@@ -233,6 +237,32 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetShaders(VkShaderModule vert
         PipelineShaderStageCreateInfo(vertex_shader, VK_SHADER_STAGE_VERTEX_BIT));
     shader_stages.push_back(
         PipelineShaderStageCreateInfo(frag_shader, VK_SHADER_STAGE_FRAGMENT_BIT));
+
+    return *this;
+}
+
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::AddVertexBinding(uint32_t binding,
+                                                                   uint32_t stride,
+                                                                   VkVertexInputRate rate) {
+    vert_input_bindings.push_back({
+        .binding = binding,
+        .stride = stride,
+        .inputRate = rate,
+    });
+
+    return *this;
+}
+
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::AddVertexAttribute(uint32_t binding,
+                                                                     uint32_t location,
+                                                                     VkFormat format,
+                                                                     uint32_t offset) {
+    vert_attributes.push_back({
+        .binding = binding,
+        .location = location,
+        .format = format,
+        .offset = offset,
+    });
 
     return *this;
 }

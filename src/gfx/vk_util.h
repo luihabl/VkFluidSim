@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
 #include <span>
 
 #include "gfx/common.h"
@@ -266,6 +267,13 @@ public:
     void Clear();
 
     GraphicsPipelineBuilder& SetShaders(VkShaderModule vertex_shader, VkShaderModule frag_shader);
+    GraphicsPipelineBuilder& AddVertexBinding(uint32_t binding,
+                                              uint32_t stride,
+                                              VkVertexInputRate rate = VK_VERTEX_INPUT_RATE_VERTEX);
+    GraphicsPipelineBuilder& AddVertexAttribute(uint32_t binding,
+                                                uint32_t location,
+                                                VkFormat format,
+                                                uint32_t offset);
     GraphicsPipelineBuilder& SetInputTopology(VkPrimitiveTopology topo);
     GraphicsPipelineBuilder& SetPolygonMode(VkPolygonMode mode);
     GraphicsPipelineBuilder& SetCullMode(VkCullModeFlags cull_mode, VkFrontFace front_face);
@@ -281,6 +289,8 @@ public:
 
 private:
     std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
+    std::vector<VkVertexInputBindingDescription> vert_input_bindings;
+    std::vector<VkVertexInputAttributeDescription> vert_attributes;
     VkPipelineInputAssemblyStateCreateInfo input_assembly;
     VkPipelineRasterizationStateCreateInfo rasterizer;
     VkPipelineColorBlendAttachmentState color_blend_attachment;

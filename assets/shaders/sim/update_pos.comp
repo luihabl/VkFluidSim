@@ -1,0 +1,51 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.glsl"
+
+layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+
+void processBoundaries(inout Data p) {
+    if(p.x.x < ubo.box.x){
+        p.x.x = 2*ubo.box.x-p.x.x;
+        p.v.x = -p.v.x;
+    }
+
+    if(p.x.y < ubo.box.y){
+        p.x.y = 2*ubo.box.y-p.x.y;
+        p.v.y  = -p.v.y;
+    }
+
+   if(p.x.x > ubo.box.x + ubo.box.z){
+        p.x.x = 2*(ubo.box.x + ubo.box.z) - p.x.x;
+        p.v.x = -p.v.x;
+    }
+
+    if(p.x.y > ubo.box.y + ubo.box.w){
+        p.x.y = 2*(ubo.box.y + ubo.box.w) - p.x.y;
+        p.v.y = -p.v.y;
+    }       
+}
+
+Data moveParticle(Data old) {
+    Data p;
+    p.x = old.x + ubo.dt * old.v;
+    p.v = old.v;
+    return p;
+}
+
+void main() {
+    uint gi  = gl_GlobalInvocationID.x;
+    
+    if(gi < pc.data_buffer_size) {
+        Data d_in = pc.in_buf.data[gi];
+
+        Data new_state = moveParticle(d_in);
+        processBoundaries(new_state);
+
+        pc.out_buf.data[gi].x = new_state.x;
+        pc.out_buf.data[gi].v = new_state.v;
+    }
+}

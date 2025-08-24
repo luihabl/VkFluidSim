@@ -32,7 +32,7 @@ private:
 
     glm::vec4 box;
     glm::vec4 cbox;
-    int n_particles = 1400;
+    int n_particles = 6000;
     float spacing = 0.2f;
     float scale = 2e-2;
 };

@@ -75,7 +75,7 @@ void World::SetInitialData() {
     float w = Platform::Info::GetConfig()->w;
     float h = Platform::Info::GetConfig()->h;
 
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
 
     test_mesh = gfx::UploadMesh(gfx, mesh);
 

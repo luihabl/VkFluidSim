@@ -12,7 +12,8 @@ public:
               VkCommandBuffer cmd,
               const gfx::GPUMesh& mesh,
               const gfx::Buffer& buf,
-              const glm::mat4& transform);
+              const glm::mat4& transform,
+              uint32_t instances);
     void Clear(const gfx::Device& gfx);
 
     const gfx::Image& GetDrawImage() { return draw_img; }

@@ -51,7 +51,8 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
                               const gfx::Image& draw_img,
                               const gfx::GPUMesh& mesh,
                               const gfx::Buffer& buf,
-                              const glm::mat4& tranform) {
+                              const glm::mat4& tranform,
+                              uint32_t instances) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
     const auto viewport = VkViewport{
@@ -74,7 +75,6 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
 
     PushConstants push_constants;
     push_constants.matrix = tranform;
-    // push_constants.vertex_buffer = mesh.vertex_addr;
     push_constants.pos_buffer = vk::util::GetBufferAddress(gfx.GetCoreCtx().device, buf);
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
                        &push_constants);
@@ -83,7 +83,7 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
     vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertices.buffer, offsets);
     vkCmdBindIndexBuffer(cmd, mesh.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdDrawIndexed(cmd, mesh.index_count, 10, 0, 0, 0);
+    vkCmdDrawIndexed(cmd, mesh.index_count, instances, 0, 0, 0);
 }
 
 void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
@@ -119,9 +119,6 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
                                nullptr);
     }
 
-    UpdateUniformBuffers(0);
-    UpdateUniformBuffers(1);
-
     auto shader = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/particles.comp.spv").c_str());
 
@@ -137,17 +134,12 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
     vkDestroyShaderModule(ctx.device, shader, nullptr);
 }
 
-void ComputePipeline::UpdateUniformBuffers(uint32_t frame) {
-    uniform_constant_data = GlobalUniformData{
-        .dt = 1.0f / 120.0f,
-        .g = 0.0f,
-        .mass = 1.0f,
-        .damping_factor = 0.05f,
-        .target_density = 10.0f,
-        .pressure_multiplier = 500.0f,
-        .smoothing_radius = 0.35f,
-    };
+void ComputePipeline::SetUniformData(const GlobalUniformData& data) {
+    uniform_constant_data = data;
+    update_ubo.fill(true);
+}
 
+void ComputePipeline::UpdateUniformBuffers(uint32_t frame) {
     memcpy(uniform_buffers[frame].Map(), &uniform_constant_data, sizeof(GlobalUniformData));
 }
 
@@ -156,6 +148,11 @@ void ComputePipeline::Compute(VkCommandBuffer cmd,
                               const gfx::Buffer& in,
                               const gfx::Buffer& out) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+    if (update_ubo[current_frame]) {
+        UpdateUniformBuffers(current_frame);
+        update_ubo[current_frame] = false;
+    }
+
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
                             &desc_sets[current_frame], 0, 0);
 

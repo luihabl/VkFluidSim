@@ -17,6 +17,7 @@ struct GlobalUniformData {
     float target_density = 10.0f;
     float pressure_multiplier = 500.0f;
     float smoothing_radius = 0.35f;
+    glm::vec4 box = {0, 0, 1, 1};
 };
 
 class SpriteDrawPipeline {
@@ -34,7 +35,8 @@ public:
               const gfx::Image& draw_img,
               const gfx::GPUMesh& mesh,
               const gfx::Buffer& buf,
-              const glm::mat4& transform);
+              const glm::mat4& transform,
+              uint32_t instances);
 
 private:
     VkPipeline pipeline;
@@ -44,8 +46,8 @@ private:
 class ComputePipeline {
 public:
     struct DataPoint {
-        float x;
-        float v;
+        glm::vec2 x;
+        glm::vec2 v;
     };
 
     struct PushConstants {
@@ -57,6 +59,8 @@ public:
     };
 
     void Init(const gfx::CoreCtx& ctx);
+    void SetUniformData(const GlobalUniformData& data);
+
     void Compute(VkCommandBuffer cmd,
                  gfx::Device& gfx,
                  const gfx::Buffer& in,
@@ -74,6 +78,8 @@ private:
     VkDescriptorSetLayout desc_layout;
     std::array<VkDescriptorSet, gfx::FRAME_COUNT> desc_sets;
     std::array<gfx::Buffer, gfx::FRAME_COUNT> uniform_buffers;
+    std::array<bool, gfx::FRAME_COUNT> update_ubo = {};
+
     GlobalUniformData uniform_constant_data;
     uint32_t current_frame{0};
 };

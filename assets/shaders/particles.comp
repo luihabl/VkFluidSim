@@ -4,7 +4,7 @@
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-layout (binding = 0) uniform UBO {
+layout (binding = 0, scalar) uniform UBO {
     float dt;
     float g;
     float mass;
@@ -12,12 +12,13 @@ layout (binding = 0) uniform UBO {
     float target_density;
     float pressure_multiplier;
     float smoothing_radius;
+    vec4 box;
 } ubo;
 
 
 struct Data {
-    float x;
-    float v;
+    vec2 x;
+    vec2 v;
 };
 
 layout(buffer_reference, scalar) readonly buffer DataBuffer{ 
@@ -28,16 +29,46 @@ layout( push_constant ) uniform constants {
     float time;
     float dt;
     uint data_buffer_size;
-	DataBuffer in_data_buffer;
-	DataBuffer out_data_buffer;
+	DataBuffer in_buf;
+	DataBuffer out_buf;
 } pc;
+
+void processBoundaries(inout Data p) {
+    if(p.x.x < ubo.box.x){
+        p.x.x = 2*ubo.box.x-p.x.x;
+        p.v.x = -p.v.x;
+    }
+
+    if(p.x.y < ubo.box.y){
+        p.x.y = 2*ubo.box.y-p.x.y;
+        p.v.y  = -p.v.y;
+    }
+
+   if(p.x.x > ubo.box.x + ubo.box.z){
+        p.x.x = 2*(ubo.box.x + ubo.box.z) - p.x.x;
+        p.v.x = -p.v.x;
+    }
+
+    if(p.x.y > ubo.box.y + ubo.box.w){
+        p.x.y = 2*(ubo.box.y + ubo.box.w) - p.x.y;
+        p.v.y = -p.v.y;
+    }       
+}
+
 
 void main() {
     uint gi  = gl_GlobalInvocationID.x;
     
     if(gi < pc.data_buffer_size) {
-        Data d_in = pc.in_data_buffer.data[gi];
-        pc.out_data_buffer.data[gi].x = ubo.target_density * sin(10*pc.time / 5.0f + gi / 2.0f);
-        pc.out_data_buffer.data[gi].v = 0.0f;
+        Data d_in = pc.in_buf.data[gi];
+
+        Data new_d;
+        new_d.x = d_in.x + ubo.dt * d_in.v;
+        new_d.v = d_in.v;
+
+        processBoundaries(new_d);
+
+        pc.out_buf.data[gi].x = new_d.x;
+        pc.out_buf.data[gi].v = new_d.v;
     }
 }

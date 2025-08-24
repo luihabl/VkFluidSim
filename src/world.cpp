@@ -1,6 +1,7 @@
 #include "world.h"
 
 #include <glm/ext.hpp>
+#include <random>
 
 #include "gfx/mesh.h"
 #include "pipeline.h"
@@ -17,6 +18,20 @@ void World::Init(Platform& platform) {
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
     comp_pipeline.Init(gfx.GetCoreCtx());
+
+    SetBox(17, 9);
+
+    comp_pipeline.SetUniformData({
+        .dt = 1.0f / 120.0f,
+        .g = 0.0f,
+        .mass = 1.0f,
+        .damping_factor = 0.05f,
+        .target_density = 10.0f,
+        .pressure_multiplier = 500.0f,
+        .smoothing_radius = 0.35f,
+        .box = box,
+    });
+
     SetInitialData();
 }
 
@@ -44,18 +59,27 @@ void DrawCircleFill(gfx::CPUMesh& mesh,
     }
 }
 
+void World::SetBox(float w, float h) {
+    float win_w = scale * Platform::Info::GetConfig()->w;
+    float win_h = scale * Platform::Info::GetConfig()->h;
+
+    box.x = win_w / 2.0 - w / 2.0;
+    box.y = win_h / 2.0 - h / 2.0;
+    box.z = w;
+    box.w = h;
+}
+
 void World::SetInitialData() {
     gfx::CPUMesh mesh;
 
     float w = Platform::Info::GetConfig()->w;
     float h = Platform::Info::GetConfig()->h;
 
-    DrawCircleFill(mesh, glm::vec3(w / 2, h / 2, 0.0f), 10.0f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-                   50);
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
 
     test_mesh = gfx::UploadMesh(gfx, mesh);
 
-    auto sz = sizeof(ComputePipeline::DataPoint) * 10;
+    auto sz = sizeof(ComputePipeline::DataPoint) * n_particles;
 
     b1 = gfx::Buffer::Create(
         gfx.GetCoreCtx(), sz,
@@ -76,8 +100,23 @@ void World::SetInitialData() {
 
     void* data = staging.Map();
 
-    for (int i = 0; i < sz; i++) {
-        ((char*)data)[i] = 0;
+    // for (int i = 0; i < sz; i++) {
+    //     ((char*)data)[i] = 0;
+    // }
+
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_real_distribution dist;
+
+    auto* dp = (ComputePipeline::DataPoint*)data;
+    for (int i = 0; i < n_particles; i++) {
+        float r1 = dist(rng);
+        float r2 = dist(rng);
+
+        float x = box.x + r1 * box.z;
+        float y = box.y + r2 * box.w;
+        dp[i].x = glm::vec2{x, y};
+        dp[i].v = glm::vec2{-1.0f + 2.0f * r1, -1.0f + 2.0f * r2};
     }
 
     gfx.ImmediateSubmit([&](VkCommandBuffer cmd) {
@@ -105,10 +144,10 @@ void World::Update(Platform& platform) {
 
     auto cmd = gfx.BeginFrame();
 
-    auto proj = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
-                           0.0f, 1.0f);
+    auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
+                         -1.0f, 1.0f);
 
-    auto transform = proj;
+    tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));
 
     std::swap(in_buf, out_buf);
 
@@ -131,7 +170,7 @@ void World::Update(Platform& platform) {
 
     vkCmdPipelineBarrier2(cmd, &dep_info);
 
-    renderer.Draw(gfx, cmd, test_mesh, *out_buf, transform);
+    renderer.Draw(gfx, cmd, test_mesh, *out_buf, tr, n_particles);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 }

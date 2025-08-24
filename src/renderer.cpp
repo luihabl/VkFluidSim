@@ -46,7 +46,8 @@ void Renderer::Draw(gfx::Device& gfx,
                     VkCommandBuffer cmd,
                     const gfx::GPUMesh& mesh,
                     const gfx::Buffer& buf,
-                    const glm::mat4& transform) {
+                    const glm::mat4& transform,
+                    uint32_t instances) {
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -66,7 +67,7 @@ void Renderer::Draw(gfx::Device& gfx,
 
     vkCmdBeginRendering(cmd, &render_info);
 
-    sprite_pipeline.Draw(cmd, gfx, draw_img, mesh, buf, transform);
+    sprite_pipeline.Draw(cmd, gfx, draw_img, mesh, buf, transform, instances);
 
     vkCmdEndRendering(cmd);
 }

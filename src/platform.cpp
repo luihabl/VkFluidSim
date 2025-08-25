@@ -35,6 +35,10 @@ Platform::Path Platform::Info::ResourcePath(const char* resource) {
     return {};
 }
 
+float Platform::Info::GetTime() {
+    return (float)SDL_GetTicks() / 1000.0f;
+}
+
 const Platform::Config* Platform::Info::GetConfig() {
     if (platform_instance) {
         return &platform_instance->GetConfig();

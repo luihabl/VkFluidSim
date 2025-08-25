@@ -130,7 +130,7 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
 
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,
-        .size = sizeof(PushConstants),
+        .size = sizeof(ComputePushConstants),
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
     };
 
@@ -163,7 +163,7 @@ void ComputePipeline::UpdateUniformBuffers(uint32_t frame) {
 
 void ComputePipeline::Compute(VkCommandBuffer cmd,
                               gfx::Device& gfx,
-                              const PushConstants& push_constants) {
+                              const ComputePushConstants& push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
     if (frame_data[current_frame].should_update) {
         UpdateUniformBuffers(current_frame);
@@ -173,7 +173,7 @@ void ComputePipeline::Compute(VkCommandBuffer cmd,
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
                             &frame_data[current_frame].desc_set, 0, 0);
 
-    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstants),
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants),
                        &push_constants);
 
     gfx::u32 sz = push_constants.n_particles / 64 + 1;

@@ -26,7 +26,7 @@ struct BufferUniformData {
     VkDeviceAddress densities;
 };
 
-struct PushConstants {
+struct ComputePushConstants {
     float time;
     float dt;
     unsigned n_particles;
@@ -59,7 +59,7 @@ public:
     void SetUniformData(const GlobalUniformData& data);
     void SetBuffers(const std::vector<BufferUniformData>& data);
 
-    void Compute(VkCommandBuffer cmd, gfx::Device& gfx, const PushConstants& push_constants);
+    void Compute(VkCommandBuffer cmd, gfx::Device& gfx, const ComputePushConstants& push_constants);
     void Clear(const gfx::CoreCtx& ctx);
 
 private:

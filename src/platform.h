@@ -31,6 +31,7 @@ public:
         static void SetPlatformInstance(Platform* platform);
         static Path ResourcePath(const char* resource);
         static Path ResourceFolder();
+        static float GetTime();
         static const Config* GetConfig();
     };
 

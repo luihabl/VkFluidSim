@@ -151,7 +151,7 @@ void World::Init(Platform& platform) {
     comp_pipeline.SetBuffers(buffer_uniform_data);
 
     gfx::CPUMesh mesh;
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
     circle_mesh = gfx::UploadMesh(gfx, mesh);
 
     SetInitialData();
@@ -206,12 +206,12 @@ void World::Update(Platform& platform) {
 
     tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));
 
-    PushConstants push_constants = {
-        .n_particles = (uint32_t)n_particles,
-        .dt = 1 / 120.f,
-    };
-
-    comp_pipeline.Compute(cmd, gfx, push_constants);
+    comp_pipeline.Compute(cmd, gfx,
+                          {
+                              .time = Platform::Info::GetTime(),
+                              .dt = 1 / 120.f,
+                              .n_particles = (uint32_t)n_particles,
+                          });
 
     auto mem_barrier = VkMemoryBarrier2{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,

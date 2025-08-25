@@ -1,30 +1,36 @@
 
 const int nThreads = 64;
 
-layout (binding = 0, scalar) uniform UBO {
-    float dt;
+layout(buffer_reference, scalar) readonly buffer Vec2BufferRef{ 
+	vec2 data[];
+};
+
+layout (binding = 0, scalar) uniform GlobalConstants {
     float g;
     float mass;
     float damping_factor;
     float target_density;
     float pressure_multiplier;
-    float smoothing_radius;
+    float smoothing_radius;    
     vec4 box;
-} ubo;
+} constants;
 
-struct Data {
-    vec2 x;
-    vec2 v;
-};
+layout (binding = 1, scalar) uniform InputGlobalBuffers {
+    Vec2BufferRef positions;
+    Vec2BufferRef predicted_positions;
+    Vec2BufferRef velocities;
+    Vec2BufferRef densities;
+} in_buffers;
 
-layout(buffer_reference, scalar) readonly buffer DataBuffer{ 
-	Data data[];
-};
+layout (binding = 2, scalar) uniform OutputGlobalBuffers {
+    Vec2BufferRef positions;
+    Vec2BufferRef predicted_positions;
+    Vec2BufferRef velocities;
+    Vec2BufferRef densities;
+} out_buffers;
 
-layout( push_constant ) uniform constants {	
+layout( push_constant ) uniform PushConstants {	
     float time;
     float dt;
-    uint data_buffer_size;
-	DataBuffer in_buf;
-	DataBuffer out_buf;
+    uint n_particles;
 } pc;

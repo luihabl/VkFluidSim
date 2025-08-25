@@ -7,45 +7,46 @@
 
 layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
 
-void processBoundaries(inout Data p) {
-    if(p.x.x < ubo.box.x){
-        p.x.x = 2*ubo.box.x-p.x.x;
-        p.v.x = -p.v.x;
+void processBoundaries(inout vec2 p, inout vec2 v) {
+    if(p.x < constants.box.x){
+        p.x = 2*constants.box.x-p.x;
+        v.x = -v.x;
     }
 
-    if(p.x.y < ubo.box.y){
-        p.x.y = 2*ubo.box.y-p.x.y;
-        p.v.y  = -p.v.y;
+    if(p.y < constants.box.y){
+        p.y = 2*constants.box.y-p.y;
+        v.y  = -v.y;
     }
 
-   if(p.x.x > ubo.box.x + ubo.box.z){
-        p.x.x = 2*(ubo.box.x + ubo.box.z) - p.x.x;
-        p.v.x = -p.v.x;
+   if(p.x > constants.box.x + constants.box.z){
+        p.x = 2*(constants.box.x + constants.box.z) - p.x;
+        v.x = -v.x;
     }
 
-    if(p.x.y > ubo.box.y + ubo.box.w){
-        p.x.y = 2*(ubo.box.y + ubo.box.w) - p.x.y;
-        p.v.y = -p.v.y;
+    if(p.y > constants.box.y + constants.box.w){
+        p.y = 2*(constants.box.y + constants.box.w) - p.y;
+        v.y = -v.y;
     }       
 }
 
-Data moveParticle(Data old) {
-    Data p;
-    p.x = old.x + ubo.dt * old.v;
-    p.v = old.v;
+vec2 moveParticle(vec2 pos, vec2 vel) {
+    vec2 p;
+    p = pos + pc.dt * vel;
     return p;
 }
 
 void main() {
     uint gi  = gl_GlobalInvocationID.x;
     
-    if(gi < pc.data_buffer_size) {
-        Data d_in = pc.in_buf.data[gi];
+    if(gi < pc.n_particles) {
+        vec2 pos = in_buffers.positions.data[gi];
+        vec2 vel = in_buffers.velocities.data[gi];
 
-        Data new_state = moveParticle(d_in);
-        processBoundaries(new_state);
 
-        pc.out_buf.data[gi].x = new_state.x;
-        pc.out_buf.data[gi].v = new_state.v;
+        vec2 new_pos = moveParticle(pos, vel);
+        processBoundaries(new_pos, vel);
+
+        out_buffers.positions.data[gi] = new_pos;
+        out_buffers.velocities.data[gi] = vel;
     }
 }

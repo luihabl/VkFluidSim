@@ -1,10 +1,16 @@
 find_program(GLSL_VALIDATOR glslangValidator)
 
+
 set(SHADER_FILES
     gfx/sprite.frag
     gfx/sprite.vert
     sim/update_pos.comp
 )
+
+set(SHADER_COMMON
+    sim/common.glsl
+)
+
 
 foreach(GLSL ${SHADER_FILES})
     set(GLSL ${CMAKE_CURRENT_LIST_DIR}/${GLSL})
@@ -16,7 +22,7 @@ foreach(GLSL ${SHADER_FILES})
     add_custom_command(
         OUTPUT ${SPIRV}
         COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-        DEPENDS ${GLSL})
+        DEPENDS ${GLSL} ${SHADER_COMMON})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 

@@ -21,11 +21,21 @@ private:
     gfx::Device gfx;
     Renderer renderer;
 
-    gfx::Buffer *in_buf{nullptr}, *out_buf{nullptr};
-    gfx::Buffer b1, b2;
+    // gfx::Buffer *in_buf{nullptr}, *out_buf{nullptr};
+    // gfx::Buffer b1, b2;
+
+    struct FrameBuffers {
+        gfx::Buffer position_buffer;
+        gfx::Buffer predicted_position_buffer;
+        gfx::Buffer velocity_buffer;
+        gfx::Buffer density_buffer;
+    };
+
+    std::array<FrameBuffers, gfx::FRAME_COUNT> frame_buffers;
+
     ComputePipeline comp_pipeline;
 
-    gfx::GPUMesh test_mesh;
+    gfx::GPUMesh circle_mesh;
     void SetInitialData();
 
     void SetBox(float w, float h);
@@ -35,5 +45,6 @@ private:
     int n_particles = 6000;
     float spacing = 0.2f;
     float scale = 2e-2;
+    int current_frame = 0;
 };
 }  // namespace vfs

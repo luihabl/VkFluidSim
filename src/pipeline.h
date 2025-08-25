@@ -10,7 +10,6 @@
 namespace vfs {
 
 struct GlobalUniformData {
-    float dt = 1.0f / 120.0f;
     float g = 0.0f;
     float mass = 1.0f;
     float damping_factor = 0.05f;
@@ -20,22 +19,33 @@ struct GlobalUniformData {
     glm::vec4 box = {0, 0, 1, 1};
 };
 
+struct BufferUniformData {
+    VkDeviceAddress positions;
+    VkDeviceAddress predicted_positions;
+    VkDeviceAddress velocities;
+    VkDeviceAddress densities;
+};
+
+struct PushConstants {
+    float time;
+    float dt;
+    unsigned n_particles;
+};
+
+struct DrawPushConstants {
+    glm::mat4 matrix;
+    VkDeviceAddress positions;
+};
+
 class SpriteDrawPipeline {
 public:
-    struct PushConstants {
-        glm::mat4 matrix;
-        // VkDeviceAddress vertex_buffer;
-        VkDeviceAddress pos_buffer;
-    };
-
     void Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format);
     void Clear(const gfx::CoreCtx& ctx);
     void Draw(VkCommandBuffer cmd,
               gfx::Device& gfx,
               const gfx::Image& draw_img,
               const gfx::GPUMesh& mesh,
-              const gfx::Buffer& buf,
-              const glm::mat4& transform,
+              const DrawPushConstants& push_constants,
               uint32_t instances);
 
 private:
@@ -45,26 +55,11 @@ private:
 
 class ComputePipeline {
 public:
-    struct DataPoint {
-        glm::vec2 x;
-        glm::vec2 v;
-    };
-
-    struct PushConstants {
-        float time;
-        float dt;
-        unsigned data_buffer_size;
-        VkDeviceAddress in_buf;
-        VkDeviceAddress out_buf;
-    };
-
     void Init(const gfx::CoreCtx& ctx);
     void SetUniformData(const GlobalUniformData& data);
+    void SetBuffers(const std::vector<BufferUniformData>& data);
 
-    void Compute(VkCommandBuffer cmd,
-                 gfx::Device& gfx,
-                 const gfx::Buffer& in,
-                 const gfx::Buffer& out);
+    void Compute(VkCommandBuffer cmd, gfx::Device& gfx, const PushConstants& push_constants);
     void Clear(const gfx::CoreCtx& ctx);
 
 private:
@@ -76,11 +71,26 @@ private:
     // Descriptor sets
     gfx::DescriptorPoolAlloc desc_pool;
     VkDescriptorSetLayout desc_layout;
-    std::array<VkDescriptorSet, gfx::FRAME_COUNT> desc_sets;
-    std::array<gfx::Buffer, gfx::FRAME_COUNT> uniform_buffers;
-    std::array<bool, gfx::FRAME_COUNT> update_ubo = {};
 
-    GlobalUniformData uniform_constant_data;
+    struct FrameData {
+        VkDescriptorSet desc_set;
+        gfx::Buffer global_constants_ubo;
+        gfx::Buffer buffers_ubo;
+        bool should_update = false;
+
+        GlobalUniformData uniform_constant_data;
+        BufferUniformData buffer_uniform_data;
+    };
+
+    std::array<FrameData, gfx::FRAME_COUNT> frame_data;
+
+    // std::array<VkDescriptorSet, gfx::FRAME_COUNT> desc_sets;
+    // std::array<gfx::Buffer, gfx::FRAME_COUNT> global_uniform_buffers;
+    // std::array<gfx::Buffer, gfx::FRAME_COUNT> buffer_uniform_buffers;
+    // std::array<bool, gfx::FRAME_COUNT> update_ubo = {};
+
+    // GlobalUniformData uniform_constant_data;
+    // BufferUniformData buffer_uniform_data;
     uint32_t current_frame{0};
 };
 

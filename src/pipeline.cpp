@@ -21,7 +21,7 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
 
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,
-        .size = sizeof(PushConstants),
+        .size = sizeof(DrawPushConstants),
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
     };
 
@@ -50,8 +50,7 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
                               gfx::Device& gfx,
                               const gfx::Image& draw_img,
                               const gfx::GPUMesh& mesh,
-                              const gfx::Buffer& buf,
-                              const glm::mat4& tranform,
+                              const DrawPushConstants& push_constants,
                               uint32_t instances) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -73,10 +72,7 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    PushConstants push_constants;
-    push_constants.matrix = tranform;
-    push_constants.pos_buffer = vk::util::GetBufferAddress(gfx.GetCoreCtx().device, buf);
-    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(DrawPushConstants),
                        &push_constants);
 
     VkDeviceSize offsets[1]{0};
@@ -100,19 +96,29 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
 
     desc_layout = gfx::DescriptorLayoutBuilder{}
                       .Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                      .Add(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                      .Add(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                       .Build(ctx, VK_SHADER_STAGE_ALL);
 
-    for (auto& ubo : uniform_buffers) {
-        ubo =
+    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
+        auto& frame = frame_data[i];
+        frame.global_constants_ubo =
             gfx::Buffer::Create(ctx, sizeof(GlobalUniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        frame.buffers_ubo =
+            gfx::Buffer::Create(ctx, sizeof(BufferUniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     }
 
     for (int i = 0; i < gfx::FRAME_COUNT; i++) {
-        auto& set = desc_sets[i];
-        set = desc_pool.Alloc(ctx, desc_layout);
+        auto& frame = frame_data[i];
+        frame.desc_set = desc_pool.Alloc(ctx, desc_layout);
         std::vector<VkWriteDescriptorSet> write_desc_sets = {
-            vk::util::WriteDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                                         &uniform_buffers[i].desc_info),
+            vk::util::WriteDescriptorSet(frame.desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
+                                         &frame.global_constants_ubo.desc_info),
+            vk::util::WriteDescriptorSet(frame.desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                         &frame.buffers_ubo.desc_info),
+            vk::util::WriteDescriptorSet(
+                frame.desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2,
+                &frame_data[(i + 1) % gfx::FRAME_COUNT].buffers_ubo.desc_info),
         };
 
         vkUpdateDescriptorSets(ctx.device, write_desc_sets.size(), write_desc_sets.data(), 0,
@@ -135,50 +141,52 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
 }
 
 void ComputePipeline::SetUniformData(const GlobalUniformData& data) {
-    uniform_constant_data = data;
-    update_ubo.fill(true);
+    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
+        frame_data[i].uniform_constant_data = data;
+        frame_data[i].should_update = true;
+    }
+}
+
+void ComputePipeline::SetBuffers(const std::vector<BufferUniformData>& data) {
+    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
+        frame_data[i].buffer_uniform_data = data[i];
+        frame_data[i].should_update = true;
+    }
 }
 
 void ComputePipeline::UpdateUniformBuffers(uint32_t frame) {
-    memcpy(uniform_buffers[frame].Map(), &uniform_constant_data, sizeof(GlobalUniformData));
+    memcpy(frame_data[frame].global_constants_ubo.Map(), &frame_data[frame].uniform_constant_data,
+           sizeof(GlobalUniformData));
+    memcpy(frame_data[frame].buffers_ubo.Map(), &frame_data[frame].buffer_uniform_data,
+           sizeof(BufferUniformData));
 }
 
 void ComputePipeline::Compute(VkCommandBuffer cmd,
                               gfx::Device& gfx,
-                              const gfx::Buffer& in,
-                              const gfx::Buffer& out) {
+                              const PushConstants& push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-    if (update_ubo[current_frame]) {
+    if (frame_data[current_frame].should_update) {
         UpdateUniformBuffers(current_frame);
-        update_ubo[current_frame] = false;
+        frame_data[current_frame].should_update = false;
     }
 
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
-                            &desc_sets[current_frame], 0, 0);
-
-    PushConstants push_constants;
-    push_constants.in_buf = vk::util::GetBufferAddress(gfx.GetCoreCtx().device, in);
-    push_constants.out_buf = vk::util::GetBufferAddress(gfx.GetCoreCtx().device, out);
-    push_constants.dt = 0.01f;
-    push_constants.data_buffer_size = in.size;
-
-    static float t = 0.0f;
-    push_constants.time = t;
-    t += 0.01f;
+                            &frame_data[current_frame].desc_set, 0, 0);
 
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstants),
                        &push_constants);
 
-    // do stuff
-    gfx::u32 sz = in.size / 64 + 1;
+    gfx::u32 sz = push_constants.n_particles / 64 + 1;
     vkCmdDispatch(cmd, sz, 1, 1);
 
     current_frame = (current_frame + 1) % gfx::FRAME_COUNT;
 }
 
 void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {
-    for (auto& ubo : uniform_buffers)
-        ubo.Destroy();
+    for (auto& frame : frame_data) {
+        frame.global_constants_ubo.Destroy();
+        frame.buffers_ubo.Destroy();
+    }
 
     vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
     desc_pool.Clear(ctx);

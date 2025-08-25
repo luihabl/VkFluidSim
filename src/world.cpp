@@ -1,38 +1,79 @@
 #include "world.h"
 
+#include <cstdint>
 #include <glm/ext.hpp>
 #include <random>
 
+#include "gfx/common.h"
+#include "gfx/gfx.h"
 #include "gfx/mesh.h"
+#include "gfx/vk_util.h"
 #include "pipeline.h"
 #include "platform.h"
 
 namespace vfs {
-void World::Init(Platform& platform) {
-    gfx.Init({
-        .name = "Vulkan fluid sim",
-        .window = platform.GetWindow(),
-        .validation_layers = true,
+
+namespace {
+template <typename T>
+gfx::Buffer CreateDataBuffer(const gfx::CoreCtx& ctx, size_t n) {
+    const auto sz = sizeof(T) * n;
+    return gfx::Buffer::Create(ctx, sz,
+                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                               VMA_MEMORY_USAGE_GPU_ONLY);
+}
+
+template <typename T>
+void SetDataVal(const gfx::Device& gfx, const gfx::Buffer& buf, const T& value) {
+    auto staging = gfx::Buffer::Create(gfx.GetCoreCtx(), buf.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                       VMA_MEMORY_USAGE_CPU_ONLY);
+    void* data = staging.Map();
+
+    size_t n = buf.size / sizeof(T);
+    auto* dp = (T*)data;
+
+    for (int i = 0; i < n; i++) {
+        dp[i] = value;
+    }
+
+    gfx.ImmediateSubmit([&](VkCommandBuffer cmd) {
+        auto cpy_info = VkBufferCopy{
+            .dstOffset = 0,
+            .srcOffset = 0,
+            .size = buf.size,
+        };
+
+        vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
     });
 
-    auto ext = gfx.GetSwapchainExtent();
-    renderer.Init(gfx, ext.width, ext.height);
-    comp_pipeline.Init(gfx.GetCoreCtx());
+    staging.Destroy();
+}
 
-    SetBox(17, 9);
+template <typename T>
+void SetDataVec(const gfx::Device& gfx, const gfx::Buffer& buf, const std::vector<T>& value) {
+    auto staging = gfx::Buffer::Create(gfx.GetCoreCtx(), buf.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                       VMA_MEMORY_USAGE_CPU_ONLY);
+    void* data = staging.Map();
 
-    comp_pipeline.SetUniformData({
-        .dt = 1.0f / 120.0f,
-        .g = 0.0f,
-        .mass = 1.0f,
-        .damping_factor = 0.05f,
-        .target_density = 10.0f,
-        .pressure_multiplier = 500.0f,
-        .smoothing_radius = 0.35f,
-        .box = box,
+    size_t n = buf.size / sizeof(T);
+    auto* dp = (T*)data;
+
+    for (int i = 0; i < n; i++) {
+        dp[i] = value[i];
+    }
+
+    gfx.ImmediateSubmit([&](VkCommandBuffer cmd) {
+        auto cpy_info = VkBufferCopy{
+            .dstOffset = 0,
+            .srcOffset = 0,
+            .size = buf.size,
+        };
+
+        vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
     });
 
-    SetInitialData();
+    staging.Destroy();
 }
 
 void DrawCircleFill(gfx::CPUMesh& mesh,
@@ -59,6 +100,63 @@ void DrawCircleFill(gfx::CPUMesh& mesh,
     }
 }
 
+}  // namespace
+
+void World::Init(Platform& platform) {
+    gfx.Init({
+        .name = "Vulkan fluid sim",
+        .window = platform.GetWindow(),
+        .validation_layers = true,
+    });
+
+    auto ext = gfx.GetSwapchainExtent();
+    renderer.Init(gfx, ext.width, ext.height);
+    comp_pipeline.Init(gfx.GetCoreCtx());
+
+    SetBox(17, 9);
+
+    for (auto& bufs : frame_buffers) {
+        bufs = {
+            .position_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
+            .predicted_position_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
+            .velocity_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
+            .density_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
+        };
+    }
+
+    comp_pipeline.SetUniformData({
+        .g = 0.0f,
+        .mass = 1.0f,
+        .damping_factor = 0.05f,
+        .target_density = 10.0f,
+        .pressure_multiplier = 500.0f,
+        .smoothing_radius = 0.35f,
+        .box = box,
+    });
+
+    std::vector<BufferUniformData> buffer_uniform_data(gfx::FRAME_COUNT);
+    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
+        buffer_uniform_data[i] = {
+            .positions = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
+                                                    frame_buffers[i].position_buffer),
+            .predicted_positions = vk::util::GetBufferAddress(
+                gfx.GetCoreCtx().device, frame_buffers[i].predicted_position_buffer),
+            .velocities = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
+                                                     frame_buffers[i].velocity_buffer),
+            .densities = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
+                                                    frame_buffers[i].density_buffer),
+        };
+    }
+
+    comp_pipeline.SetBuffers(buffer_uniform_data);
+
+    gfx::CPUMesh mesh;
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
+    circle_mesh = gfx::UploadMesh(gfx, mesh);
+
+    SetInitialData();
+}
+
 void World::SetBox(float w, float h) {
     float win_w = scale * Platform::Info::GetConfig()->w;
     float win_h = scale * Platform::Info::GetConfig()->h;
@@ -70,67 +168,28 @@ void World::SetBox(float w, float h) {
 }
 
 void World::SetInitialData() {
-    gfx::CPUMesh mesh;
-
-    float w = Platform::Info::GetConfig()->w;
-    float h = Platform::Info::GetConfig()->h;
-
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
-
-    test_mesh = gfx::UploadMesh(gfx, mesh);
-
-    auto sz = sizeof(ComputePipeline::DataPoint) * n_particles;
-
-    b1 = gfx::Buffer::Create(
-        gfx.GetCoreCtx(), sz,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
-    b2 = gfx::Buffer::Create(
-        gfx.GetCoreCtx(), sz,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
-
-    in_buf = &b1;
-    out_buf = &b2;
-
-    auto staging = gfx::Buffer::Create(gfx.GetCoreCtx(), sz, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                       VMA_MEMORY_USAGE_CPU_ONLY);
-
-    void* data = staging.Map();
-
-    // for (int i = 0; i < sz; i++) {
-    //     ((char*)data)[i] = 0;
-    // }
+    std::vector<glm::vec2> initial_positions(n_particles);
+    std::vector<glm::vec2> initial_velocities(n_particles);
 
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_real_distribution dist;
-
-    auto* dp = (ComputePipeline::DataPoint*)data;
     for (int i = 0; i < n_particles; i++) {
         float r1 = dist(rng);
         float r2 = dist(rng);
 
         float x = box.x + r1 * box.z;
         float y = box.y + r2 * box.w;
-        dp[i].x = glm::vec2{x, y};
-        dp[i].v = glm::vec2{-1.0f + 2.0f * r1, -1.0f + 2.0f * r2};
+        initial_positions[i] = glm::vec2{x, y};
+        initial_velocities[i] = glm::vec2{-1.0f + 2.0f * r1, -1.0f + 2.0f * r2};  // REMOVE
     }
 
-    gfx.ImmediateSubmit([&](VkCommandBuffer cmd) {
-        auto cpy_info = VkBufferCopy{
-            .dstOffset = 0,
-            .srcOffset = 0,
-            .size = sz,
-        };
-
-        vkCmdCopyBuffer(cmd, staging.buffer, b1.buffer, 1, &cpy_info);
-        vkCmdCopyBuffer(cmd, staging.buffer, b2.buffer, 1, &cpy_info);
-    });
-
-    staging.Destroy();
+    for (auto& frame : frame_buffers) {
+        SetDataVec(gfx, frame.position_buffer, initial_positions);
+        SetDataVec(gfx, frame.predicted_position_buffer, initial_positions);
+        SetDataVec(gfx, frame.velocity_buffer, initial_velocities);
+        SetDataVal(gfx, frame.density_buffer, glm::vec2(0.0f));
+    }
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
@@ -140,8 +199,6 @@ void World::HandleEvent(Platform& platform, const SDL_Event& e) {
 }
 
 void World::Update(Platform& platform) {
-    static int i = 0;
-
     auto cmd = gfx.BeginFrame();
 
     auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
@@ -149,9 +206,12 @@ void World::Update(Platform& platform) {
 
     tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));
 
-    std::swap(in_buf, out_buf);
+    PushConstants push_constants = {
+        .n_particles = (uint32_t)n_particles,
+        .dt = 1 / 120.f,
+    };
 
-    comp_pipeline.Compute(cmd, gfx, *in_buf, *out_buf);
+    comp_pipeline.Compute(cmd, gfx, push_constants);
 
     auto mem_barrier = VkMemoryBarrier2{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
@@ -170,17 +230,30 @@ void World::Update(Platform& platform) {
 
     vkCmdPipelineBarrier2(cmd, &dep_info);
 
-    renderer.Draw(gfx, cmd, test_mesh, *out_buf, tr, n_particles);
+    auto draw_push_constants = DrawPushConstants{
+        .matrix = tr,
+        .positions = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
+                                                frame_buffers[current_frame].position_buffer),
+    };
+
+    renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
+
+    current_frame = (current_frame + 1) % gfx::FRAME_COUNT;
 }
 
 void World::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
+    for (auto& frame : frame_buffers) {
+        frame.position_buffer.Destroy();
+        frame.predicted_position_buffer.Destroy();
+        frame.velocity_buffer.Destroy();
+        frame.density_buffer.Destroy();
+    }
+
     comp_pipeline.Clear(gfx.GetCoreCtx());
-    b1.Destroy();
-    b2.Destroy();
-    gfx::DestroyMesh(gfx, test_mesh);
+    gfx::DestroyMesh(gfx, circle_mesh);
     renderer.Clear(gfx);
     gfx.Clear();
 }

@@ -12,8 +12,8 @@ void main() {
     if(id >= pc.n_particles)
         return;
 
-    
-
-
-
+    uint sorted_index = ubo.sorted_indices.data[id];
+    ubo.sort_target_positions.data[id] = pc.positions.data[sorted_index];
+    ubo.sort_target_pred_positions.data[id] = ubo.predicted_positions.data[sorted_index];
+    ubo.sort_target_velocities.data[id] = pc.velocities.data[sorted_index];
 }

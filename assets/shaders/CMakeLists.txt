@@ -4,11 +4,17 @@ find_program(GLSL_VALIDATOR glslangValidator)
 set(SHADER_FILES
     gfx/sprite.frag
     gfx/sprite.vert
+
+    sim/update_external_forces.comp
+    sim/update_spatial_hash.comp
     sim/update_pos.comp
+    sim/update_reorder.comp
+    sim/update_reorder_copyback.comp
 )
 
 set(SHADER_COMMON
     sim/common.glsl
+    sim/spatial_hash.glsl
 )
 
 

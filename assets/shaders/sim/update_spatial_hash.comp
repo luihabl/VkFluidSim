@@ -1,0 +1,21 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.glsl"
+#include "spatial_hash.glsl"
+
+layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if(id >= pc.n_particles)
+        return;
+
+    uint index = id;
+    ivec2 cell = GetCell2D(ubo.predicted_positions.data[id], ubo.smoothing_radius);
+    uint hash = HashCell2D(cell);
+    uint key = KeyFromHash(hash, pc.n_particles);
+    ubo.spatial_keys.data[id] = key;
+}

@@ -7,29 +7,29 @@
 
 layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
 
-void processBoundaries(inout vec2 p, inout vec2 v) {
-    if(p.x < constants.box.x){
-        p.x = 2*constants.box.x-p.x;
+void ProcessBoundaries(inout vec2 p, inout vec2 v) {
+    if(p.x < ubo.box.x){
+        p.x = 2*ubo.box.x-p.x;
         v.x = -v.x;
     }
 
-    if(p.y < constants.box.y){
-        p.y = 2*constants.box.y-p.y;
+    if(p.y < ubo.box.y){
+        p.y = 2*ubo.box.y-p.y;
         v.y  = -v.y;
     }
 
-   if(p.x > constants.box.x + constants.box.z){
-        p.x = 2*(constants.box.x + constants.box.z) - p.x;
+   if(p.x > ubo.box.x + ubo.box.z){
+        p.x = 2*(ubo.box.x + ubo.box.z) - p.x;
         v.x = -v.x;
     }
 
-    if(p.y > constants.box.y + constants.box.w){
-        p.y = 2*(constants.box.y + constants.box.w) - p.y;
+    if(p.y > ubo.box.y + ubo.box.w){
+        p.y = 2*(ubo.box.y + ubo.box.w) - p.y;
         v.y = -v.y;
     }       
 }
 
-vec2 moveParticle(vec2 pos, vec2 vel) {
+vec2 MoveParticle(vec2 pos, vec2 vel) {
     vec2 p;
     p = pos + pc.dt * vel;
     return p;
@@ -44,8 +44,8 @@ void main() {
     vec2 vel = pc.velocities.data[id];
 
 
-    vec2 new_pos = moveParticle(pos, vel);
-    // processBoundaries(new_pos, vel);
+    vec2 new_pos = MoveParticle(pos, vel);
+    ProcessBoundaries(new_pos, vel);
 
     pc.positions.data[id] = new_pos;
     pc.velocities.data[id] = vel;

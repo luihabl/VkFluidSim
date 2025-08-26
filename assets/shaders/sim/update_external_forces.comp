@@ -1,0 +1,29 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.glsl"
+
+layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+
+vec2 ExternalForces(vec2 pos, vec2 velocity) {
+
+    // Gravity force
+    vec2 gravity_accel = vec2(0, ubo.gravity);
+
+    // TODO: Add other external forces here.
+
+    return gravity_accel;
+}
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if(id >= pc.n_particles)
+        return;
+
+    pc.velocities.data[id] += ExternalForces(pc.positions.data[id], pc.velocities.data[id]) * pc.dt;
+
+    const float prediction_factor = 1 / 120.0f;
+    ubo.predicted_positions.data[id] = pc.positions.data[id] + pc.velocities.data[id] * prediction_factor;
+}

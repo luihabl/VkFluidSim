@@ -17,11 +17,11 @@ namespace {
 template <typename T>
 gfx::Buffer CreateDataBuffer(const gfx::CoreCtx& ctx, size_t n) {
     const auto sz = sizeof(T) * n;
-    return gfx::Buffer::Create(ctx, sz,
-                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                               VMA_MEMORY_USAGE_GPU_ONLY);
+    return gfx::Buffer::Create(
+        ctx, sz,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY);
 }
 
 template <typename T>
@@ -121,24 +121,16 @@ void World::Init(Platform& platform) {
             .velocity_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
             .density_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
         };
-    }
 
-    std::vector<BufferUniformData> buffer_uniform_data(gfx::FRAME_COUNT);
-    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
-        buffer_uniform_data[i] = {
-            .positions = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
-                                                    frame_buffers[i].position_buffer),
-            .predicted_positions = vk::util::GetBufferAddress(
-                gfx.GetCoreCtx().device, frame_buffers[i].predicted_position_buffer),
-            .velocities = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
-                                                     frame_buffers[i].velocity_buffer),
-            .densities = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
-                                                    frame_buffers[i].density_buffer),
-        };
+        bufs.position_buffer_addr =
+            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.position_buffer);
+        bufs.predicted_position_buffer_addr =
+            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.predicted_position_buffer);
+        bufs.velocity_buffer_addr =
+            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.velocity_buffer);
+        bufs.density_buffer_addr =
+            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.density_buffer);
     }
-
-    std::vector<BufferUniformData> reversed_buffer_uniform_data(buffer_uniform_data.rbegin(),
-                                                                buffer_uniform_data.rend());
 
     auto global_uniforms = GlobalUniformData{
         .g = 0.0f,
@@ -151,11 +143,9 @@ void World::Init(Platform& platform) {
     };
 
     update_pos_pipeline.Init(gfx.GetCoreCtx(), "shaders/compiled/update_pos.comp.spv");
-    update_pos_pipeline.SetBuffers(buffer_uniform_data);
     update_pos_pipeline.SetUniformData(global_uniforms);
 
     boundaries_pipeline.Init(gfx.GetCoreCtx(), "shaders/compiled/boundaries.comp.spv");
-    boundaries_pipeline.SetBuffers(reversed_buffer_uniform_data);
     boundaries_pipeline.SetUniformData(global_uniforms);
 
     gfx::CPUMesh mesh;
@@ -206,6 +196,24 @@ void World::HandleEvent(Platform& platform, const SDL_Event& e) {
     }
 }
 
+void World::CopyBuffersToNextFrame(VkCommandBuffer cmd) {
+    int next_frame = (current_frame + 1) % gfx::FRAME_COUNT;
+
+#define CPY_BUFFER(name)                                                                     \
+    {                                                                                        \
+        auto cpy_info = VkBufferCopy{                                                        \
+            .dstOffset = 0, .srcOffset = 0, .size = frame_buffers[current_frame].name.size}; \
+        vkCmdCopyBuffer(cmd, frame_buffers[current_frame].name.buffer,                       \
+                        frame_buffers[next_frame].name.buffer, 1, &cpy_info);                \
+    }
+
+    CPY_BUFFER(position_buffer);
+    CPY_BUFFER(predicted_position_buffer);
+    CPY_BUFFER(velocity_buffer);
+    CPY_BUFFER(density_buffer);
+
+}  // namespace vfs
+
 void ComputeToComputePipelineBarrier(VkCommandBuffer cmd) {
     auto mem_barrier = VkMemoryBarrier2{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
@@ -242,30 +250,50 @@ void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd) {
     vkCmdPipelineBarrier2(cmd, &dep_info);
 }
 
+void World::RunSimulationStep(VkCommandBuffer cmd) {
+    constexpr int iterations = 3;
+
+    auto compute_constants = ComputePushConstants{
+        .time = Platform::Info::GetTime(),
+        .dt = 1 / (120.f * iterations),
+        .n_particles = (uint32_t)n_particles,
+
+        .positions = frame_buffers[current_frame].position_buffer_addr,
+        .predicted_positions = frame_buffers[current_frame].predicted_position_buffer_addr,
+        .velocities = frame_buffers[current_frame].velocity_buffer_addr,
+        .densities = frame_buffers[current_frame].density_buffer_addr,
+    };
+
+    for (int i = 0; i < iterations; i++) {
+        update_pos_pipeline.Compute(cmd, gfx, compute_constants);
+        ComputeToComputePipelineBarrier(cmd);
+        boundaries_pipeline.Compute(cmd, gfx, compute_constants);
+
+        if (i < iterations - 1)
+            ComputeToComputePipelineBarrier(cmd);
+    }
+}
+
 void World::Update(Platform& platform) {
     auto cmd = gfx.BeginFrame();
 
+    // Run compute step
+    RunSimulationStep(cmd);
+
+    ComputeToGraphicsPipelineBarrier(cmd);
+
+    // NOTE: this is probably slow... rework this to avoid copy every frame
+    CopyBuffersToNextFrame(cmd);
+
+    // Run graphics step
     auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
                          -1.0f, 1.0f);
 
     tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));
 
-    auto compute_constants = ComputePushConstants{
-        .time = Platform::Info::GetTime(),
-        .dt = 1 / 120.f,
-        .n_particles = (uint32_t)n_particles,
-    };
-
-    update_pos_pipeline.Compute(cmd, gfx, compute_constants);
-    ComputeToComputePipelineBarrier(cmd);
-    boundaries_pipeline.Compute(cmd, gfx, compute_constants);
-
-    ComputeToGraphicsPipelineBarrier(cmd);
-
     auto draw_push_constants = DrawPushConstants{
         .matrix = tr,
-        .positions = vk::util::GetBufferAddress(gfx.GetCoreCtx().device,
-                                                frame_buffers[current_frame].position_buffer),
+        .positions = frame_buffers[current_frame].position_buffer_addr,
     };
 
     renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);

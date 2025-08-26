@@ -15,22 +15,13 @@ layout (binding = 0, scalar) uniform GlobalConstants {
     vec4 box;
 } constants;
 
-layout (binding = 1, scalar) uniform InputGlobalBuffers {
-    Vec2BufferRef positions;
-    Vec2BufferRef predicted_positions;
-    Vec2BufferRef velocities;
-    Vec2BufferRef densities;
-} in_buffers;
-
-layout (binding = 2, scalar) uniform OutputGlobalBuffers {
-    Vec2BufferRef positions;
-    Vec2BufferRef predicted_positions;
-    Vec2BufferRef velocities;
-    Vec2BufferRef densities;
-} out_buffers;
-
 layout( push_constant ) uniform PushConstants {	
     float time;
     float dt;
     uint n_particles;
+
+    Vec2BufferRef positions;
+    Vec2BufferRef predicted_positions;
+    Vec2BufferRef velocities;
+    Vec2BufferRef densities;
 } pc;

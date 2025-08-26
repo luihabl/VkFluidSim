@@ -19,17 +19,14 @@ struct GlobalUniformData {
     glm::vec4 box = {0, 0, 1, 1};
 };
 
-struct BufferUniformData {
-    VkDeviceAddress positions;
-    VkDeviceAddress predicted_positions;
-    VkDeviceAddress velocities;
-    VkDeviceAddress densities;
-};
-
 struct ComputePushConstants {
     float time;
     float dt;
     unsigned n_particles;
+    VkDeviceAddress positions;
+    VkDeviceAddress predicted_positions;
+    VkDeviceAddress velocities;
+    VkDeviceAddress densities;
 };
 
 struct DrawPushConstants {
@@ -57,7 +54,6 @@ class ComputePipeline {
 public:
     void Init(const gfx::CoreCtx& ctx, const char* shader_path);
     void SetUniformData(const GlobalUniformData& data);
-    void SetBuffers(const std::vector<BufferUniformData>& data);
 
     void Compute(VkCommandBuffer cmd, gfx::Device& gfx, const ComputePushConstants& push_constants);
     void Clear(const gfx::CoreCtx& ctx);
@@ -66,24 +62,30 @@ private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
 
-    void UpdateUniformBuffers(uint32_t frame);
+    void UpdateUniformBuffers();
 
     // Descriptor sets
     gfx::DescriptorPoolAlloc desc_pool;
     VkDescriptorSetLayout desc_layout;
 
-    struct FrameData {
-        VkDescriptorSet desc_set;
-        gfx::Buffer global_constants_ubo;
-        gfx::Buffer buffers_ubo;
-        bool should_update = false;
+    VkDescriptorSet desc_set;
+    gfx::Buffer global_constants_ubo;
+    bool should_update = false;
 
-        GlobalUniformData uniform_constant_data;
-        BufferUniformData buffer_uniform_data;
-    };
+    GlobalUniformData uniform_constant_data;
 
-    std::array<FrameData, gfx::FRAME_COUNT> frame_data;
-    uint32_t current_frame{0};
+    // struct FrameData {
+    //     VkDescriptorSet desc_set;
+    //     gfx::Buffer global_constants_ubo;
+    //     gfx::Buffer buffers_ubo;
+    //     bool should_update = false;
+
+    //     GlobalUniformData uniform_constant_data;
+    //     BufferUniformData buffer_uniform_data;
+    // };
+
+    // std::array<FrameData, gfx::FRAME_COUNT> frame_data;
+    // uint32_t current_frame{0};
 };
 
 }  // namespace vfs

@@ -1,6 +1,5 @@
 #include "pipeline.h"
 
-#include <array>
 #include <cstddef>
 
 #include "gfx/common.h"
@@ -96,34 +95,18 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const char* shader_path) {
 
     desc_layout = gfx::DescriptorLayoutBuilder{}
                       .Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-                      .Add(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-                      .Add(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                       .Build(ctx, VK_SHADER_STAGE_ALL);
 
-    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
-        auto& frame = frame_data[i];
-        frame.global_constants_ubo =
-            gfx::Buffer::Create(ctx, sizeof(GlobalUniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-        frame.buffers_ubo =
-            gfx::Buffer::Create(ctx, sizeof(BufferUniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    }
+    global_constants_ubo =
+        gfx::Buffer::Create(ctx, sizeof(GlobalUniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
-        auto& frame = frame_data[i];
-        frame.desc_set = desc_pool.Alloc(ctx, desc_layout);
-        std::vector<VkWriteDescriptorSet> write_desc_sets = {
-            vk::util::WriteDescriptorSet(frame.desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                                         &frame.global_constants_ubo.desc_info),
-            vk::util::WriteDescriptorSet(frame.desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-                                         &frame.buffers_ubo.desc_info),
-            vk::util::WriteDescriptorSet(
-                frame.desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2,
-                &frame_data[(i + 1) % gfx::FRAME_COUNT].buffers_ubo.desc_info),
-        };
+    desc_set = desc_pool.Alloc(ctx, desc_layout);
+    std::vector<VkWriteDescriptorSet> write_desc_sets = {
+        vk::util::WriteDescriptorSet(desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
+                                     &global_constants_ubo.desc_info),
+    };
 
-        vkUpdateDescriptorSets(ctx.device, write_desc_sets.size(), write_desc_sets.data(), 0,
-                               nullptr);
-    }
+    vkUpdateDescriptorSets(ctx.device, write_desc_sets.size(), write_desc_sets.data(), 0, nullptr);
 
     auto shader =
         vk::util::LoadShaderModule(ctx, Platform::Info::ResourcePath(shader_path).c_str());
@@ -141,53 +124,34 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const char* shader_path) {
 }
 
 void ComputePipeline::SetUniformData(const GlobalUniformData& data) {
-    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
-        frame_data[i].uniform_constant_data = data;
-        frame_data[i].should_update = true;
-    }
+    uniform_constant_data = data;
+    should_update = true;
 }
 
-void ComputePipeline::SetBuffers(const std::vector<BufferUniformData>& data) {
-    for (int i = 0; i < gfx::FRAME_COUNT; i++) {
-        frame_data[i].buffer_uniform_data = data[i];
-        frame_data[i].should_update = true;
-    }
-}
-
-void ComputePipeline::UpdateUniformBuffers(uint32_t frame) {
-    memcpy(frame_data[frame].global_constants_ubo.Map(), &frame_data[frame].uniform_constant_data,
-           sizeof(GlobalUniformData));
-    memcpy(frame_data[frame].buffers_ubo.Map(), &frame_data[frame].buffer_uniform_data,
-           sizeof(BufferUniformData));
+void ComputePipeline::UpdateUniformBuffers() {
+    memcpy(global_constants_ubo.Map(), &uniform_constant_data, sizeof(GlobalUniformData));
 }
 
 void ComputePipeline::Compute(VkCommandBuffer cmd,
                               gfx::Device& gfx,
                               const ComputePushConstants& push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-    if (frame_data[current_frame].should_update) {
-        UpdateUniformBuffers(current_frame);
-        frame_data[current_frame].should_update = false;
+    if (should_update) {
+        UpdateUniformBuffers();
+        should_update = false;
     }
 
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
-                            &frame_data[current_frame].desc_set, 0, 0);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &desc_set, 0, 0);
 
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants),
                        &push_constants);
 
     gfx::u32 sz = push_constants.n_particles / 64 + 1;
     vkCmdDispatch(cmd, sz, 1, 1);
-
-    current_frame = (current_frame + 1) % gfx::FRAME_COUNT;
 }
 
 void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {
-    for (auto& frame : frame_data) {
-        frame.global_constants_ubo.Destroy();
-        frame.buffers_ubo.Destroy();
-    }
-
+    global_constants_ubo.Destroy();
     vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
     desc_pool.Clear(ctx);
     vkDestroyPipeline(ctx.device, pipeline, nullptr);

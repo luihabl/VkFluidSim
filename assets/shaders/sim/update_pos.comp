@@ -39,14 +39,14 @@ void main() {
     uint gi  = gl_GlobalInvocationID.x;
     
     if(gi < pc.n_particles) {
-        vec2 pos = in_buffers.positions.data[gi];
-        vec2 vel = in_buffers.velocities.data[gi];
+        vec2 pos = pc.positions.data[gi];
+        vec2 vel = pc.velocities.data[gi];
 
 
         vec2 new_pos = moveParticle(pos, vel);
         // processBoundaries(new_pos, vel);
 
-        out_buffers.positions.data[gi] = new_pos;
-        out_buffers.velocities.data[gi] = vel;
+        pc.positions.data[gi] = new_pos;
+        pc.velocities.data[gi] = vel;
     }
 }

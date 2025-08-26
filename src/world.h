@@ -23,9 +23,16 @@ private:
 
     struct FrameBuffers {
         gfx::Buffer position_buffer;
+        VkDeviceAddress position_buffer_addr;
+
         gfx::Buffer predicted_position_buffer;
+        VkDeviceAddress predicted_position_buffer_addr;
+
         gfx::Buffer velocity_buffer;
+        VkDeviceAddress velocity_buffer_addr;
+
         gfx::Buffer density_buffer;
+        VkDeviceAddress density_buffer_addr;
     };
 
     std::array<FrameBuffers, gfx::FRAME_COUNT> frame_buffers;
@@ -35,6 +42,8 @@ private:
 
     gfx::GPUMesh circle_mesh;
     void SetInitialData();
+    void CopyBuffersToNextFrame(VkCommandBuffer cmd);
+    void RunSimulationStep(VkCommandBuffer cmd);
 
     void SetBox(float w, float h);
 

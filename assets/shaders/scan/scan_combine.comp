@@ -1,0 +1,18 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.glsl"
+
+void main() {
+    uint threadGlobal = gl_GlobalInvocationID.x;
+    uint treadLocal = gl_LocalInvocationID.x;
+    uint group = gl_WorkGroupID.x;
+
+    uint globalA = threadGlobal * 2 + 0;
+	uint globalB = threadGlobal * 2 + 1;
+
+	if (globalA < pc.item_count) pc.elements.data[globalA] += pc.group_sums.data[group];
+	if (globalB < pc.item_count) pc.elements.data[globalB] += pc.group_sums.data[group];
+}

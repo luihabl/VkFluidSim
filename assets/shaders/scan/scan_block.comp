@@ -1,0 +1,68 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.glsl"
+
+shared uint temp[ITEMS_PER_GROUP];
+
+void main() {
+
+    uint threadGlobal = gl_GlobalInvocationID.x;
+    uint threadLocal = gl_LocalInvocationID.x;
+    uint group = gl_WorkGroupID.x;
+
+    uint localA = threadLocal * 2 + 0;
+	uint localB = threadLocal * 2 + 1;
+	uint globalA = threadGlobal * 2 + 0;
+	uint globalB = threadGlobal * 2 + 1;
+
+    bool hasA = globalA < pc.item_count;
+	bool hasB = globalB < pc.item_count;
+
+    temp[localA] = hasA ? pc.elements.data[globalA] : 0;
+	temp[localB] = hasB ? pc.elements.data[globalB] : 0;
+
+    // Up sweep
+    uint offset = 1;
+	uint numActiveThreads;
+    for (numActiveThreads = GROUP_SIZE; numActiveThreads > 0; numActiveThreads /= 2) {
+        groupMemoryBarrier();
+        barrier();
+
+        if(threadLocal < numActiveThreads) {
+            uint indexA = offset * (localA + 1) - 1;
+			uint indexB = offset * (localB + 1) - 1;
+			temp[indexB] = temp[indexA] + temp[indexB];
+        }
+        offset *= 2;
+    }
+
+    if(threadLocal == 0) {
+        pc.group_sums.data[group] = temp[ITEMS_PER_GROUP - 1];
+        temp[ITEMS_PER_GROUP - 1] = 0;
+    }
+
+    // Down sweep
+    for (numActiveThreads = 1; numActiveThreads <= GROUP_SIZE; numActiveThreads *= 2) {
+        groupMemoryBarrier();
+        barrier();
+
+        offset /= 2;
+
+        if(threadLocal < numActiveThreads) {
+            uint indexA = offset * (localA + 1) - 1;
+			uint indexB = offset * (localB + 1) - 1;
+			uint sum = temp[indexA] + temp[indexB];
+            temp[indexA] = temp[indexB];
+			temp[indexB] = sum;
+        }
+    }
+
+    groupMemoryBarrier();
+    barrier();
+
+    if (hasA) pc.elements.data[globalA] = temp[localA];
+	if (hasB) pc.elements.data[globalB] = temp[localB];
+}

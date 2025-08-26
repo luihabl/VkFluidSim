@@ -55,7 +55,7 @@ private:
 
 class ComputePipeline {
 public:
-    void Init(const gfx::CoreCtx& ctx);
+    void Init(const gfx::CoreCtx& ctx, const char* shader_path);
     void SetUniformData(const GlobalUniformData& data);
     void SetBuffers(const std::vector<BufferUniformData>& data);
 
@@ -83,14 +83,6 @@ private:
     };
 
     std::array<FrameData, gfx::FRAME_COUNT> frame_data;
-
-    // std::array<VkDescriptorSet, gfx::FRAME_COUNT> desc_sets;
-    // std::array<gfx::Buffer, gfx::FRAME_COUNT> global_uniform_buffers;
-    // std::array<gfx::Buffer, gfx::FRAME_COUNT> buffer_uniform_buffers;
-    // std::array<bool, gfx::FRAME_COUNT> update_ubo = {};
-
-    // GlobalUniformData uniform_constant_data;
-    // BufferUniformData buffer_uniform_data;
     uint32_t current_frame{0};
 };
 

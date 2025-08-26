@@ -43,10 +43,10 @@ void main() {
         vec2 vel = in_buffers.velocities.data[gi];
 
 
-        vec2 new_pos = moveParticle(pos, vel);
-        // processBoundaries(new_pos, vel);
+        // vec2 new_pos = moveParticle(pos, vel);
+        processBoundaries(pos, vel);
 
-        out_buffers.positions.data[gi] = new_pos;
+        out_buffers.positions.data[gi] = pos;
         out_buffers.velocities.data[gi] = vel;
     }
 }

@@ -21,9 +21,6 @@ private:
     gfx::Device gfx;
     Renderer renderer;
 
-    // gfx::Buffer *in_buf{nullptr}, *out_buf{nullptr};
-    // gfx::Buffer b1, b2;
-
     struct FrameBuffers {
         gfx::Buffer position_buffer;
         gfx::Buffer predicted_position_buffer;
@@ -33,7 +30,8 @@ private:
 
     std::array<FrameBuffers, gfx::FRAME_COUNT> frame_buffers;
 
-    ComputePipeline comp_pipeline;
+    ComputePipeline update_pos_pipeline;
+    ComputePipeline boundaries_pipeline;
 
     gfx::GPUMesh circle_mesh;
     void SetInitialData();

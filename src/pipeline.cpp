@@ -86,7 +86,7 @@ void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
-void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
+void ComputePipeline::Init(const gfx::CoreCtx& ctx, const char* shader_path) {
     desc_pool.Init(ctx,
                    {{
                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -125,8 +125,8 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx) {
                                nullptr);
     }
 
-    auto shader = vk::util::LoadShaderModule(
-        ctx, Platform::Info::ResourcePath("shaders/compiled/update_pos.comp.spv").c_str());
+    auto shader =
+        vk::util::LoadShaderModule(ctx, Platform::Info::ResourcePath(shader_path).c_str());
 
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,

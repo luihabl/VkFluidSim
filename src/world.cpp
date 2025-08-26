@@ -111,7 +111,6 @@ void World::Init(Platform& platform) {
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
-    comp_pipeline.Init(gfx.GetCoreCtx());
 
     SetBox(17, 9);
 
@@ -123,16 +122,6 @@ void World::Init(Platform& platform) {
             .density_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
         };
     }
-
-    comp_pipeline.SetUniformData({
-        .g = 0.0f,
-        .mass = 1.0f,
-        .damping_factor = 0.05f,
-        .target_density = 10.0f,
-        .pressure_multiplier = 500.0f,
-        .smoothing_radius = 0.35f,
-        .box = box,
-    });
 
     std::vector<BufferUniformData> buffer_uniform_data(gfx::FRAME_COUNT);
     for (int i = 0; i < gfx::FRAME_COUNT; i++) {
@@ -148,7 +137,26 @@ void World::Init(Platform& platform) {
         };
     }
 
-    comp_pipeline.SetBuffers(buffer_uniform_data);
+    std::vector<BufferUniformData> reversed_buffer_uniform_data(buffer_uniform_data.rbegin(),
+                                                                buffer_uniform_data.rend());
+
+    auto global_uniforms = GlobalUniformData{
+        .g = 0.0f,
+        .mass = 1.0f,
+        .damping_factor = 0.05f,
+        .target_density = 10.0f,
+        .pressure_multiplier = 500.0f,
+        .smoothing_radius = 0.35f,
+        .box = box,
+    };
+
+    update_pos_pipeline.Init(gfx.GetCoreCtx(), "shaders/compiled/update_pos.comp.spv");
+    update_pos_pipeline.SetBuffers(buffer_uniform_data);
+    update_pos_pipeline.SetUniformData(global_uniforms);
+
+    boundaries_pipeline.Init(gfx.GetCoreCtx(), "shaders/compiled/boundaries.comp.spv");
+    boundaries_pipeline.SetBuffers(reversed_buffer_uniform_data);
+    boundaries_pipeline.SetUniformData(global_uniforms);
 
     gfx::CPUMesh mesh;
     DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
@@ -198,21 +206,25 @@ void World::HandleEvent(Platform& platform, const SDL_Event& e) {
     }
 }
 
-void World::Update(Platform& platform) {
-    auto cmd = gfx.BeginFrame();
+void ComputeToComputePipelineBarrier(VkCommandBuffer cmd) {
+    auto mem_barrier = VkMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+    };
 
-    auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
-                         -1.0f, 1.0f);
+    auto dep_info = VkDependencyInfo{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &mem_barrier,
+        .memoryBarrierCount = 1,
+    };
 
-    tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));
+    vkCmdPipelineBarrier2(cmd, &dep_info);
+}
 
-    comp_pipeline.Compute(cmd, gfx,
-                          {
-                              .time = Platform::Info::GetTime(),
-                              .dt = 1 / 120.f,
-                              .n_particles = (uint32_t)n_particles,
-                          });
-
+void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd) {
     auto mem_barrier = VkMemoryBarrier2{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -225,10 +237,30 @@ void World::Update(Platform& platform) {
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
         .pMemoryBarriers = &mem_barrier,
         .memoryBarrierCount = 1,
-
     };
 
     vkCmdPipelineBarrier2(cmd, &dep_info);
+}
+
+void World::Update(Platform& platform) {
+    auto cmd = gfx.BeginFrame();
+
+    auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
+                         -1.0f, 1.0f);
+
+    tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));
+
+    auto compute_constants = ComputePushConstants{
+        .time = Platform::Info::GetTime(),
+        .dt = 1 / 120.f,
+        .n_particles = (uint32_t)n_particles,
+    };
+
+    update_pos_pipeline.Compute(cmd, gfx, compute_constants);
+    ComputeToComputePipelineBarrier(cmd);
+    boundaries_pipeline.Compute(cmd, gfx, compute_constants);
+
+    ComputeToGraphicsPipelineBarrier(cmd);
 
     auto draw_push_constants = DrawPushConstants{
         .matrix = tr,
@@ -252,7 +284,8 @@ void World::Clear() {
         frame.density_buffer.Destroy();
     }
 
-    comp_pipeline.Clear(gfx.GetCoreCtx());
+    update_pos_pipeline.Clear(gfx.GetCoreCtx());
+    boundaries_pipeline.Clear(gfx.GetCoreCtx());
     gfx::DestroyMesh(gfx, circle_mesh);
     renderer.Clear(gfx);
     gfx.Clear();

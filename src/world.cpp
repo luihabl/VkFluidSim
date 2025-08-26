@@ -142,11 +142,13 @@ void World::Init(Platform& platform) {
         .box = box,
     };
 
-    update_pos_pipeline.Init(gfx.GetCoreCtx(), "shaders/compiled/update_pos.comp.spv");
-    update_pos_pipeline.SetUniformData(global_uniforms);
+    global_desc_manager.Init(gfx.GetCoreCtx());
+    global_desc_manager.SetUniformData(global_uniforms);
 
-    boundaries_pipeline.Init(gfx.GetCoreCtx(), "shaders/compiled/boundaries.comp.spv");
-    boundaries_pipeline.SetUniformData(global_uniforms);
+    update_pos_pipeline.Init(gfx.GetCoreCtx(), global_desc_manager,
+                             "shaders/compiled/update_pos.comp.spv");
+    boundaries_pipeline.Init(gfx.GetCoreCtx(), global_desc_manager,
+                             "shaders/compiled/boundaries.comp.spv");
 
     gfx::CPUMesh mesh;
     DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
@@ -218,9 +220,9 @@ void ComputeToComputePipelineBarrier(VkCommandBuffer cmd) {
     auto mem_barrier = VkMemoryBarrier2{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        // .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
         .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+        // .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
     };
 
     auto dep_info = VkDependencyInfo{
@@ -268,6 +270,7 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         update_pos_pipeline.Compute(cmd, gfx, compute_constants);
         ComputeToComputePipelineBarrier(cmd);
         boundaries_pipeline.Compute(cmd, gfx, compute_constants);
+        // TODO: write the others pipelines
 
         if (i < iterations - 1)
             ComputeToComputePipelineBarrier(cmd);
@@ -312,6 +315,7 @@ void World::Clear() {
         frame.density_buffer.Destroy();
     }
 
+    global_desc_manager.Clear(gfx.GetCoreCtx());
     update_pos_pipeline.Clear(gfx.GetCoreCtx());
     boundaries_pipeline.Clear(gfx.GetCoreCtx());
     gfx::DestroyMesh(gfx, circle_mesh);

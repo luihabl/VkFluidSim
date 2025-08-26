@@ -37,6 +37,7 @@ private:
 
     std::array<FrameBuffers, gfx::FRAME_COUNT> frame_buffers;
 
+    DescriptorManager global_desc_manager;
     ComputePipeline update_pos_pipeline;
     ComputePipeline boundaries_pipeline;
 

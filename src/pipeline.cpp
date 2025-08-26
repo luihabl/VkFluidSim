@@ -85,7 +85,7 @@ void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
-void ComputePipeline::Init(const gfx::CoreCtx& ctx, const char* shader_path) {
+void DescriptorManager::Init(const gfx::CoreCtx& ctx) {
     desc_pool.Init(ctx,
                    {{
                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -107,6 +107,23 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const char* shader_path) {
     };
 
     vkUpdateDescriptorSets(ctx.device, write_desc_sets.size(), write_desc_sets.data(), 0, nullptr);
+}
+
+void DescriptorManager::Clear(const gfx::CoreCtx& ctx) {
+    global_constants_ubo.Destroy();
+    vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
+    desc_pool.Clear(ctx);
+}
+
+void DescriptorManager::SetUniformData(const GlobalUniformData& data) {
+    uniform_constant_data = data;
+    memcpy(global_constants_ubo.Map(), &uniform_constant_data, sizeof(GlobalUniformData));
+}
+
+void ComputePipeline::Init(const gfx::CoreCtx& ctx,
+                           const DescriptorManager& dm,
+                           const char* shader_path) {
+    desc_manager = &dm;
 
     auto shader =
         vk::util::LoadShaderModule(ctx, Platform::Info::ResourcePath(shader_path).c_str());
@@ -117,31 +134,20 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const char* shader_path) {
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
     };
 
-    layout = vk::util::CreatePipelineLayout(ctx, {{desc_layout}}, {{push_constant_range}});
+    layout =
+        vk::util::CreatePipelineLayout(ctx, {{desc_manager->desc_layout}}, {{push_constant_range}});
     pipeline = vk::util::BuildComputePipeline(ctx.device, layout, shader);
 
     vkDestroyShaderModule(ctx.device, shader, nullptr);
-}
-
-void ComputePipeline::SetUniformData(const GlobalUniformData& data) {
-    uniform_constant_data = data;
-    should_update = true;
-}
-
-void ComputePipeline::UpdateUniformBuffers() {
-    memcpy(global_constants_ubo.Map(), &uniform_constant_data, sizeof(GlobalUniformData));
 }
 
 void ComputePipeline::Compute(VkCommandBuffer cmd,
                               gfx::Device& gfx,
                               const ComputePushConstants& push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-    if (should_update) {
-        UpdateUniformBuffers();
-        should_update = false;
-    }
 
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &desc_set, 0, 0);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
+                            &desc_manager->desc_set, 0, 0);
 
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants),
                        &push_constants);
@@ -151,9 +157,6 @@ void ComputePipeline::Compute(VkCommandBuffer cmd,
 }
 
 void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {
-    global_constants_ubo.Destroy();
-    vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
-    desc_pool.Clear(ctx);
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 

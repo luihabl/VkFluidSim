@@ -50,42 +50,32 @@ private:
     VkPipelineLayout layout;
 };
 
-class ComputePipeline {
+class DescriptorManager {
 public:
-    void Init(const gfx::CoreCtx& ctx, const char* shader_path);
+    void Init(const gfx::CoreCtx& ctx);
+    void Clear(const gfx::CoreCtx& ctx);
+
     void SetUniformData(const GlobalUniformData& data);
 
+    gfx::DescriptorPoolAlloc desc_pool;
+    VkDescriptorSetLayout desc_layout;
+    VkDescriptorSet desc_set;
+    gfx::Buffer global_constants_ubo;
+    GlobalUniformData uniform_constant_data;
+};
+
+class ComputePipeline {
+public:
+    void Init(const gfx::CoreCtx& ctx,
+              const DescriptorManager& desc_manager,
+              const char* shader_path);
     void Compute(VkCommandBuffer cmd, gfx::Device& gfx, const ComputePushConstants& push_constants);
     void Clear(const gfx::CoreCtx& ctx);
 
 private:
+    const DescriptorManager* desc_manager = nullptr;
     VkPipeline pipeline;
     VkPipelineLayout layout;
-
-    void UpdateUniformBuffers();
-
-    // Descriptor sets
-    gfx::DescriptorPoolAlloc desc_pool;
-    VkDescriptorSetLayout desc_layout;
-
-    VkDescriptorSet desc_set;
-    gfx::Buffer global_constants_ubo;
-    bool should_update = false;
-
-    GlobalUniformData uniform_constant_data;
-
-    // struct FrameData {
-    //     VkDescriptorSet desc_set;
-    //     gfx::Buffer global_constants_ubo;
-    //     gfx::Buffer buffers_ubo;
-    //     bool should_update = false;
-
-    //     GlobalUniformData uniform_constant_data;
-    //     BufferUniformData buffer_uniform_data;
-    // };
-
-    // std::array<FrameData, gfx::FRAME_COUNT> frame_data;
-    // uint32_t current_frame{0};
 };
 
 }  // namespace vfs

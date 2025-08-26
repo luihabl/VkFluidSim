@@ -36,17 +36,17 @@ vec2 moveParticle(vec2 pos, vec2 vel) {
 }
 
 void main() {
-    uint gi  = gl_GlobalInvocationID.x;
+    uint id = gl_GlobalInvocationID.x;
+    if(id >= pc.n_particles)
+        return;
     
-    if(gi < pc.n_particles) {
-        vec2 pos = pc.positions.data[gi];
-        vec2 vel = pc.velocities.data[gi];
+    vec2 pos = pc.positions.data[id];
+    vec2 vel = pc.velocities.data[id];
 
 
-        vec2 new_pos = moveParticle(pos, vel);
-        // processBoundaries(new_pos, vel);
+    vec2 new_pos = moveParticle(pos, vel);
+    // processBoundaries(new_pos, vel);
 
-        pc.positions.data[gi] = new_pos;
-        pc.velocities.data[gi] = vel;
-    }
+    pc.positions.data[id] = new_pos;
+    pc.velocities.data[id] = vel;
 }

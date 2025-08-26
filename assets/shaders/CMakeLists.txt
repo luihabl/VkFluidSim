@@ -5,7 +5,6 @@ set(SHADER_FILES
     gfx/sprite.frag
     gfx/sprite.vert
     sim/update_pos.comp
-    sim/boundaries.comp
 )
 
 set(SHADER_COMMON

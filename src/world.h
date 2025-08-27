@@ -39,7 +39,7 @@ private:
 
     DescriptorManager global_desc_manager;
     ComputePipeline update_pos_pipeline;
-    ComputePipeline boundaries_pipeline;
+    // ComputePipeline boundaries_pipeline;
 
     gfx::GPUMesh circle_mesh;
     void SetInitialData();

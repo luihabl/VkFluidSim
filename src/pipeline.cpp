@@ -120,22 +120,25 @@ void DescriptorManager::SetUniformData(const GlobalUniformData& data) {
     memcpy(global_constants_ubo.Map(), &uniform_constant_data, sizeof(GlobalUniformData));
 }
 
-void ComputePipeline::Init(const gfx::CoreCtx& ctx,
-                           const DescriptorManager& dm,
-                           const char* shader_path) {
-    desc_manager = &dm;
+void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) {
+    config = input_config;
 
-    auto shader =
-        vk::util::LoadShaderModule(ctx, Platform::Info::ResourcePath(shader_path).c_str());
+    auto shader = vk::util::LoadShaderModule(
+        ctx, Platform::Info::ResourcePath(config.shader_path.c_str()).c_str());
 
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,
-        .size = sizeof(ComputePushConstants),
+        .size = config.push_const_size,
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
     };
 
-    layout =
-        vk::util::CreatePipelineLayout(ctx, {{desc_manager->desc_layout}}, {{push_constant_range}});
+    if (config.desc_manager) {
+        layout = vk::util::CreatePipelineLayout(ctx, {{config.desc_manager->desc_layout}},
+                                                {{push_constant_range}});
+    } else {
+        layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
+    }
+
     pipeline = vk::util::BuildComputePipeline(ctx.device, layout, shader);
 
     vkDestroyShaderModule(ctx.device, shader, nullptr);
@@ -143,17 +146,20 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx,
 
 void ComputePipeline::Compute(VkCommandBuffer cmd,
                               gfx::Device& gfx,
-                              const ComputePushConstants& push_constants) {
+                              glm::ivec3 group_count,
+                              void* push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
-                            &desc_manager->desc_set, 0, 0);
+    if (config.desc_manager) {
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
+                                &config.desc_manager->desc_set, 0, 0);
+    }
 
-    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants),
-                       &push_constants);
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, config.push_const_size,
+                       push_constants);
 
-    gfx::u32 sz = push_constants.n_particles / 64 + 1;
-    vkCmdDispatch(cmd, sz, 1, 1);
+    // gfx::u32 sz = push_constants.n_particles / 64 + 1;
+    vkCmdDispatch(cmd, group_count.x, group_count.y, group_count.z);
 }
 
 void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {

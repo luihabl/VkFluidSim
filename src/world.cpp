@@ -145,10 +145,17 @@ void World::Init(Platform& platform) {
     global_desc_manager.Init(gfx.GetCoreCtx());
     global_desc_manager.SetUniformData(global_uniforms);
 
-    update_pos_pipeline.Init(gfx.GetCoreCtx(), global_desc_manager,
-                             "shaders/compiled/update_pos.comp.spv");
-    boundaries_pipeline.Init(gfx.GetCoreCtx(), global_desc_manager,
-                             "shaders/compiled/boundaries.comp.spv");
+    update_pos_pipeline.Init(gfx.GetCoreCtx(),
+                             {
+                                 .desc_manager = &global_desc_manager,
+                                 .shader_path = "shaders/compiled/update_pos.comp.spv",
+                                 .push_const_size = sizeof(ComputePushConstants),
+                             });
+
+    // boundaries_pipeline.Init(gfx.GetCoreCtx(),
+    //                          {.desc_manager = &global_desc_manager,
+    //                           .shader_path = "shaders/compiled/update_pos.comp.spv",
+    //                           .push_const_size = sizeof(ComputePushConstants)});
 
     gfx::CPUMesh mesh;
     DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
@@ -253,7 +260,8 @@ void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd) {
 }
 
 void World::RunSimulationStep(VkCommandBuffer cmd) {
-    constexpr int iterations = 3;
+    constexpr int iterations = 1;
+    auto group_count = glm::ivec3{n_particles / 64 + 1, 1, 1};
 
     auto compute_constants = ComputePushConstants{
         .time = Platform::Info::GetTime(),
@@ -261,15 +269,14 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         .n_particles = (uint32_t)n_particles,
 
         .positions = frame_buffers[current_frame].position_buffer_addr,
-        .predicted_positions = frame_buffers[current_frame].predicted_position_buffer_addr,
         .velocities = frame_buffers[current_frame].velocity_buffer_addr,
         .densities = frame_buffers[current_frame].density_buffer_addr,
     };
 
     for (int i = 0; i < iterations; i++) {
-        update_pos_pipeline.Compute(cmd, gfx, compute_constants);
-        ComputeToComputePipelineBarrier(cmd);
-        boundaries_pipeline.Compute(cmd, gfx, compute_constants);
+        update_pos_pipeline.Compute(cmd, gfx, group_count, &compute_constants);
+        // ComputeToComputePipelineBarrier(cmd);
+        // boundaries_pipeline.Compute(cmd, gfx, glm::ivec3(), &compute_constants);
         // TODO: write the others pipelines
 
         if (i < iterations - 1)
@@ -317,7 +324,7 @@ void World::Clear() {
 
     global_desc_manager.Clear(gfx.GetCoreCtx());
     update_pos_pipeline.Clear(gfx.GetCoreCtx());
-    boundaries_pipeline.Clear(gfx.GetCoreCtx());
+    // boundaries_pipeline.Clear(gfx.GetCoreCtx());
     gfx::DestroyMesh(gfx, circle_mesh);
     renderer.Clear(gfx);
     gfx.Clear();

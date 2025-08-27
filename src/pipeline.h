@@ -24,7 +24,6 @@ struct ComputePushConstants {
     float dt;
     unsigned n_particles;
     VkDeviceAddress positions;
-    VkDeviceAddress predicted_positions;
     VkDeviceAddress velocities;
     VkDeviceAddress densities;
 };
@@ -66,14 +65,21 @@ public:
 
 class ComputePipeline {
 public:
-    void Init(const gfx::CoreCtx& ctx,
-              const DescriptorManager& desc_manager,
-              const char* shader_path);
-    void Compute(VkCommandBuffer cmd, gfx::Device& gfx, const ComputePushConstants& push_constants);
+    struct Config {
+        uint32_t push_const_size;
+        DescriptorManager* desc_manager;
+        std::string shader_path;
+    };
+
+    void Init(const gfx::CoreCtx& ctx, const Config& config);
+    void Compute(VkCommandBuffer cmd,
+                 gfx::Device& gfx,
+                 glm::ivec3 group_count,
+                 void* push_constants = nullptr);
     void Clear(const gfx::CoreCtx& ctx);
 
 private:
-    const DescriptorManager* desc_manager = nullptr;
+    Config config;
     VkPipeline pipeline;
     VkPipelineLayout layout;
 };

@@ -18,6 +18,9 @@ set(SHADER_FILES
     sort/sort_calc_counts.comp
     sort/sort_scatter.comp
     sort/sort_copy_back.comp
+
+    offsets/offsets_init.comp
+    offsets/offsets_calc.comp
 )
 
 set(SHADER_COMMON

@@ -38,7 +38,7 @@ void GPUScan::Clear(const gfx::CoreCtx& ctx) {
     }
 }
 
-void GPUScan::Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, gfx::Buffer elements) {
+void GPUScan::Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, const gfx::Buffer& elements) {
     const u32 threads_per_group = 256;
     const u32 count = elements.size / sizeof(u32);
     int num_groups = (int)std::ceil((float)count / 2.0f / (float)threads_per_group);
@@ -97,8 +97,8 @@ void GPUCountSort::Clear(const gfx::CoreCtx& ctx) {
 
 void GPUCountSort::Run(VkCommandBuffer cmd,
                        const gfx::CoreCtx& ctx,
-                       gfx::Buffer items,
-                       gfx::Buffer keys,
+                       const gfx::Buffer& items,
+                       const gfx::Buffer& keys,
                        u32 max_value) {
     u32 item_count = items.size / (u32)sizeof(u32);
 
@@ -118,12 +118,53 @@ void GPUCountSort::Run(VkCommandBuffer cmd,
     u32 n_groups = item_count / 256 + 1;
 
     clear_counts_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    ComputeToComputePipelineBarrier(cmd);
     count_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    ComputeToComputePipelineBarrier(cmd);
 
     gpu_scan.Run(cmd, ctx, counts_buffer);
+    ComputeToComputePipelineBarrier(cmd);
 
     scatter_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    ComputeToComputePipelineBarrier(cmd);
+
     copy_back_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    ComputeToComputePipelineBarrier(cmd);
+}
+
+void SpatialOffset::Init(const gfx::CoreCtx& ctx) {
+    offset_init_pipeline.Init(ctx, {.shader_path = "shaders/compiled/offsets_init.comp.spv",
+                                    .push_const_size = sizeof(PushConstants)});
+    offset_calc_pipeline.Init(ctx, {.shader_path = "shaders/compiled/offsets_calc.comp.spv",
+                                    .push_const_size = sizeof(PushConstants)});
+}
+
+void SpatialOffset::Clear(const gfx::CoreCtx& ctx) {
+    offset_init_pipeline.Clear(ctx);
+    offset_calc_pipeline.Clear(ctx);
+}
+
+void SpatialOffset::Run(VkCommandBuffer cmd,
+                        const gfx::CoreCtx& ctx,
+                        bool init,
+                        const gfx::Buffer& sorted_keys,
+                        const gfx::Buffer& offsets) {
+    u32 num_inputs = sorted_keys.size / (u32)sizeof(PushConstants);
+
+    auto push_consts = PushConstants{
+        .sorted_keys = vk::util::GetBufferAddress(ctx.device, sorted_keys),
+        .offsets = vk::util::GetBufferAddress(ctx.device, offsets),
+        .num_inputs = num_inputs,
+    };
+
+    u32 n_groups = num_inputs / 256 + 1;
+
+    if (init) {
+        offset_init_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+        ComputeToComputePipelineBarrier(cmd);
+    }
+
+    offset_calc_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
 }
 
 }  // namespace vfs

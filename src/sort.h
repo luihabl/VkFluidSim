@@ -15,7 +15,7 @@ public:
     void Init(const gfx::CoreCtx& ctx);
     void Clear(const gfx::CoreCtx& ctx);
 
-    void Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, gfx::Buffer elements);
+    void Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, const gfx::Buffer& elements);
 
 private:
     struct PushConstants {
@@ -36,8 +36,8 @@ public:
 
     void Run(VkCommandBuffer cmd,
              const gfx::CoreCtx& ctx,
-             gfx::Buffer items,
-             gfx::Buffer keys,
+             const gfx::Buffer& items,
+             const gfx::Buffer& keys,
              u32 max_value);
 
 private:
@@ -60,6 +60,27 @@ private:
     gfx::Buffer sorted_items_buffer;
     gfx::Buffer sorted_values_buffer;
     gfx::Buffer counts_buffer;
+};
+
+class SpatialOffset {
+public:
+    void Init(const gfx::CoreCtx& ctx);
+    void Clear(const gfx::CoreCtx& ctx);
+    void Run(VkCommandBuffer cmd,
+             const gfx::CoreCtx& ctx,
+             bool init,
+             const gfx::Buffer& sorted_keys,
+             const gfx::Buffer& offsets);
+
+private:
+    struct PushConstants {
+        VkDeviceAddress sorted_keys;
+        VkDeviceAddress offsets;
+        u32 num_inputs;
+    };
+
+    ComputePipeline offset_init_pipeline;
+    ComputePipeline offset_calc_pipeline;
 };
 
 }  // namespace vfs

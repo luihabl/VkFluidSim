@@ -69,6 +69,7 @@ src/platform.cpp
 src/world.cpp
 src/renderer.cpp
 src/pipeline.cpp
+src/sort.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

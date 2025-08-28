@@ -144,10 +144,7 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) 
     vkDestroyShaderModule(ctx.device, shader, nullptr);
 }
 
-void ComputePipeline::Compute(VkCommandBuffer cmd,
-                              gfx::Device& gfx,
-                              glm::ivec3 group_count,
-                              void* push_constants) {
+void ComputePipeline::Compute(VkCommandBuffer cmd, glm::ivec3 group_count, void* push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
     if (config.desc_manager) {
@@ -166,4 +163,38 @@ void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
+void ComputeToComputePipelineBarrier(VkCommandBuffer cmd) {
+    auto mem_barrier = VkMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        // .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        // .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+    };
+
+    auto dep_info = VkDependencyInfo{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &mem_barrier,
+        .memoryBarrierCount = 1,
+    };
+
+    vkCmdPipelineBarrier2(cmd, &dep_info);
+}
+void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd) {
+    auto mem_barrier = VkMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+    };
+
+    auto dep_info = VkDependencyInfo{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &mem_barrier,
+        .memoryBarrierCount = 1,
+    };
+
+    vkCmdPipelineBarrier2(cmd, &dep_info);
+}
 }  // namespace vfs

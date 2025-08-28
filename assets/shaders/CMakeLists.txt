@@ -13,6 +13,11 @@ set(SHADER_FILES
 
     scan/scan_block.comp
     scan/scan_combine.comp
+
+    sort/sort_clear_counts.comp
+    sort/sort_calc_counts.comp
+    sort/sort_scatter.comp
+    sort/sort_copy_back.comp
 )
 
 set(SHADER_COMMON

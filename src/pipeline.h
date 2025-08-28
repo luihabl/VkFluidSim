@@ -72,10 +72,7 @@ public:
     };
 
     void Init(const gfx::CoreCtx& ctx, const Config& config);
-    void Compute(VkCommandBuffer cmd,
-                 gfx::Device& gfx,
-                 glm::ivec3 group_count,
-                 void* push_constants = nullptr);
+    void Compute(VkCommandBuffer cmd, glm::ivec3 group_count, void* push_constants = nullptr);
     void Clear(const gfx::CoreCtx& ctx);
 
 private:
@@ -83,5 +80,8 @@ private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
 };
+
+void ComputeToComputePipelineBarrier(VkCommandBuffer cmd);
+void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd);
 
 }  // namespace vfs

@@ -5,6 +5,13 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
+using f32 = float;
+using f64 = double;
+using i32 = int32_t;
+using i64 = int64_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+
 #define VK_CHECK(x)                                                                       \
     do {                                                                                  \
         VkResult err = x;                                                                 \
@@ -17,13 +24,6 @@
     } while (0)
 
 namespace gfx {
-
-using f32 = float;
-using f64 = double;
-using i32 = int32_t;
-using i64 = int64_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
 
 constexpr u64 ONE_SEC_NS = 1000000000;
 constexpr u32 FRAME_COUNT = 2;
@@ -46,11 +46,11 @@ struct Image {
 };
 
 struct Buffer {
-    VkBuffer buffer;
-    VmaAllocation alloc;
+    VkBuffer buffer{nullptr};
+    VmaAllocation alloc{nullptr};
     void* mapped{nullptr};
-    VmaAllocator allocator;
-    VkDescriptorBufferInfo desc_info;
+    VmaAllocator allocator{nullptr};
+    VkDescriptorBufferInfo desc_info{0};
     u32 size{0};
 
     void* GetMapped();

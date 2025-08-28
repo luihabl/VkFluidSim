@@ -61,8 +61,10 @@ void Buffer::SetDescriptorInfo(VkDeviceSize size, VkDeviceSize offset) {
 }
 
 void Buffer::Destroy() {
-    Unmap();
-    vmaDestroyBuffer(allocator, buffer, alloc);
+    if (buffer) {
+        Unmap();
+        vmaDestroyBuffer(allocator, buffer, alloc);
+    }
 }
 
 }  // namespace gfx

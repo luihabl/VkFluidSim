@@ -7,7 +7,6 @@
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "gfx/mesh.h"
-#include "gfx/vk_util.h"
 #include "pipeline.h"
 #include "platform.h"
 
@@ -114,25 +113,38 @@ void World::Init(Platform& platform) {
 
     SetBox(17, 9);
 
+    InitSimulationPipelines();
+
+    gfx::CPUMesh mesh;
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
+    circle_mesh = gfx::UploadMesh(gfx, mesh);
+
+    SetInitialData();
+
+    sort.Init(gfx.GetCoreCtx());
+    offset.Init(gfx.GetCoreCtx());
+}
+
+void World::InitSimulationPipelines() {
     for (auto& bufs : frame_buffers) {
         bufs = {
             .position_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
-            .predicted_position_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
             .velocity_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
             .density_buffer = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles),
         };
-
-        bufs.position_buffer_addr =
-            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.position_buffer);
-        bufs.predicted_position_buffer_addr =
-            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.predicted_position_buffer);
-        bufs.velocity_buffer_addr =
-            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.velocity_buffer);
-        bufs.density_buffer_addr =
-            vk::util::GetBufferAddress(gfx.GetCoreCtx().device, bufs.density_buffer);
     }
 
-    auto global_uniforms = GlobalUniformData{
+    predicted_positions = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
+
+    spatial_keys = CreateDataBuffer<u32>(gfx.GetCoreCtx(), n_particles);
+    spatial_indices = CreateDataBuffer<u32>(gfx.GetCoreCtx(), n_particles);
+    spatial_offsets = CreateDataBuffer<u32>(gfx.GetCoreCtx(), n_particles);
+
+    sort_target_position = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
+    sort_target_pred_position = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
+    sort_target_velocity = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
+
+    auto global_uniforms = SimulationUniformData{
         .g = 0.0f,
         .mass = 1.0f,
         .damping_factor = 0.05f,
@@ -140,28 +152,28 @@ void World::Init(Platform& platform) {
         .pressure_multiplier = 500.0f,
         .smoothing_radius = 0.35f,
         .box = box,
+
+        .predicted_positions = predicted_positions.device_addr,
+
+        .spatial_keys = spatial_keys.device_addr,
+        .spatial_offsets = spatial_offsets.device_addr,
+        .sorted_indices = spatial_indices.device_addr,
+
+        .sort_target_positions = sort_target_position.device_addr,
+        .sort_target_pred_positions = sort_target_pred_position.device_addr,
+        .sort_target_velocities = sort_target_velocity.device_addr,
     };
 
-    global_desc_manager.Init(gfx.GetCoreCtx());
-    global_desc_manager.SetUniformData(global_uniforms);
+    global_desc_manager.Init(gfx.GetCoreCtx(), sizeof(SimulationUniformData));
+    global_desc_manager.SetUniformData(&global_uniforms);
 
-    update_pos_pipeline.Init(gfx.GetCoreCtx(),
-                             {
-                                 .desc_manager = &global_desc_manager,
-                                 .shader_path = "shaders/compiled/update_pos.comp.spv",
-                                 .push_const_size = sizeof(ComputePushConstants),
-                             });
-
-    // boundaries_pipeline.Init(gfx.GetCoreCtx(),
-    //                          {.desc_manager = &global_desc_manager,
-    //                           .shader_path = "shaders/compiled/update_pos.comp.spv",
-    //                           .push_const_size = sizeof(ComputePushConstants)});
-
-    gfx::CPUMesh mesh;
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
-    circle_mesh = gfx::UploadMesh(gfx, mesh);
-
-    SetInitialData();
+    simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
+    sim_pos = simulation_pipelines.Add("shaders/compiled/update_pos.comp.spv");
+    sim_ext_forces = simulation_pipelines.Add("shaders/compiled/update_external_forces.comp.spv");
+    sim_reorder_copyback =
+        simulation_pipelines.Add("shaders/compiled/update_reorder_copyback.comp.spv");
+    sim_reorder = simulation_pipelines.Add("shaders/compiled/update_reorder.comp.spv");
+    sim_spatial_hash = simulation_pipelines.Add("shaders/compiled/update_spatial_hash.comp.spv");
 }
 
 void World::SetBox(float w, float h) {
@@ -193,7 +205,6 @@ void World::SetInitialData() {
 
     for (auto& frame : frame_buffers) {
         SetDataVec(gfx, frame.position_buffer, initial_positions);
-        SetDataVec(gfx, frame.predicted_position_buffer, initial_positions);
         SetDataVec(gfx, frame.velocity_buffer, initial_velocities);
         SetDataVal(gfx, frame.density_buffer, glm::vec2(0.0f));
     }
@@ -217,67 +228,51 @@ void World::CopyBuffersToNextFrame(VkCommandBuffer cmd) {
     }
 
     CPY_BUFFER(position_buffer);
-    CPY_BUFFER(predicted_position_buffer);
     CPY_BUFFER(velocity_buffer);
     CPY_BUFFER(density_buffer);
 
 }  // namespace vfs
 
-void ComputeToComputePipelineBarrier(VkCommandBuffer cmd) {
-    auto mem_barrier = VkMemoryBarrier2{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        // .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        // .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
-    };
-
-    auto dep_info = VkDependencyInfo{
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pMemoryBarriers = &mem_barrier,
-        .memoryBarrierCount = 1,
-    };
-
-    vkCmdPipelineBarrier2(cmd, &dep_info);
-}
-
-void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd) {
-    auto mem_barrier = VkMemoryBarrier2{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
-    };
-
-    auto dep_info = VkDependencyInfo{
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pMemoryBarriers = &mem_barrier,
-        .memoryBarrierCount = 1,
-    };
-
-    vkCmdPipelineBarrier2(cmd, &dep_info);
-}
-
 void World::RunSimulationStep(VkCommandBuffer cmd) {
     constexpr int iterations = 1;
     auto group_count = glm::ivec3{n_particles / 64 + 1, 1, 1};
 
-    auto compute_constants = ComputePushConstants{
+    auto comp_consts = SimulationPushConstants{
         .time = Platform::Info::GetTime(),
         .dt = 1 / (120.f * iterations),
         .n_particles = (uint32_t)n_particles,
 
-        .positions = frame_buffers[current_frame].position_buffer_addr,
-        .velocities = frame_buffers[current_frame].velocity_buffer_addr,
-        .densities = frame_buffers[current_frame].density_buffer_addr,
+        .positions = frame_buffers[current_frame].position_buffer.device_addr,
+        .velocities = frame_buffers[current_frame].velocity_buffer.device_addr,
+        .densities = frame_buffers[current_frame].density_buffer.device_addr,
     };
 
+    auto n_groups = glm::ivec3(n_particles / 64 + 1, 1, 1);
+    simulation_pipelines.UpdatePushConstants(comp_consts);
+
     for (int i = 0; i < iterations; i++) {
-        update_pos_pipeline.Compute(cmd, gfx, group_count, &compute_constants);
-        // ComputeToComputePipelineBarrier(cmd);
-        // boundaries_pipeline.Compute(cmd, gfx, glm::ivec3(), &compute_constants);
-        // TODO: write the others pipelines
+        simulation_pipelines.Run(sim_ext_forces, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        // RunSpatial
+        simulation_pipelines.Run(sim_spatial_hash, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        sort.Run(cmd, gfx.GetCoreCtx(), spatial_indices, spatial_keys,
+                 spatial_keys.size / sizeof(u32) - 1);
+        ComputeToComputePipelineBarrier(cmd);
+
+        offset.Run(cmd, gfx.GetCoreCtx(), true, spatial_keys, spatial_offsets);
+        ComputeToComputePipelineBarrier(cmd);
+
+        simulation_pipelines.Run(sim_reorder, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        simulation_pipelines.Run(sim_reorder_copyback, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        simulation_pipelines.Run(sim_pos, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
 
         if (i < iterations - 1)
             ComputeToComputePipelineBarrier(cmd);
@@ -289,7 +284,6 @@ void World::Update(Platform& platform) {
 
     // Run compute step
     RunSimulationStep(cmd);
-
     ComputeToGraphicsPipelineBarrier(cmd);
 
     // NOTE: this is probably slow... rework this to avoid copy every frame
@@ -303,7 +297,7 @@ void World::Update(Platform& platform) {
 
     auto draw_push_constants = DrawPushConstants{
         .matrix = tr,
-        .positions = frame_buffers[current_frame].position_buffer_addr,
+        .positions = frame_buffers[current_frame].position_buffer.device_addr,
     };
 
     renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);
@@ -315,16 +309,28 @@ void World::Update(Platform& platform) {
 
 void World::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
+
+    predicted_positions.Destroy();
+
+    spatial_keys.Destroy();
+    spatial_indices.Destroy();
+    spatial_offsets.Destroy();
+
+    sort_target_position.Destroy();
+    sort_target_pred_position.Destroy();
+    sort_target_velocity.Destroy();
+
+    sort.Clear(gfx.GetCoreCtx());
+    offset.Clear(gfx.GetCoreCtx());
+
     for (auto& frame : frame_buffers) {
         frame.position_buffer.Destroy();
-        frame.predicted_position_buffer.Destroy();
         frame.velocity_buffer.Destroy();
         frame.density_buffer.Destroy();
     }
 
+    simulation_pipelines.Clear();
     global_desc_manager.Clear(gfx.GetCoreCtx());
-    update_pos_pipeline.Clear(gfx.GetCoreCtx());
-    // boundaries_pipeline.Clear(gfx.GetCoreCtx());
     gfx::DestroyMesh(gfx, circle_mesh);
     renderer.Clear(gfx);
     gfx.Clear();

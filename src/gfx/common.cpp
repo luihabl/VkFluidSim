@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "gfx/vk_util.h"
+
 namespace gfx {
 
 void* Buffer::GetMapped() {
@@ -48,6 +50,10 @@ Buffer Buffer::Create(const CoreCtx& ctx,
         .offset = 0,
         .range = VK_WHOLE_SIZE,
     };
+
+    if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+        buffer.device_addr = vk::util::GetBufferAddress(ctx.device, buffer);
+    }
 
     return buffer;
 }

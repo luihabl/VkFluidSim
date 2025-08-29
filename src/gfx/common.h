@@ -9,6 +9,8 @@ using f32 = float;
 using f64 = double;
 using i32 = int32_t;
 using i64 = int64_t;
+using u8 = uint8_t;
+using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 
@@ -51,6 +53,7 @@ struct Buffer {
     void* mapped{nullptr};
     VmaAllocator allocator{nullptr};
     VkDescriptorBufferInfo desc_info{0};
+    VkDeviceAddress device_addr{0};
     u32 size{0};
 
     void* GetMapped();

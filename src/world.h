@@ -6,6 +6,7 @@
 #include "pipeline.h"
 #include "platform.h"
 #include "renderer.h"
+#include "sort.h"
 
 namespace vfs {
 class World {
@@ -21,32 +22,66 @@ private:
     gfx::Device gfx;
     Renderer renderer;
 
+    struct SimulationUniformData {
+        float g = 0.0f;
+        float mass = 1.0f;
+        float damping_factor = 0.05f;
+        float target_density = 10.0f;
+        float pressure_multiplier = 500.0f;
+        float smoothing_radius = 0.35f;
+        glm::vec4 box = {0, 0, 1, 1};
+
+        VkDeviceAddress predicted_positions;
+
+        VkDeviceAddress spatial_keys;
+        VkDeviceAddress spatial_offsets;
+        VkDeviceAddress sorted_indices;
+
+        VkDeviceAddress sort_target_positions;
+        VkDeviceAddress sort_target_pred_positions;
+        VkDeviceAddress sort_target_velocities;
+    };
+
+    struct SimulationPushConstants {
+        float time;
+        float dt;
+        unsigned n_particles;
+        VkDeviceAddress positions;
+        VkDeviceAddress velocities;
+        VkDeviceAddress densities;
+    };
+
     struct FrameBuffers {
         gfx::Buffer position_buffer;
-        VkDeviceAddress position_buffer_addr;
-
-        gfx::Buffer predicted_position_buffer;
-        VkDeviceAddress predicted_position_buffer_addr;
-
         gfx::Buffer velocity_buffer;
-        VkDeviceAddress velocity_buffer_addr;
-
         gfx::Buffer density_buffer;
-        VkDeviceAddress density_buffer_addr;
     };
 
     std::array<FrameBuffers, gfx::FRAME_COUNT> frame_buffers;
 
     DescriptorManager global_desc_manager;
-    ComputePipeline update_pos_pipeline;
-    // ComputePipeline boundaries_pipeline;
+
+    ComputePipelineSet<SimulationPushConstants> simulation_pipelines;
+    u32 sim_pos;
+    u32 sim_ext_forces;
+    u32 sim_reorder;
+    u32 sim_spatial_hash;
+    u32 sim_reorder_copyback;
+
+    GPUCountSort sort;
+    SpatialOffset offset;
+
+    gfx::Buffer predicted_positions;
+
+    gfx::Buffer spatial_keys;
+    gfx::Buffer spatial_indices;
+    gfx::Buffer spatial_offsets;
+
+    gfx::Buffer sort_target_position;
+    gfx::Buffer sort_target_pred_position;
+    gfx::Buffer sort_target_velocity;
 
     gfx::GPUMesh circle_mesh;
-    void SetInitialData();
-    void CopyBuffersToNextFrame(VkCommandBuffer cmd);
-    void RunSimulationStep(VkCommandBuffer cmd);
-
-    void SetBox(float w, float h);
 
     glm::vec4 box;
     glm::vec4 cbox;
@@ -54,5 +89,11 @@ private:
     float spacing = 0.2f;
     float scale = 2e-2;
     int current_frame = 0;
+
+    void SetInitialData();
+    void CopyBuffersToNextFrame(VkCommandBuffer cmd);
+    void RunSimulationStep(VkCommandBuffer cmd);
+    void SetBox(float w, float h);
+    void InitSimulationPipelines();
 };
 }  // namespace vfs

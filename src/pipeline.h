@@ -9,25 +9,6 @@
 
 namespace vfs {
 
-struct GlobalUniformData {
-    float g = 0.0f;
-    float mass = 1.0f;
-    float damping_factor = 0.05f;
-    float target_density = 10.0f;
-    float pressure_multiplier = 500.0f;
-    float smoothing_radius = 0.35f;
-    glm::vec4 box = {0, 0, 1, 1};
-};
-
-struct ComputePushConstants {
-    float time;
-    float dt;
-    unsigned n_particles;
-    VkDeviceAddress positions;
-    VkDeviceAddress velocities;
-    VkDeviceAddress densities;
-};
-
 struct DrawPushConstants {
     glm::mat4 matrix;
     VkDeviceAddress positions;
@@ -51,16 +32,18 @@ private:
 
 class DescriptorManager {
 public:
-    void Init(const gfx::CoreCtx& ctx);
+    void Init(const gfx::CoreCtx& ctx, u32 ubo_size);
     void Clear(const gfx::CoreCtx& ctx);
 
-    void SetUniformData(const GlobalUniformData& data);
+    void SetUniformData(void* data);
 
     gfx::DescriptorPoolAlloc desc_pool;
     VkDescriptorSetLayout desc_layout;
     VkDescriptorSet desc_set;
     gfx::Buffer global_constants_ubo;
-    GlobalUniformData uniform_constant_data;
+
+    u32 size;
+    std::vector<u8> uniform_constant_data;
 };
 
 class ComputePipeline {
@@ -79,6 +62,50 @@ private:
     Config config;
     VkPipeline pipeline;
     VkPipelineLayout layout;
+};
+
+template <typename PushConstantType>
+class ComputePipelineSet {
+public:
+    void Init(const gfx::CoreCtx& context, DescriptorManager* desc_manager = nullptr) {
+        ctx = context;
+        descriptor_manager = desc_manager;
+    }
+
+    u32 Add(const std::string& shader_path) {
+        pipelines.push_back({});
+        pipelines.back().Init(ctx, {.push_const_size = sizeof(PushConstantType),
+                                    .desc_manager = descriptor_manager,
+                                    .shader_path = shader_path});
+        return pipelines.size() - 1;
+    }
+
+    ComputePipeline& Get(u32 id) { return pipelines.at(id); }
+
+    void Run(u32 id,
+             VkCommandBuffer cmd,
+             glm::ivec3 group_count,
+             PushConstantType* push_consts = nullptr) {
+        if (push_consts) {
+            Get(id).Compute(cmd, group_count, push_consts);
+        } else {
+            Get(id).Compute(cmd, group_count, &push_constants);
+        }
+    }
+
+    void Clear() {
+        for (auto& p : pipelines) {
+            p.Clear(ctx);
+        }
+    }
+
+    void UpdatePushConstants(const PushConstantType& pc) { push_constants = pc; }
+
+private:
+    DescriptorManager* descriptor_manager = nullptr;
+    PushConstantType push_constants;
+    gfx::CoreCtx ctx;
+    std::vector<ComputePipeline> pipelines;
 };
 
 void ComputeToComputePipelineBarrier(VkCommandBuffer cmd);

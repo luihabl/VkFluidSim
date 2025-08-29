@@ -85,7 +85,10 @@ void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
-void DescriptorManager::Init(const gfx::CoreCtx& ctx) {
+void DescriptorManager::Init(const gfx::CoreCtx& ctx, u32 ubo_size) {
+    size = ubo_size;
+    uniform_constant_data.resize(size);
+
     desc_pool.Init(ctx,
                    {{
                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -97,8 +100,7 @@ void DescriptorManager::Init(const gfx::CoreCtx& ctx) {
                       .Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                       .Build(ctx, VK_SHADER_STAGE_ALL);
 
-    global_constants_ubo =
-        gfx::Buffer::Create(ctx, sizeof(GlobalUniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    global_constants_ubo = gfx::Buffer::Create(ctx, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     desc_set = desc_pool.Alloc(ctx, desc_layout);
     std::vector<VkWriteDescriptorSet> write_desc_sets = {
@@ -115,9 +117,9 @@ void DescriptorManager::Clear(const gfx::CoreCtx& ctx) {
     desc_pool.Clear(ctx);
 }
 
-void DescriptorManager::SetUniformData(const GlobalUniformData& data) {
-    uniform_constant_data = data;
-    memcpy(global_constants_ubo.Map(), &uniform_constant_data, sizeof(GlobalUniformData));
+void DescriptorManager::SetUniformData(void* data) {
+    memcpy(uniform_constant_data.data(), data, size);
+    memcpy(global_constants_ubo.Map(), data, size);
 }
 
 void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) {
@@ -197,4 +199,5 @@ void ComputeToGraphicsPipelineBarrier(VkCommandBuffer cmd) {
 
     vkCmdPipelineBarrier2(cmd, &dep_info);
 }
+
 }  // namespace vfs

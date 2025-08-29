@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <glm/ext.hpp>
+#include <glm/ext/scalar_constants.hpp>
 #include <random>
 
 #include "gfx/common.h"
@@ -144,14 +145,24 @@ void World::InitSimulationPipelines() {
     sort_target_pred_position = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
     sort_target_velocity = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
 
+    const float smoothing_radius = 0.35f;
     auto global_uniforms = SimulationUniformData{
-        .g = 0.0f,
+        .gravity = 0.0f,
         .mass = 1.0f,
-        .damping_factor = 0.05f,
+        .damping_factor = 0.95f,
+        .smoothing_radius = smoothing_radius,
         .target_density = 10.0f,
         .pressure_multiplier = 500.0f,
-        .smoothing_radius = 0.35f,
+        .near_pressure_multiplier = 500.0f,
+        .viscosity_strenght = 500.0f,
+
         .box = box,
+
+        .poly6_scale = 4.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 8)),
+        .spiky_pow3_scale = 4.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
+        .spiky_pow2_scale = 6.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
+        .spiky_pow3_diff_scale = 30.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
+        .spiky_pow2_diff_scale = 12.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
 
         .predicted_positions = predicted_positions.device_addr,
 

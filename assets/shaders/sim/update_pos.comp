@@ -10,22 +10,22 @@ layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
 void ProcessBoundaries(inout vec2 p, inout vec2 v) {
     if(p.x < ubo.box.x){
         p.x = 2*ubo.box.x-p.x;
-        v.x = -v.x;
+        v.x = -v.x * ubo.damping_factor;
     }
 
     if(p.y < ubo.box.y){
         p.y = 2*ubo.box.y-p.y;
-        v.y  = -v.y;
+        v.y  = -v.y * ubo.damping_factor;
     }
 
    if(p.x > ubo.box.x + ubo.box.z){
         p.x = 2*(ubo.box.x + ubo.box.z) - p.x;
-        v.x = -v.x;
+        v.x = -v.x * ubo.damping_factor;
     }
 
     if(p.y > ubo.box.y + ubo.box.w){
         p.y = 2*(ubo.box.y + ubo.box.w) - p.y;
-        v.y = -v.y;
+        v.y = -v.y * ubo.damping_factor;
     }       
 }
 

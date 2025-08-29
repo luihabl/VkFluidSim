@@ -23,13 +23,22 @@ private:
     Renderer renderer;
 
     struct SimulationUniformData {
-        float g = 0.0f;
+        float gravity = 0.0f;
         float mass = 1.0f;
         float damping_factor = 0.05f;
+        float smoothing_radius = 0.35f;
         float target_density = 10.0f;
         float pressure_multiplier = 500.0f;
-        float smoothing_radius = 0.35f;
+        float near_pressure_multiplier = 500.0f;
+        float viscosity_strenght = 500.0f;
+
         glm::vec4 box = {0, 0, 1, 1};
+
+        float poly6_scale;
+        float spiky_pow3_scale;
+        float spiky_pow2_scale;
+        float spiky_pow3_diff_scale;
+        float spiky_pow2_diff_scale;
 
         VkDeviceAddress predicted_positions;
 

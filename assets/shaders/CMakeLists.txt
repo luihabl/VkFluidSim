@@ -10,6 +10,8 @@ set(SHADER_FILES
     sim/update_pos.comp
     sim/update_reorder.comp
     sim/update_reorder_copyback.comp
+    sim/update_density.comp
+    sim/update_viscosity.comp
 
     scan/scan_block.comp
     scan/scan_combine.comp
@@ -25,8 +27,9 @@ set(SHADER_FILES
 
 set(SHADER_COMMON
     sim/common.glsl
+    sim/spatial_hash.glsl
+    sim/kernels_2d.glsl
     scan/common.glsl
-    hash/spatial_hash.glsl
 )
 
 

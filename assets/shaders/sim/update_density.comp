@@ -1,0 +1,54 @@
+#version 450
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.glsl"
+#include "spatial_hash.glsl"
+#include "kernels_2d.glsl"
+
+vec2 CalculateDensity(vec2 pos) {
+    ivec2 origin_cell = GetCell2D(pos, ubo.smoothing_radius);
+    float sqr_radius = ubo.smoothing_radius * ubo.smoothing_radius;
+    float density = 0.0f;
+    float near_density = 0.0f;
+
+    for(int i = 0; i < 9; i++) {
+        uint hash = HashCell2D(origin_cell + offsets_2d[i]);
+        uint key = KeyFromHash(hash, pc.n_particles);
+        uint curr_index = ubo.spatial_offsets.data[key];
+
+        while(curr_index < pc.n_particles) {
+            uint neighbor_index = curr_index;
+            curr_index++;
+
+            uint neighbor_key = ubo.spatial_keys.data[neighbor_index];
+
+            if(neighbor_key != key)
+                break;
+
+            vec2 neighbor_pos = ubo.predicted_positions.data[neighbor_index];
+            vec2 offset_to_neighbor = neighbor_pos - pos;
+            float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
+
+            if(sqr_dst_to_neighbor > sqr_radius)
+                continue;
+
+            float dst = sqrt(sqr_dst_to_neighbor);
+            density += DensityKernel(dst, ubo.smoothing_radius);
+            near_density += NearDensityKernel(dst, ubo.smoothing_radius);
+        }
+    }
+
+    return vec2(density, near_density);
+}
+
+layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if(id >= pc.n_particles)
+        return;
+
+   vec2 pos = ubo.predicted_positions.data[id];
+   pc.densities.data[id] = CalculateDensity(pos);
+}

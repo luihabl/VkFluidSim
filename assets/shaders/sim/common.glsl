@@ -13,10 +13,19 @@ layout (binding = 0, scalar) uniform GlobalConstants {
     float gravity;
     float mass;
     float damping_factor;
+    float smoothing_radius;
     float target_density;
     float pressure_multiplier;
-    float smoothing_radius;    
+    float near_pressure_multiplier;
+    float viscosity_strenght;
+
     vec4 box;
+
+    float poly6_scale;
+    float spiky_pow3_scale;
+    float spiky_pow2_scale;
+    float spiky_pow3_diff_scale;
+    float spiky_pow2_diff_scale;
 
     BufferRefVec2 predicted_positions;
 

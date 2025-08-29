@@ -149,11 +149,11 @@ void SpatialOffset::Run(VkCommandBuffer cmd,
                         bool init,
                         const gfx::Buffer& sorted_keys,
                         const gfx::Buffer& offsets) {
-    u32 num_inputs = sorted_keys.size / (u32)sizeof(PushConstants);
+    u32 num_inputs = sorted_keys.size / (u32)sizeof(u32);
 
     auto push_consts = PushConstants{
-        .sorted_keys = vk::util::GetBufferAddress(ctx.device, sorted_keys),
-        .offsets = vk::util::GetBufferAddress(ctx.device, offsets),
+        .sorted_keys = sorted_keys.device_addr,
+        .offsets = offsets.device_addr,
         .num_inputs = num_inputs,
     };
 

@@ -13,7 +13,6 @@ void main() {
     if(id >= pc.n_particles)
         return;
 
-    uint index = id;
     ivec2 cell = GetCell2D(ubo.predicted_positions.data[id], ubo.smoothing_radius);
     uint hash = HashCell2D(cell);
     uint key = KeyFromHash(hash, pc.n_particles);

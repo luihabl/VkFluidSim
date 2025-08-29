@@ -11,6 +11,7 @@ set(SHADER_FILES
     sim/update_reorder.comp
     sim/update_reorder_copyback.comp
     sim/update_density.comp
+    sim/update_pressure_force.comp
     sim/update_viscosity.comp
 
     scan/scan_block.comp

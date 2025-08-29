@@ -1,5 +1,7 @@
 #include "vk_util.h"
 
+#include <filesystem>
+
 #include "gfx/common.h"
 
 namespace vk::util {
@@ -81,6 +83,10 @@ void CopyImage(VkCommandBuffer cmd,
 }
 
 VkShaderModule LoadShaderModule(const gfx::CoreCtx& ctx, const char* path) {
+    if (!std::filesystem::exists(path)) {
+        fmt::println("File does not exist: {}", path);
+    }
+
     std::ifstream file(path, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {

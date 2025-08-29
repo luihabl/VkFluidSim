@@ -21,7 +21,7 @@ vec2 CalculatePressureForce(uint id) {
     float density_near = pc.densities.data[id].y;
     float pressure = PressureFromDensity(density);
     float near_pressure = NearPressureFromDensity(density_near);
-    vec2 pressure_force = 0.0f;
+    vec2 pressure_force = vec2(0.0f);
 
     vec2 pos = ubo.predicted_positions.data[id];
     ivec2 origin_cell = GetCell2D(pos, ubo.smoothing_radius);

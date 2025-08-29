@@ -147,19 +147,19 @@ void World::InitSimulationPipelines() {
 
     const float smoothing_radius = 0.35f;
     auto global_uniforms = SimulationUniformData{
-        .gravity = 0.0f,
+        .gravity = -10.0f,
         .mass = 1.0f,
         .damping_factor = 0.95f,
         .smoothing_radius = smoothing_radius,
-        .target_density = 10.0f,
+        .target_density = 55.0f,
         .pressure_multiplier = 500.0f,
-        .near_pressure_multiplier = 500.0f,
-        .viscosity_strenght = 500.0f,
+        .near_pressure_multiplier = 5.0f,
+        .viscosity_strenght = 0.03f,
 
         .box = box,
 
         .poly6_scale = 4.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 8)),
-        .spiky_pow3_scale = 4.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
+        .spiky_pow3_scale = 10.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
         .spiky_pow2_scale = 6.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
         .spiky_pow3_diff_scale = 30.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
         .spiky_pow2_diff_scale = 12.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
@@ -179,12 +179,16 @@ void World::InitSimulationPipelines() {
     global_desc_manager.SetUniformData(&global_uniforms);
 
     simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
-    sim_pos = simulation_pipelines.Add("shaders/compiled/update_pos.comp.spv");
-    sim_ext_forces = simulation_pipelines.Add("shaders/compiled/update_external_forces.comp.spv");
-    sim_reorder_copyback =
-        simulation_pipelines.Add("shaders/compiled/update_reorder_copyback.comp.spv");
-    sim_reorder = simulation_pipelines.Add("shaders/compiled/update_reorder.comp.spv");
-    sim_spatial_hash = simulation_pipelines.Add("shaders/compiled/update_spatial_hash.comp.spv");
+
+    std::string prefix = "shaders/compiled/";
+    sim_pos = simulation_pipelines.Add(prefix + "update_pos.comp.spv");
+    sim_ext_forces = simulation_pipelines.Add(prefix + "update_external_forces.comp.spv");
+    sim_reorder_copyback = simulation_pipelines.Add(prefix + "update_reorder_copyback.comp.spv");
+    sim_reorder = simulation_pipelines.Add(prefix + "update_reorder.comp.spv");
+    sim_density = simulation_pipelines.Add(prefix + "update_density.comp.spv");
+    sim_pressure = simulation_pipelines.Add(prefix + "update_pressure_force.comp.spv");
+    sim_viscosity = simulation_pipelines.Add(prefix + "update_viscosity.comp.spv");
+    sim_spatial_hash = simulation_pipelines.Add(prefix + "update_spatial_hash.comp.spv");
 }
 
 void World::SetBox(float w, float h) {
@@ -199,7 +203,6 @@ void World::SetBox(float w, float h) {
 
 void World::SetInitialData() {
     std::vector<glm::vec2> initial_positions(n_particles);
-    std::vector<glm::vec2> initial_velocities(n_particles);
 
     std::random_device dev;
     std::mt19937 rng(dev());
@@ -211,12 +214,11 @@ void World::SetInitialData() {
         float x = box.x + r1 * box.z;
         float y = box.y + r2 * box.w;
         initial_positions[i] = glm::vec2{x, y};
-        initial_velocities[i] = glm::vec2{-1.0f + 2.0f * r1, -1.0f + 2.0f * r2};  // REMOVE
     }
 
     for (auto& frame : frame_buffers) {
         SetDataVec(gfx, frame.position_buffer, initial_positions);
-        SetDataVec(gfx, frame.velocity_buffer, initial_velocities);
+        SetDataVal(gfx, frame.velocity_buffer, glm::vec2(0.0f));
         SetDataVal(gfx, frame.density_buffer, glm::vec2(0.0f));
     }
 }
@@ -250,7 +252,7 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
 
     auto comp_consts = SimulationPushConstants{
         .time = Platform::Info::GetTime(),
-        .dt = 1 / (120.f * iterations),
+        .dt = 1.0f / (120.f * iterations),
         .n_particles = (uint32_t)n_particles,
 
         .positions = frame_buffers[current_frame].position_buffer.device_addr,
@@ -270,7 +272,7 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         ComputeToComputePipelineBarrier(cmd);
 
         sort.Run(cmd, gfx.GetCoreCtx(), spatial_indices, spatial_keys,
-                 spatial_keys.size / sizeof(u32) - 1);
+                 (spatial_keys.size / sizeof(u32)) - 1);
         ComputeToComputePipelineBarrier(cmd);
 
         offset.Run(cmd, gfx.GetCoreCtx(), true, spatial_keys, spatial_offsets);
@@ -280,6 +282,15 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         ComputeToComputePipelineBarrier(cmd);
 
         simulation_pipelines.Run(sim_reorder_copyback, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        simulation_pipelines.Run(sim_density, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        simulation_pipelines.Run(sim_pressure, cmd, n_groups);
+        ComputeToComputePipelineBarrier(cmd);
+
+        simulation_pipelines.Run(sim_viscosity, cmd, n_groups);
         ComputeToComputePipelineBarrier(cmd);
 
         simulation_pipelines.Run(sim_pos, cmd, n_groups);
@@ -301,7 +312,7 @@ void World::Update(Platform& platform) {
     CopyBuffersToNextFrame(cmd);
 
     // Run graphics step
-    auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, 0.0f, (float)platform.GetConfig().h,
+    auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, (float)platform.GetConfig().h, 0.0f,
                          -1.0f, 1.0f);
 
     tr = glm::scale(tr, glm::vec3(1 / scale, 1 / scale, 1.0f));

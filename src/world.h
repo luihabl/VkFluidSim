@@ -76,6 +76,9 @@ private:
     u32 sim_reorder;
     u32 sim_spatial_hash;
     u32 sim_reorder_copyback;
+    u32 sim_pressure;
+    u32 sim_density;
+    u32 sim_viscosity;
 
     GPUCountSort sort;
     SpatialOffset offset;

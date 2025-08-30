@@ -332,6 +332,7 @@ void World::Update(Platform& platform) {
     auto draw_push_constants = DrawPushConstants{
         .matrix = tr,
         .positions = frame_buffers[current_frame].position_buffer.device_addr,
+        .velocities = frame_buffers[current_frame].velocity_buffer.device_addr,
     };
 
     renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);

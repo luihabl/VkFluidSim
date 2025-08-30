@@ -12,6 +12,7 @@ namespace vfs {
 struct DrawPushConstants {
     glm::mat4 matrix;
     VkDeviceAddress positions;
+    VkDeviceAddress velocities;
 };
 
 class SpriteDrawPipeline {

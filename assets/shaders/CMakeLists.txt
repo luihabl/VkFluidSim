@@ -1,5 +1,13 @@
 find_program(GLSL_VALIDATOR glslangValidator)
 
+CPMAddPackage(
+    NAME colormaps
+    GITHUB_REPOSITORY kbinani/colormap-shaders
+    GIT_TAG master
+    DOWNLOAD_ONLY YES
+)
+
+set(SHADER_SEARCH_PATH ${colormaps_SOURCE_DIR}/shaders/glsl)
 
 set(SHADER_FILES
     gfx/sprite.frag
@@ -43,7 +51,7 @@ foreach(GLSL ${SHADER_FILES})
     message(STATUS COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV})
     add_custom_command(
         OUTPUT ${SPIRV}
-        COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+        COMMAND ${GLSL_VALIDATOR} -I${SHADER_SEARCH_PATH} -V ${GLSL} -o ${SPIRV}
         DEPENDS ${GLSL} ${SHADER_COMMON})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)

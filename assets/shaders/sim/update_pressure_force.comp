@@ -16,7 +16,6 @@ float NearPressureFromDensity(float near_density) {
 }
 
 vec2 CalculatePressureForce(uint id) {
-    
     float density = pc.densities.data[id].x;
     float density_near = pc.densities.data[id].y;
     float pressure = PressureFromDensity(density);
@@ -27,31 +26,31 @@ vec2 CalculatePressureForce(uint id) {
     ivec2 origin_cell = GetCell2D(pos, ubo.smoothing_radius);
     float sqr_radius = ubo.smoothing_radius * ubo.smoothing_radius;
 
-    for(int i = 0; i < 9; i++) {
+    for (int i = 0; i < 9; i++) {
         uint hash = HashCell2D(origin_cell + offsets_2d[i]);
         uint key = KeyFromHash(hash, pc.n_particles);
         uint curr_index = ubo.spatial_offsets.data[key];
 
-        while(curr_index < pc.n_particles) {
+        while (curr_index < pc.n_particles) {
             uint neighbor_index = curr_index;
             curr_index++;
 
-            if(neighbor_index == id)
+            if (neighbor_index == id)
                 continue;
-            
+
             uint neighbor_key = ubo.spatial_keys.data[neighbor_index];
 
-            if(neighbor_key != key)
+            if (neighbor_key != key)
                 break;
-            
-            vec2 neighbor_pos = ubo.predicted_positions.data[neighbor_index]; 
+
+            vec2 neighbor_pos = ubo.predicted_positions.data[neighbor_index];
             vec2 offset_to_neighbor = neighbor_pos - pos;
             float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
 
-            if(sqr_dst_to_neighbor > sqr_radius)
+            if (sqr_dst_to_neighbor > sqr_radius)
                 continue;
 
-            float dst = sqrt(sqr_dst_to_neighbor); 
+            float dst = sqrt(sqr_dst_to_neighbor);
             vec2 dir_to_neighbor = dst > 0 ? offset_to_neighbor / dst : vec2(0, 1);
 
             float neighbor_density = pc.densities.data[neighbor_index].x;
@@ -60,7 +59,7 @@ vec2 CalculatePressureForce(uint id) {
             float neighbor_near_pressure = NearPressureFromDensity(neighbor_near_density);
 
             float shared_pressure = (pressure + neighbor_pressure) * 0.5f;
-            float shared_near_pressure = (pressure + neighbor_near_pressure) * 0.5f;
+            float shared_near_pressure = (near_pressure + neighbor_near_pressure) * 0.5f;
 
             pressure_force += dir_to_neighbor * DensityDerivative(dst, ubo.smoothing_radius) * shared_pressure / neighbor_density;
             pressure_force += dir_to_neighbor * NearDensityDerivative(dst, ubo.smoothing_radius) * shared_near_pressure / neighbor_near_density;
@@ -70,12 +69,12 @@ vec2 CalculatePressureForce(uint id) {
     return pressure_force / density;
 }
 
-layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
 void main() {
     uint id = gl_GlobalInvocationID.x;
-    if(id >= pc.n_particles)
+    if (id >= pc.n_particles)
         return;
 
-   vec2 acc = CalculatePressureForce(id);
-   pc.velocities.data[id] += acc * pc.dt;
+    vec2 acc = CalculatePressureForce(id);
+    pc.velocities.data[id] += acc * pc.dt;
 }

@@ -97,9 +97,9 @@ private:
 
     glm::vec4 box;
     glm::vec4 cbox;
-    int n_particles = 6000;
+    int n_particles = 4536;
     float spacing = 0.2f;
-    float scale = 2e-2;
+    float scale = 1.5e-2;
     int current_frame = 0;
 
     void SetInitialData();

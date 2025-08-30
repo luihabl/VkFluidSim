@@ -147,7 +147,7 @@ void World::InitSimulationPipelines() {
 
     const float smoothing_radius = 0.35f;
     auto global_uniforms = SimulationUniformData{
-        .gravity = -10.0f,
+        .gravity = -12.0f,
         .mass = 1.0f,
         .damping_factor = 0.95f,
         .smoothing_radius = smoothing_radius,

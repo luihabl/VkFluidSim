@@ -5,7 +5,7 @@
 
 #include "common.glsl"
 
-layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
 
 vec2 ExternalForces(vec2 pos, vec2 velocity) {
 
@@ -19,7 +19,7 @@ vec2 ExternalForces(vec2 pos, vec2 velocity) {
 
 void main() {
     uint id = gl_GlobalInvocationID.x;
-    if(id >= pc.n_particles)
+    if (id >= pc.n_particles)
         return;
 
     pc.velocities.data[id] += ExternalForces(pc.positions.data[id], pc.velocities.data[id]) * pc.dt;

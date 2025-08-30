@@ -148,7 +148,6 @@ void World::InitSimulationPipelines() {
     const float smoothing_radius = 0.35f;
     auto global_uniforms = SimulationUniformData{
         .gravity = -12.0f,
-        .mass = 1.0f,
         .damping_factor = 0.95f,
         .smoothing_radius = smoothing_radius,
         .target_density = 55.0f,
@@ -247,12 +246,12 @@ void World::CopyBuffersToNextFrame(VkCommandBuffer cmd) {
 }  // namespace vfs
 
 void World::RunSimulationStep(VkCommandBuffer cmd) {
-    constexpr int iterations = 1;
+    constexpr int iterations = 3;
     auto group_count = glm::ivec3{n_particles / 64 + 1, 1, 1};
 
     auto comp_consts = SimulationPushConstants{
         .time = Platform::Info::GetTime(),
-        .dt = 1.0f / (120.f * iterations),
+        .dt = fixed_dt / (float)iterations,
         .n_particles = (uint32_t)n_particles,
 
         .positions = frame_buffers[current_frame].position_buffer.device_addr,
@@ -271,8 +270,7 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         simulation_pipelines.Run(sim_spatial_hash, cmd, n_groups);
         ComputeToComputePipelineBarrier(cmd);
 
-        sort.Run(cmd, gfx.GetCoreCtx(), spatial_indices, spatial_keys,
-                 (spatial_keys.size / sizeof(u32)) - 1);
+        sort.Run(cmd, gfx.GetCoreCtx(), spatial_indices, spatial_keys, n_particles - 1);
         ComputeToComputePipelineBarrier(cmd);
 
         offset.Run(cmd, gfx.GetCoreCtx(), true, spatial_keys, spatial_offsets);

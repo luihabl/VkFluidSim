@@ -1,17 +1,16 @@
 
 const int nThreads = 64;
 
-layout(buffer_reference, scalar) readonly buffer BufferRefVec2{ 
-	vec2 data[];
+layout(buffer_reference, scalar) readonly buffer BufferRefVec2 {
+    vec2 data[];
 };
 
-layout(buffer_reference, scalar) readonly buffer BufferRefUInt{ 
-	uint data[];
+layout(buffer_reference, scalar) readonly buffer BufferRefUInt {
+    uint data[];
 };
 
-layout (binding = 0, scalar) uniform GlobalConstants {
+layout(binding = 0, scalar) uniform GlobalConstants {
     float gravity;
-    float mass;
     float damping_factor;
     float smoothing_radius;
     float target_density;
@@ -36,10 +35,9 @@ layout (binding = 0, scalar) uniform GlobalConstants {
     BufferRefVec2 sort_target_positions;
     BufferRefVec2 sort_target_pred_positions;
     BufferRefVec2 sort_target_velocities;
-
 } ubo;
 
-layout( push_constant ) uniform PushConstants {	
+layout(push_constant) uniform PushConstants {
     float time;
     float dt;
     uint n_particles;

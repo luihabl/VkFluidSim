@@ -1,7 +1,6 @@
 #include "sort.h"
 
 #include "gfx/common.h"
-#include "gfx/vk_util.h"
 #include "pipeline.h"
 
 namespace vfs {
@@ -54,8 +53,8 @@ void GPUScan::Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, const gfx::Buffe
     }
 
     auto push_constants = PushConstants{
-        .elements = vk::util::GetBufferAddress(ctx.device, elements),
-        .group_sums = vk::util::GetBufferAddress(ctx.device, group_sum_buffer),
+        .elements = elements.device_addr,
+        .group_sums = group_sum_buffer.device_addr,
         .item_count = count,
     };
 
@@ -107,11 +106,11 @@ void GPUCountSort::Run(VkCommandBuffer cmd,
     CreateBufferIfNeeded(ctx, counts_buffer, (max_value + 1) * sizeof(u32));
 
     auto push_consts = PushConstants{
-        .input_items = vk::util::GetBufferAddress(ctx.device, items),
-        .input_keys = vk::util::GetBufferAddress(ctx.device, keys),
-        .sorted_items = vk::util::GetBufferAddress(ctx.device, sorted_items_buffer),
-        .sorted_keys = vk::util::GetBufferAddress(ctx.device, sorted_values_buffer),
-        .counts = vk::util::GetBufferAddress(ctx.device, counts_buffer),
+        .input_items = items.device_addr,
+        .input_keys = keys.device_addr,
+        .sorted_items = sorted_items_buffer.device_addr,
+        .sorted_keys = sorted_values_buffer.device_addr,
+        .counts = counts_buffer.device_addr,
         .item_count = item_count,
     };
 
@@ -119,6 +118,7 @@ void GPUCountSort::Run(VkCommandBuffer cmd,
 
     clear_counts_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
     ComputeToComputePipelineBarrier(cmd);
+
     count_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
     ComputeToComputePipelineBarrier(cmd);
 

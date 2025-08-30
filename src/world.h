@@ -24,7 +24,6 @@ private:
 
     struct SimulationUniformData {
         float gravity = 0.0f;
-        float mass = 1.0f;
         float damping_factor = 0.05f;
         float smoothing_radius = 0.35f;
         float target_density = 10.0f;
@@ -100,6 +99,7 @@ private:
     int n_particles = 4536;
     float spacing = 0.2f;
     float scale = 1.5e-2;
+    float fixed_dt = 1 / 120.0f;
     int current_frame = 0;
 
     void SetInitialData();

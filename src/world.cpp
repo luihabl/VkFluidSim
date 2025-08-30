@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <glm/ext.hpp>
 #include <glm/ext/scalar_constants.hpp>
+#include <glm/fwd.hpp>
 #include <random>
 
 #include "gfx/common.h"
@@ -98,6 +99,26 @@ void DrawCircleFill(gfx::CPUMesh& mesh,
                                                    {.pos = p1, .color = color},
                                                    {.pos = p2, .color = color}});
     }
+}
+
+std::vector<glm::vec2> SpawnParticlesInBox(glm::vec4 box, u32 count) {
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_real_distribution dist;
+
+    auto p = std::vector<glm::vec2>(count);
+
+    for (u32 i = 0; i < count; i++) {
+        float r1 = dist(rng);
+        float r2 = dist(rng);
+
+        float x = box.x + r1 * box.z;
+        float y = box.y + r2 * box.w;
+
+        p[i] = glm::vec2{x, y};
+    }
+
+    return p;
 }
 
 }  // namespace
@@ -201,22 +222,15 @@ void World::SetBox(float w, float h) {
 }
 
 void World::SetInitialData() {
-    std::vector<glm::vec2> initial_positions(n_particles);
+    auto center = glm::vec2(box.x + box.z / 2.0f, box.y + box.w / 2.0f);
 
-    std::random_device dev;
-    std::mt19937 rng(dev());
-    std::uniform_real_distribution dist;
-    for (int i = 0; i < n_particles; i++) {
-        float r1 = dist(rng);
-        float r2 = dist(rng);
+    auto size = glm::vec2(6.42, 4.39);
+    auto spawn_region = glm::vec4(center.x - size.x / 2, center.y - size.y / 2, size.x, size.y);
 
-        float x = box.x + r1 * box.z;
-        float y = box.y + r2 * box.w;
-        initial_positions[i] = glm::vec2{x, y};
-    }
+    auto pos = SpawnParticlesInBox(spawn_region, n_particles);
 
     for (auto& frame : frame_buffers) {
-        SetDataVec(gfx, frame.position_buffer, initial_positions);
+        SetDataVec(gfx, frame.position_buffer, pos);
         SetDataVal(gfx, frame.velocity_buffer, glm::vec2(0.0f));
         SetDataVal(gfx, frame.density_buffer, glm::vec2(0.0f));
     }

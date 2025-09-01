@@ -16,7 +16,7 @@ CPMAddPackage(
     GITHUB_REPOSITORY libsdl-org/SDL
     GIT_TAG release-3.2.18
     OPTIONS
-    "SDL_TEST_ENABLED_BY_DEFAULT Off" 
+    "SDL_TEST_ENABLED_BY_DEFAULT Off"
     "SDL_TEST Off"
     "SDL_SHARED Off"
     "SDL_STATIC On"
@@ -41,7 +41,10 @@ add_library(imgui STATIC
     ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
 )
 
-target_include_directories(imgui 
+target_compile_definitions(imgui
+    PUBLIC IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING)
+
+target_include_directories(imgui
 PUBLIC
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
@@ -70,6 +73,7 @@ src/world.cpp
 src/renderer.cpp
 src/pipeline.cpp
 src/sort.cpp
+src/ui.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

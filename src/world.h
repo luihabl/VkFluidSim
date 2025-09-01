@@ -7,6 +7,7 @@
 #include "platform.h"
 #include "renderer.h"
 #include "sort.h"
+#include "ui.h"
 
 namespace vfs {
 class World {
@@ -96,6 +97,11 @@ private:
 
     glm::vec4 box;
     glm::vec4 cbox;
+
+    UI ui;
+
+    float time_scale = 1.0f;
+    int iterations = 3;
     int n_particles = 4536;
     float spacing = 0.2f;
     float scale = 1.5e-2;
@@ -103,6 +109,7 @@ private:
     int current_frame = 0;
 
     void SetInitialData();
+    void DrawUI(VkCommandBuffer cmd);
     void CopyBuffersToNextFrame(VkCommandBuffer cmd);
     void RunSimulationStep(VkCommandBuffer cmd);
     void SetBox(float w, float h);

@@ -11,7 +11,7 @@ void Renderer::Init(const gfx::Device& gfx, int w, int h) {
 
     // draw image
     {
-        VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
+        VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 
         VkImageUsageFlags usage;
         usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;

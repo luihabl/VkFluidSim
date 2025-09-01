@@ -36,6 +36,9 @@ struct Device {
     void DestroyImage(Image& img) const;
 
     const CoreCtx& GetCoreCtx() const { return core; }
+    VkQueue GetQueue() const { return graphics_queue; }
+    u32 GetQueueFamily() const { return graphics_queue_family; }
+    const Swapchain& GetSwapchain() const { return swapchain; }
 
     VkExtent2D GetSwapchainExtent();
 
@@ -48,7 +51,7 @@ private:
 
     CoreCtx core;
     VkQueue graphics_queue;
-    uint32_t graphics_queue_family;
+    u32 graphics_queue_family;
 
     Swapchain swapchain;
     glm::vec4 swapchain_img_clear_color;

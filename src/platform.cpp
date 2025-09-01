@@ -48,6 +48,14 @@ const Platform::Config* Platform::Info::GetConfig() {
     return nullptr;
 }
 
+SDL_Window* Platform::Info::GetWindow() {
+    if (platform_instance) {
+        return platform_instance->GetWindow();
+    }
+
+    return nullptr;
+}
+
 void Platform::Init(Config&& config_) {
     config = std::move(config_);
 

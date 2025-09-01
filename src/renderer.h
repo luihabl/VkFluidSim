@@ -15,7 +15,7 @@ public:
               uint32_t instances);
     void Clear(const gfx::Device& gfx);
 
-    const gfx::Image& GetDrawImage() { return draw_img; }
+    const gfx::Image& GetDrawImage() const { return draw_img; }
 
 private:
     gfx::Image draw_img;

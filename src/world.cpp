@@ -9,6 +9,7 @@
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "gfx/mesh.h"
+#include "imgui.h"
 #include "pipeline.h"
 #include "platform.h"
 
@@ -132,8 +133,15 @@ void World::Init(Platform& platform) {
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
+    ui.Init(gfx);
 
-    SetBox(17, 9);
+    // TODO: Add options to ImGui and make time profilers to discover the performance bottlenecks.
+
+    iterations = 4;
+    time_scale = 4.0f;
+    scale = 3e-2;
+    n_particles = 14000;
+    SetBox(25, 18);
 
     InitSimulationPipelines();
 
@@ -237,6 +245,8 @@ void World::SetInitialData() {
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
+    ui.HandleEvent(e);
+
     if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_Q) {
         platform.ScheduleQuit();
     }
@@ -260,12 +270,11 @@ void World::CopyBuffersToNextFrame(VkCommandBuffer cmd) {
 }  // namespace vfs
 
 void World::RunSimulationStep(VkCommandBuffer cmd) {
-    constexpr int iterations = 3;
     auto group_count = glm::ivec3{n_particles / 64 + 1, 1, 1};
 
     auto comp_consts = SimulationPushConstants{
         .time = Platform::Info::GetTime(),
-        .dt = fixed_dt / (float)iterations,
+        .dt = time_scale * fixed_dt / (float)iterations,
         .n_particles = (uint32_t)n_particles,
 
         .positions = frame_buffers[current_frame].position_buffer.device_addr,
@@ -337,9 +346,26 @@ void World::Update(Platform& platform) {
 
     renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);
 
+    DrawUI(cmd);
+
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 
     current_frame = (current_frame + 1) % gfx::FRAME_COUNT;
+}
+
+void World::DrawUI(VkCommandBuffer cmd) {
+    ui.BeginDraw(gfx, cmd, renderer.GetDrawImage());
+
+    ImGui::Begin("simulation control");
+
+    auto& io = ImGui::GetIO();
+    ImGui::Text("FPS: %.2f", io.Framerate);
+
+    ImGui::End();
+
+    ImGui::ShowDemoWindow();
+
+    ui.EndDraw(cmd);
 }
 
 void World::Clear() {

@@ -33,6 +33,7 @@ public:
         static Path ResourceFolder();
         static float GetTime();
         static const Config* GetConfig();
+        static SDL_Window* GetWindow();
     };
 
     void Init(Config&& config);

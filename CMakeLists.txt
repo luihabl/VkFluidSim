@@ -41,9 +41,6 @@ add_library(imgui STATIC
     ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
 )
 
-target_compile_definitions(imgui
-    PUBLIC IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING)
-
 target_include_directories(imgui
 PUBLIC
     ${imgui_SOURCE_DIR}

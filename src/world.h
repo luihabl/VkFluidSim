@@ -108,6 +108,9 @@ private:
     float fixed_dt = 1 / 120.0f;
     int current_frame = 0;
 
+    std::vector<float> gpu_times;
+    std::span<u64> gpu_timestamps;
+
     void SetInitialData();
     void DrawUI(VkCommandBuffer cmd);
     void CopyBuffersToNextFrame(VkCommandBuffer cmd);

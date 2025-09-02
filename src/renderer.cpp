@@ -13,7 +13,7 @@ void Renderer::Init(const gfx::Device& gfx, int w, int h) {
     {
         VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 
-        VkImageUsageFlags usage;
+        VkImageUsageFlags usage{0};
         usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -28,7 +28,7 @@ void Renderer::Init(const gfx::Device& gfx, int w, int h) {
     {
         VkFormat format = VK_FORMAT_D32_SFLOAT;
 
-        VkImageUsageFlags usage;
+        VkImageUsageFlags usage{0};
         usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         depth_img = gfx.CreateImage(extent, format, usage, false);

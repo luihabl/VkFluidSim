@@ -8,7 +8,6 @@
 #include "kernels_2d.glsl"
 
 vec2 CalculateViscosity(uint id) {
-    
     vec2 pos = ubo.predicted_positions.data[id];
     ivec2 origin_cell = GetCell2D(pos, ubo.smoothing_radius);
     float sqr_radius = ubo.smoothing_radius * ubo.smoothing_radius;
@@ -16,31 +15,31 @@ vec2 CalculateViscosity(uint id) {
     vec2 viscosity_force = vec2(0.0f);
     vec2 velocity = pc.velocities.data[id];
 
-    for(int i = 0; i < 9; i++) {
+    for (int i = 0; i < 9; i++) {
         uint hash = HashCell2D(origin_cell + offsets_2d[i]);
         uint key = KeyFromHash(hash, pc.n_particles);
         uint curr_index = ubo.spatial_offsets.data[key];
 
-        while(curr_index < pc.n_particles) {
-            uint neighbor_index = curr_index;
+        while (curr_index < pc.n_particles) {
+            const uint neighbor_index = curr_index;
             curr_index++;
 
-            if(neighbor_index == id)
+            if (neighbor_index == id)
                 continue;
-            
-            uint neighbor_key = ubo.spatial_keys.data[neighbor_index];
 
-            if(neighbor_key != key)
+            const uint neighbor_key = ubo.spatial_keys.data[neighbor_index];
+
+            if (neighbor_key != key)
                 break;
-            
-            vec2 neighbor_pos = ubo.predicted_positions.data[neighbor_index]; 
+
+            vec2 neighbor_pos = ubo.predicted_positions.data[neighbor_index];
             vec2 offset_to_neighbor = neighbor_pos - pos;
             float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
 
-            if(sqr_dst_to_neighbor > sqr_radius)
+            if (sqr_dst_to_neighbor > sqr_radius)
                 continue;
 
-            float dst = sqrt(sqr_dst_to_neighbor); 
+            float dst = sqrt(sqr_dst_to_neighbor);
             vec2 neighbor_velocity = pc.velocities.data[neighbor_index];
             viscosity_force += (neighbor_velocity - velocity) * ViscosityKernel(dst, ubo.smoothing_radius);
         }
@@ -49,12 +48,12 @@ vec2 CalculateViscosity(uint id) {
     return viscosity_force;
 }
 
-layout (local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = nThreads, local_size_y = 1, local_size_z = 1) in;
 void main() {
     uint id = gl_GlobalInvocationID.x;
-    if(id >= pc.n_particles)
+    if (id >= pc.n_particles)
         return;
 
-   vec2 viscosity_force = CalculateViscosity(id);
-   pc.velocities.data[id] += viscosity_force * ubo.viscosity_strenght * pc.dt;
+    vec2 viscosity_force = CalculateViscosity(id);
+    pc.velocities.data[id] += viscosity_force * ubo.viscosity_strenght * pc.dt;
 }

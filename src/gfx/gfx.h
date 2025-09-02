@@ -5,6 +5,7 @@
 
 #include <array>
 #include <glm/glm.hpp>
+#include <span>
 
 #include "gfx/common.h"
 #include "gfx/immediate.h"
@@ -44,6 +45,11 @@ struct Device {
 
     void ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) const;
 
+    void SetTopTimestamp(VkCommandBuffer cmd, u32 id);
+    void SetBottomTimestamp(VkCommandBuffer cmd, u32 id);
+
+    std::span<u64> GetTimestamps();
+
 private:
     void InitCommandBuffers();
     FrameData& CurrentFrame();
@@ -55,6 +61,10 @@ private:
 
     Swapchain swapchain;
     glm::vec4 swapchain_img_clear_color;
+
+    u32 used_timestamps{0};
+    std::vector<u64> time_stamps;
+    VkQueryPool query_pool_timestamps;
 
     ImmediateRunner immediate_runner;
 

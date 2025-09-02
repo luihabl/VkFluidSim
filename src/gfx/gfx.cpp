@@ -79,7 +79,27 @@ VkCommandBuffer Device::BeginFrame() {
 
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
 
+    used_timestamps = 0;
+    vkCmdResetQueryPool(cmd, query_pool_timestamps, 0, (u32)time_stamps.size());
+
     return cmd;
+}
+
+void Device::SetTopTimestamp(VkCommandBuffer cmd, u32 id) {
+    vkCmdWriteTimestamp2(cmd, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, query_pool_timestamps, id);
+    used_timestamps++;
+}
+
+void Device::SetBottomTimestamp(VkCommandBuffer cmd, u32 id) {
+    vkCmdWriteTimestamp2(cmd, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, query_pool_timestamps, id);
+    used_timestamps++;
+}
+
+std::span<u64> Device::GetTimestamps() {
+    vkGetQueryPoolResults(core.device, query_pool_timestamps, 0, used_timestamps,
+                          time_stamps.size() * sizeof(u64), time_stamps.data(), sizeof(u64),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    return std::span<u64>(time_stamps.data(), used_timestamps);
 }
 
 VkExtent2D Device::GetSwapchainExtent() {
@@ -233,6 +253,14 @@ void Device::Init(const Config& config) {
     InitCommandBuffers();
 
     immediate_runner.Init(core, graphics_queue_family, graphics_queue);
+
+    time_stamps.resize(6);
+    auto query_pool_info = VkQueryPoolCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .queryType = VK_QUERY_TYPE_TIMESTAMP,
+        .queryCount = (u32)time_stamps.size(),
+    };
+    VK_CHECK(vkCreateQueryPool(core.device, &query_pool_info, nullptr, &query_pool_timestamps));
 }
 
 void Device::ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) const {

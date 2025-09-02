@@ -1,5 +1,7 @@
 build
+build-xcode
 .DS_Store
 .vscode
+.idea
 .vs
 .cache

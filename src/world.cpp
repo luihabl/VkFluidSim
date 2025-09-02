@@ -23,7 +23,7 @@ gfx::Buffer CreateDataBuffer(const gfx::CoreCtx& ctx, size_t n) {
         ctx, sz,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
+        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 }
 
 template <typename T>
@@ -128,8 +128,10 @@ void World::Init(Platform& platform) {
     gfx.Init({
         .name = "Vulkan fluid sim",
         .window = platform.GetWindow(),
-        .validation_layers = true,
+        .validation_layers = false,
     });
+
+    gpu_times.resize(6, 0);
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
@@ -137,16 +139,16 @@ void World::Init(Platform& platform) {
 
     // TODO: Add options to ImGui and make time profilers to discover the performance bottlenecks.
 
-    iterations = 4;
-    time_scale = 4.0f;
-    scale = 3e-2;
-    n_particles = 14000;
-    SetBox(25, 18);
+    iterations = 3;
+    time_scale = 1.0f;
+    scale = 1.5e-2;
+    n_particles = 45056;
+    SetBox(17.1, 9.3);
 
     InitSimulationPipelines();
 
     gfx::CPUMesh mesh;
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 50);
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 3);
     circle_mesh = gfx::UploadMesh(gfx, mesh);
 
     SetInitialData();
@@ -316,14 +318,13 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
 
         simulation_pipelines.Run(sim_pos, cmd, n_groups);
         ComputeToComputePipelineBarrier(cmd);
-
-        if (i < iterations - 1)
-            ComputeToComputePipelineBarrier(cmd);
     }
 }
 
 void World::Update(Platform& platform) {
     auto cmd = gfx.BeginFrame();
+
+    gfx.SetTopTimestamp(cmd, 0);
 
     // Run compute step
     RunSimulationStep(cmd);
@@ -331,6 +332,9 @@ void World::Update(Platform& platform) {
 
     // NOTE: this is probably slow... rework this to avoid copy every frame
     CopyBuffersToNextFrame(cmd);
+    ComputeToComputePipelineBarrier(cmd);
+
+    gfx.SetBottomTimestamp(cmd, 1);
 
     // Run graphics step
     auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, (float)platform.GetConfig().h, 0.0f,
@@ -346,9 +350,15 @@ void World::Update(Platform& platform) {
 
     renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);
 
+    gfx.SetBottomTimestamp(cmd, 2);
+
     DrawUI(cmd);
 
+    gfx.SetBottomTimestamp(cmd, 3);
+
     gfx.EndFrame(cmd, renderer.GetDrawImage());
+
+    gpu_timestamps = gfx.GetTimestamps();
 
     current_frame = (current_frame + 1) % gfx::FRAME_COUNT;
 }
@@ -356,14 +366,40 @@ void World::Update(Platform& platform) {
 void World::DrawUI(VkCommandBuffer cmd) {
     ui.BeginDraw(gfx, cmd, renderer.GetDrawImage());
 
-    ImGui::Begin("simulation control");
+    ImGui::Begin("Simulation control");
 
     auto& io = ImGui::GetIO();
     ImGui::Text("FPS: %.2f", io.Framerate);
 
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(gfx.GetCoreCtx().chosen_gpu, &props);
+
+    auto GetDelta = [this, &props](u32 id_start, u32 id_end) {
+        return gpu_timestamps.size() > id_end
+                   ? (float)(gpu_timestamps[id_end] - gpu_timestamps[id_start]) *
+                         props.limits.timestampPeriod / 1000000.0f
+                   : 0.0f;
+    };
+
+    constexpr float alpha = 0.05f;
+    gpu_times[0] = (1 - alpha) * gpu_times[0] + alpha * GetDelta(0, 3);
+    gpu_times[1] = (1 - alpha) * gpu_times[1] + alpha * GetDelta(0, 1);
+    gpu_times[2] = (1 - alpha) * gpu_times[2] + alpha * GetDelta(1, 3);
+    gpu_times[3] = (1 - alpha) * gpu_times[3] + alpha * GetDelta(1, 2);
+    gpu_times[4] = (1 - alpha) * gpu_times[4] + alpha * GetDelta(2, 3);
+
+    ImGui::Text("Effective FPS: %.2f", 1000.0f / gpu_times[0]);
+    ImGui::Text("Frame time: %.2f ms", gpu_times[0]);
+    ImGui::Separator();
+
+    ImGui::Text("Compute: %.2f ms", gpu_times[1]);
+    ImGui::Text("All render: %.2f ms", gpu_times[2]);
+    ImGui::Text("Particle render: %.2f ms", gpu_times[3]);
+    ImGui::Text("UI render: %.2f ms", gpu_times[4]);
+
     ImGui::End();
 
-    ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     ui.EndDraw(cmd);
 }

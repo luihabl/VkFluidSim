@@ -142,7 +142,7 @@ void World::Init(Platform& platform) {
     iterations = 3;
     time_scale = 1.0f;
     scale = 1.5e-2;
-    n_particles = 45056;
+    n_particles = 4505;
     SetBox(17.1, 9.3);
 
     InitSimulationPipelines();

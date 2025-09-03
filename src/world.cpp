@@ -157,6 +157,10 @@ void World::Init(Platform& platform) {
     offset.Init(gfx.GetCoreCtx());
 }
 
+void World::UpdateUniforms() {
+    global_desc_manager.SetUniformData(&sim_uniform_data);
+}
+
 void World::InitSimulationPipelines() {
     for (auto& bufs : frame_buffers) {
         bufs = {
@@ -176,37 +180,8 @@ void World::InitSimulationPipelines() {
     sort_target_pred_position = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
     sort_target_velocity = CreateDataBuffer<glm::vec2>(gfx.GetCoreCtx(), n_particles);
 
-    const float smoothing_radius = 0.35f;
-    auto global_uniforms = SimulationUniformData{
-        .gravity = -12.0f,
-        .damping_factor = 0.95f,
-        .smoothing_radius = smoothing_radius,
-        .target_density = 55.0f,
-        .pressure_multiplier = 500.0f,
-        .near_pressure_multiplier = 5.0f,
-        .viscosity_strenght = 0.03f,
-
-        .box = box,
-
-        .poly6_scale = 4.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 8)),
-        .spiky_pow3_scale = 10.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
-        .spiky_pow2_scale = 6.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
-        .spiky_pow3_diff_scale = 30.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
-        .spiky_pow2_diff_scale = 12.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
-
-        .predicted_positions = predicted_positions.device_addr,
-
-        .spatial_keys = spatial_keys.device_addr,
-        .spatial_offsets = spatial_offsets.device_addr,
-        .sorted_indices = spatial_indices.device_addr,
-
-        .sort_target_positions = sort_target_position.device_addr,
-        .sort_target_pred_positions = sort_target_pred_position.device_addr,
-        .sort_target_velocities = sort_target_velocity.device_addr,
-    };
-
     global_desc_manager.Init(gfx.GetCoreCtx(), sizeof(SimulationUniformData));
-    global_desc_manager.SetUniformData(&global_uniforms);
+    global_desc_manager.SetUniformData(&sim_uniform_data);
 
     simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
 
@@ -234,7 +209,7 @@ void World::SetBox(float w, float h) {
 void World::SetInitialData() {
     auto center = glm::vec2(box.x + box.z / 2.0f, box.y + box.w / 2.0f);
 
-    auto size = glm::vec2(6.42, 4.39);
+    auto size = glm::vec2(box.z / 3, box.w / 3);
     auto spawn_region = glm::vec4(center.x - size.x / 2, center.y - size.y / 2, size.x, size.y);
 
     auto pos = SpawnParticlesInBox(spawn_region, n_particles);
@@ -244,6 +219,37 @@ void World::SetInitialData() {
         SetDataVal(gfx, frame.velocity_buffer, glm::vec2(0.0f));
         SetDataVal(gfx, frame.density_buffer, glm::vec2(0.0f));
     }
+
+    const float smoothing_radius = 0.35f;
+    sim_uniform_data = SimulationUniformData{
+        .gravity = -12.0f,
+        .damping_factor = 0.95f,
+        .smoothing_radius = smoothing_radius,
+        .target_density = 55.0f,
+        .pressure_multiplier = 500.0f,
+        .near_pressure_multiplier = 5.0f,
+        .viscosity_strenght = 0.03f,
+
+        .box = box,
+
+        .poly6_scale = 4.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 8)),
+        .spiky_pow3_scale = 10.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
+        .spiky_pow2_scale = 6.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
+        .spiky_pow3_diff_scale = 30.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
+        .spiky_pow2_diff_scale = 12.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 4)),
+
+        .predicted_positions = predicted_positions.device_addr,
+
+        .spatial_keys = spatial_keys.device_addr,
+        .spatial_offsets = spatial_offsets.device_addr,
+        .sorted_indices = spatial_indices.device_addr,
+
+        .sort_target_positions = sort_target_position.device_addr,
+        .sort_target_pred_positions = sort_target_pred_position.device_addr,
+        .sort_target_velocities = sort_target_velocity.device_addr,
+    };
+
+    UpdateUniforms();
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
@@ -322,13 +328,20 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
 }
 
 void World::Update(Platform& platform) {
+    if (update_uniform_data) {
+        UpdateUniforms();
+        update_uniform_data = false;
+    }
+
     auto cmd = gfx.BeginFrame();
 
     gfx.SetTopTimestamp(cmd, 0);
 
-    // Run compute step
-    RunSimulationStep(cmd);
-    ComputeToGraphicsPipelineBarrier(cmd);
+    if (!paused) {
+        // Run compute step
+        RunSimulationStep(cmd);
+        ComputeToGraphicsPipelineBarrier(cmd);
+    }
 
     // NOTE: this is probably slow... rework this to avoid copy every frame
     CopyBuffersToNextFrame(cmd);
@@ -368,9 +381,6 @@ void World::DrawUI(VkCommandBuffer cmd) {
 
     ImGui::Begin("Simulation control");
 
-    auto& io = ImGui::GetIO();
-    ImGui::Text("FPS: %.2f", io.Framerate);
-
     VkPhysicalDeviceProperties props;
     vkGetPhysicalDeviceProperties(gfx.GetCoreCtx().chosen_gpu, &props);
 
@@ -388,18 +398,67 @@ void World::DrawUI(VkCommandBuffer cmd) {
     gpu_times[3] = (1 - alpha) * gpu_times[3] + alpha * GetDelta(1, 2);
     gpu_times[4] = (1 - alpha) * gpu_times[4] + alpha * GetDelta(2, 3);
 
-    ImGui::Text("Effective FPS: %.2f", 1000.0f / gpu_times[0]);
-    ImGui::Text("Frame time: %.2f ms", gpu_times[0]);
-    ImGui::Separator();
+    if (paused) {
+        if (ImGui::Button("Run")) {
+            paused = false;
+        }
+    } else {
+        if (ImGui::Button("Pause")) {
+            paused = true;
+        }
+    }
 
-    ImGui::Text("Compute: %.2f ms", gpu_times[1]);
-    ImGui::Text("All render: %.2f ms", gpu_times[2]);
-    ImGui::Text("Particle render: %.2f ms", gpu_times[3]);
-    ImGui::Text("UI render: %.2f ms", gpu_times[4]);
+    if (ImGui::CollapsingHeader("Stats")) {
+        auto& io = ImGui::GetIO();
+        ImGui::Text("FPS: %.2f", io.Framerate);
+
+        ImGui::Text("Effective FPS: %.2f", 1000.0f / gpu_times[0]);
+        ImGui::Text("Frame time: %.2f ms", gpu_times[0]);
+        ImGui::Separator();
+
+        ImGui::Text("Compute: %.2f ms", gpu_times[1]);
+        ImGui::Text("All render: %.2f ms", gpu_times[2]);
+        ImGui::Text("Particle render: %.2f ms", gpu_times[3]);
+        ImGui::Text("UI render: %.2f ms", gpu_times[4]);
+    }
+
+    if (ImGui::CollapsingHeader("Parameters")) {
+        glm::vec2 sz = {box.z, box.w};
+        if (ImGui::SliderFloat2("Box size", &sz.x, 0.0f, 20.0f)) {
+            SetBox(sz.x, sz.y);
+            sim_uniform_data.box = box;
+            update_uniform_data = true;
+        }
+
+        if (ImGui::SliderFloat("Gravity", &sim_uniform_data.gravity, -25.0f, 25.0f)) {
+            update_uniform_data = true;
+        }
+
+        if (ImGui::SliderFloat("Wall damping factor", &sim_uniform_data.damping_factor, 0.0f,
+                               1.0f)) {
+            update_uniform_data = true;
+        }
+
+        if (ImGui::SliderFloat("Pressure multiplier", &sim_uniform_data.pressure_multiplier, 0.0f,
+                               1000.0f)) {
+            update_uniform_data = true;
+        }
+
+        if (ImGui::SliderFloat("Smoothing radius", &sim_uniform_data.smoothing_radius, 0.0f,
+                               0.6f)) {
+            update_uniform_data = true;
+        }
+
+        if (ImGui::SliderFloat("Viscosity", &sim_uniform_data.viscosity_strenght, 0.0f, 1.0f)) {
+            update_uniform_data = true;
+        }
+
+        if (ImGui::SliderFloat("Target density", &sim_uniform_data.target_density, 0.0f, 100.0f)) {
+            update_uniform_data = true;
+        }
+    }
 
     ImGui::End();
-
-    // ImGui::ShowDemoWindow();
 
     ui.EndDraw(cmd);
 }

@@ -107,7 +107,9 @@ private:
     float scale = 1.5e-2;
     float fixed_dt = 1 / 120.0f;
     int current_frame = 0;
-
+    bool paused{true};
+    bool update_uniform_data{false};
+    SimulationUniformData sim_uniform_data;
     std::vector<float> gpu_times;
     std::span<u64> gpu_timestamps;
 
@@ -117,5 +119,6 @@ private:
     void RunSimulationStep(VkCommandBuffer cmd);
     void SetBox(float w, float h);
     void InitSimulationPipelines();
+    void UpdateUniforms();
 };
 }  // namespace vfs

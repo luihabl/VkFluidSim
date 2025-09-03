@@ -4,4 +4,6 @@ build-xcode
 .vscode
 .idea
 .vs
+.zed
 .cache
+cmake-*

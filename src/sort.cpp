@@ -23,10 +23,11 @@ bool CreateBufferIfNeeded(const gfx::CoreCtx& ctx, gfx::Buffer& buf, u32 size) {
 }  // namespace
 
 void GPUScan::Init(const gfx::CoreCtx& ctx) {
-    scan_pipeline.Init(ctx, {.shader_path = "shaders/compiled/scan_block.comp.spv",
-                             .push_const_size = sizeof(PushConstants)});
-    combine_pipeline.Init(ctx, {.shader_path = "shaders/compiled/scan_combine.comp.spv",
-                                .push_const_size = sizeof(PushConstants)});
+    auto config = ComputePipeline::Config{.shader_path = "shaders/compiled/scan.slang.spv",
+                                          .push_const_size = sizeof(PushConstants)};
+
+    scan_pipeline.Init(ctx, config, "scan_block");
+    combine_pipeline.Init(ctx, config, "scan_combine");
 }
 
 void GPUScan::Clear(const gfx::CoreCtx& ctx) {
@@ -69,14 +70,15 @@ void GPUScan::Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, const gfx::Buffe
 }
 
 void GPUCountSort::Init(const gfx::CoreCtx& ctx) {
-    clear_counts_pipeline.Init(ctx, {.shader_path = "shaders/compiled/sort_clear_counts.comp.spv",
-                                     .push_const_size = sizeof(PushConstants)});
-    count_pipeline.Init(ctx, {.shader_path = "shaders/compiled/sort_calc_counts.comp.spv",
-                              .push_const_size = sizeof(PushConstants)});
-    scatter_pipeline.Init(ctx, {.shader_path = "shaders/compiled/sort_scatter.comp.spv",
-                                .push_const_size = sizeof(PushConstants)});
-    copy_back_pipeline.Init(ctx, {.shader_path = "shaders/compiled/sort_copy_back.comp.spv",
-                                  .push_const_size = sizeof(PushConstants)});
+    auto config = ComputePipeline::Config{
+        .shader_path = "shaders/compiled/sort.slang.spv",
+        .push_const_size = sizeof(PushConstants),
+    };
+
+    clear_counts_pipeline.Init(ctx, config, "clear_counts");
+    count_pipeline.Init(ctx, config, "calculate_counts");
+    scatter_pipeline.Init(ctx, config, "scatter_output");
+    copy_back_pipeline.Init(ctx, config, "copy_back");
 
     gpu_scan.Init(ctx);
 }
@@ -133,10 +135,12 @@ void GPUCountSort::Run(VkCommandBuffer cmd,
 }
 
 void SpatialOffset::Init(const gfx::CoreCtx& ctx) {
-    offset_init_pipeline.Init(ctx, {.shader_path = "shaders/compiled/offsets_init.comp.spv",
-                                    .push_const_size = sizeof(PushConstants)});
-    offset_calc_pipeline.Init(ctx, {.shader_path = "shaders/compiled/offsets_calc.comp.spv",
-                                    .push_const_size = sizeof(PushConstants)});
+    auto config =
+        ComputePipeline::Config{.shader_path = "shaders/compiled/spatial_offsets.slang.spv",
+                                .push_const_size = sizeof(PushConstants)};
+
+    offset_init_pipeline.Init(ctx, config, "init_offsets");
+    offset_calc_pipeline.Init(ctx, config, "calculate_offsets");
 }
 
 void SpatialOffset::Clear(const gfx::CoreCtx& ctx) {

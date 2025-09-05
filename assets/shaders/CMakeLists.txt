@@ -1,4 +1,5 @@
 find_program(GLSL_VALIDATOR glslangValidator)
+find_program(SLANGC slangc)
 
 CPMAddPackage(
     NAME colormaps
@@ -6,6 +7,21 @@ CPMAddPackage(
     GIT_TAG master
     DOWNLOAD_ONLY YES
 )
+
+set(SLANG_SHADERS
+    gfx/gfx.slang
+    offsets/spatial_offsets.slang
+    sort/sort.slang
+    scan/scan.slang
+    sim/simulation.slang
+)
+
+set(SLANG_DEPENDENT_FILES
+    gfx/colormap.slang
+    sim/kernels.slang
+    sim/spatial_hash.slang
+)
+
 
 set(SHADER_SEARCH_PATH ${colormaps_SOURCE_DIR}/shaders/glsl)
 
@@ -39,22 +55,36 @@ set(SHADER_COMMON
     sim/spatial_hash.glsl
     sim/kernels_2d.glsl
     scan/common.glsl
+    sort/common.glsl
 )
 
+# foreach(GLSL ${SHADER_FILES})
+#     set(GLSL ${CMAKE_CURRENT_LIST_DIR}/${GLSL})
+#     message(STATUS "BUILDING SHADER")
+#     get_filename_component(FILE_NAME ${GLSL} NAME)
+#     set(SPIRV "${CMAKE_CURRENT_LIST_DIR}/compiled/${FILE_NAME}.spv")
+#     message(STATUS ${GLSL})
+#     message(STATUS COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV})
+#     add_custom_command(
+#         OUTPUT ${SPIRV}
+#         COMMAND ${GLSL_VALIDATOR} -I${SHADER_SEARCH_PATH} -V ${GLSL} -o ${SPIRV}
+#         DEPENDS ${GLSL} ${SHADER_COMMON})
+#     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+# endforeach(GLSL)
 
-foreach(GLSL ${SHADER_FILES})
-    set(GLSL ${CMAKE_CURRENT_LIST_DIR}/${GLSL})
+foreach(SLANG ${SLANG_SHADERS})
+    set(SLANG ${CMAKE_CURRENT_LIST_DIR}/${SLANG})
     message(STATUS "BUILDING SHADER")
-    get_filename_component(FILE_NAME ${GLSL} NAME)
+    get_filename_component(FILE_NAME ${SLANG} NAME)
     set(SPIRV "${CMAKE_CURRENT_LIST_DIR}/compiled/${FILE_NAME}.spv")
-    message(STATUS ${GLSL})
-    message(STATUS COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV})
+    message(STATUS ${SLANG})
+    message(STATUS COMMAND ${SLANGC} ${SLANG} -profile glsl_450 -fvk-use-entrypoint-name -emit-spirv-directly -target spirv -o ${SPIRV})
     add_custom_command(
         OUTPUT ${SPIRV}
-        COMMAND ${GLSL_VALIDATOR} -I${SHADER_SEARCH_PATH} -V ${GLSL} -o ${SPIRV}
-        DEPENDS ${GLSL} ${SHADER_COMMON})
+        COMMAND ${SLANGC} ${SLANG} -profile glsl_450 -fvk-use-entrypoint-name -fvk-use-scalar-layout -emit-spirv-directly -target spirv -o ${SPIRV}
+        DEPENDS ${SLANG} ${SLANG_DEPENDENT_FILES})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-endforeach(GLSL)
+endforeach(SLANG)
 
 add_custom_target(
     shaders

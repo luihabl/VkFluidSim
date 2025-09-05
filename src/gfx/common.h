@@ -5,6 +5,8 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
+#include <span>
+
 using f32 = float;
 using f64 = double;
 using i32 = int32_t;
@@ -60,6 +62,11 @@ struct Buffer {
     void* Map();
     void Unmap();
     void SetDescriptorInfo(VkDeviceSize size, VkDeviceSize offset);
+
+    template <typename T>
+    void CopyDataToMappedPtr(std::span<const T> data) {
+        memcpy(Map(), data.data(), data.size_bytes());
+    }
 
     static Buffer Create(const CoreCtx& ctx,
                          size_t size,

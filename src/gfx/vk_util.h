@@ -267,6 +267,10 @@ public:
     void Clear();
 
     GraphicsPipelineBuilder& SetShaders(VkShaderModule vertex_shader, VkShaderModule frag_shader);
+    GraphicsPipelineBuilder& AddShaderStage(VkShaderModule shader_mod,
+                                            VkShaderStageFlagBits stage,
+                                            const char* entry_point = "main");
+
     GraphicsPipelineBuilder& AddVertexBinding(uint32_t binding,
                                               uint32_t stride,
                                               VkVertexInputRate rate = VK_VERTEX_INPUT_RATE_VERTEX);
@@ -301,7 +305,10 @@ private:
     VkFormat color_attachment_format;
 };
 
-VkPipeline BuildComputePipeline(VkDevice device, VkPipelineLayout layout, VkShaderModule shader);
+VkPipeline BuildComputePipeline(VkDevice device,
+                                VkPipelineLayout layout,
+                                VkShaderModule shader,
+                                const char* entry_point = "main");
 
 VkDeviceAddress GetBufferAddress(VkDevice device, const gfx::Buffer& buffer);
 

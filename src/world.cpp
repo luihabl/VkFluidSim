@@ -185,15 +185,15 @@ void World::InitSimulationPipelines() {
 
     simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
 
-    std::string prefix = "shaders/compiled/";
-    sim_pos = simulation_pipelines.Add(prefix + "update_pos.comp.spv");
-    sim_ext_forces = simulation_pipelines.Add(prefix + "update_external_forces.comp.spv");
-    sim_reorder_copyback = simulation_pipelines.Add(prefix + "update_reorder_copyback.comp.spv");
-    sim_reorder = simulation_pipelines.Add(prefix + "update_reorder.comp.spv");
-    sim_density = simulation_pipelines.Add(prefix + "update_density.comp.spv");
-    sim_pressure = simulation_pipelines.Add(prefix + "update_pressure_force.comp.spv");
-    sim_viscosity = simulation_pipelines.Add(prefix + "update_viscosity.comp.spv");
-    sim_spatial_hash = simulation_pipelines.Add(prefix + "update_spatial_hash.comp.spv");
+    std::string spath = "shaders/compiled/simulation.slang.spv";
+    sim_pos = simulation_pipelines.Add(spath, "update_positions");
+    sim_ext_forces = simulation_pipelines.Add(spath, "external_forces");
+    sim_reorder_copyback = simulation_pipelines.Add(spath, "reorder_copyback");
+    sim_reorder = simulation_pipelines.Add(spath, "reorder");
+    sim_density = simulation_pipelines.Add(spath, "calculate_densities");
+    sim_pressure = simulation_pipelines.Add(spath, "calculate_pressure_forces");
+    sim_viscosity = simulation_pipelines.Add(spath, "calculate_viscosity_forces");
+    sim_spatial_hash = simulation_pipelines.Add(spath, "update_spatial_hash");
 }
 
 void World::SetBox(float w, float h) {

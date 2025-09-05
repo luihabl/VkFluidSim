@@ -50,12 +50,14 @@ public:
 class ComputePipeline {
 public:
     struct Config {
-        uint32_t push_const_size;
-        DescriptorManager* desc_manager;
-        std::string shader_path;
+        uint32_t push_const_size{0};
+        DescriptorManager* desc_manager{nullptr};
+        std::string shader_path{""};
     };
 
-    void Init(const gfx::CoreCtx& ctx, const Config& config);
+    void Init(const gfx::CoreCtx& ctx,
+              const Config& config,
+              const std::string& entry_point = "main");
     void Compute(VkCommandBuffer cmd, glm::ivec3 group_count, void* push_constants = nullptr);
     void Clear(const gfx::CoreCtx& ctx);
 
@@ -73,11 +75,13 @@ public:
         descriptor_manager = desc_manager;
     }
 
-    u32 Add(const std::string& shader_path) {
+    u32 Add(const std::string& shader_path, const std::string& entry_point = "main") {
         pipelines.push_back({});
-        pipelines.back().Init(ctx, {.push_const_size = sizeof(PushConstantType),
-                                    .desc_manager = descriptor_manager,
-                                    .shader_path = shader_path});
+        pipelines.back().Init(ctx,
+                              {.push_const_size = sizeof(PushConstantType),
+                               .desc_manager = descriptor_manager,
+                               .shader_path = shader_path},
+                              entry_point);
         return pipelines.size() - 1;
     }
 

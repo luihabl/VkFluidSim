@@ -247,6 +247,13 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetShaders(VkShaderModule vert
     return *this;
 }
 
+GraphicsPipelineBuilder& GraphicsPipelineBuilder::AddShaderStage(VkShaderModule shader_mod,
+                                                                 VkShaderStageFlagBits stage,
+                                                                 const char* entry_point) {
+    shader_stages.push_back(PipelineShaderStageCreateInfo(shader_mod, stage, entry_point));
+    return *this;
+}
+
 GraphicsPipelineBuilder& GraphicsPipelineBuilder::AddVertexBinding(uint32_t binding,
                                                                    uint32_t stride,
                                                                    VkVertexInputRate rate) {
@@ -392,8 +399,10 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetDepthTest(bool enable_depth
 
 VkPipeline BuildComputePipeline(VkDevice device,
                                 VkPipelineLayout layout,
-                                VkShaderModule shader_mod) {
-    auto shader = PipelineShaderStageCreateInfo(shader_mod, VK_SHADER_STAGE_COMPUTE_BIT);
+                                VkShaderModule shader_mod,
+                                const char* entry_point) {
+    auto shader =
+        PipelineShaderStageCreateInfo(shader_mod, VK_SHADER_STAGE_COMPUTE_BIT, entry_point);
 
     auto pipeline_info = VkComputePipelineCreateInfo{
         .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,

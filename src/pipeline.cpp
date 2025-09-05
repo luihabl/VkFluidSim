@@ -11,10 +11,8 @@
 namespace vfs {
 
 void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
-    auto frag = vk::util::LoadShaderModule(
-        ctx, Platform::Info::ResourcePath("shaders/compiled/sprite.frag.spv").c_str());
-    auto vert = vk::util::LoadShaderModule(
-        ctx, Platform::Info::ResourcePath("shaders/compiled/sprite.vert.spv").c_str());
+    auto gfx_shader = vk::util::LoadShaderModule(
+        ctx, Platform::Info::ResourcePath("shaders/compiled/gfx.slang.spv").c_str());
 
     // TODO: FILL THIS!!! Add the descriptor layouts hrere
 
@@ -28,7 +26,8 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
 
     pipeline =
         vk::util::GraphicsPipelineBuilder(layout)
-            .SetShaders(vert, frag)
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
             .AddVertexBinding(0, sizeof(gfx::Vertex))
             .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
             .AddVertexAttribute(0, 1, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(gfx::Vertex, color))
@@ -41,8 +40,7 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
             .SetColorAttachmentFormat(draw_img_format)
             .Build(ctx.device);
 
-    vkDestroyShaderModule(ctx.device, frag, nullptr);
-    vkDestroyShaderModule(ctx.device, vert, nullptr);
+    vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
 }
 
 void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
@@ -122,7 +120,9 @@ void DescriptorManager::SetUniformData(void* data) {
     memcpy(global_constants_ubo.Map(), data, size);
 }
 
-void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) {
+void ComputePipeline::Init(const gfx::CoreCtx& ctx,
+                           const Config& input_config,
+                           const std::string& entry_point) {
     config = input_config;
 
     auto shader = vk::util::LoadShaderModule(
@@ -141,7 +141,7 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) 
         layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
     }
 
-    pipeline = vk::util::BuildComputePipeline(ctx.device, layout, shader);
+    pipeline = vk::util::BuildComputePipeline(ctx.device, layout, shader, entry_point.c_str());
 
     vkDestroyShaderModule(ctx.device, shader, nullptr);
 }

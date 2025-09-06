@@ -10,8 +10,8 @@ set(SLANG_SHADERS
 
 set(SLANG_DEPENDENT_FILES
     colormap.slang
-    kernels.slang
-    spatial_hash.slang
+    simulation/kernels.slang
+    simulation/spatial_hash.slang
 )
 
 set(SLANG_COMPILER_FLAGS

@@ -1,4 +1,4 @@
-module spatial_hash;
+implementing "../simulation.slang";
 
 public static const int2 offsets_2d[9] = {
     int2(-1, 1), int2(0, 1),   int2(1, 1),  int2(-1, 0), int2(0, 0),

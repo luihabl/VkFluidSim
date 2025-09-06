@@ -1,7 +1,7 @@
+module simulation;
 
-// import kernels;
-#include "kernels.slang"
-import spatial_hash;
+__include simulation.spatial_hash;
+__include simulation.kernels;
 
 static const uint group_size = 64;
 

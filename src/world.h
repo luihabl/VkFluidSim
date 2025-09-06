@@ -106,6 +106,7 @@ private:
     std::span<u64> gpu_timestamps;
 
     void SetInitialData();
+    void ResetSimulation();
     void DrawUI(VkCommandBuffer cmd);
     void CopyBuffersToNextFrame(VkCommandBuffer cmd);
     void RunSimulationStep(VkCommandBuffer cmd);

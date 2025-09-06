@@ -239,7 +239,7 @@ void World::SetBox(float w, float h) {
     box.w = h;
 }
 
-void World::SetInitialData() {
+void World::ResetSimulation() {
     auto center = glm::vec2(box.x + box.z / 2.0f, box.y + box.w / 2.0f);
 
     auto size = glm::vec2(box.z / 3, box.w / 3);
@@ -252,7 +252,9 @@ void World::SetInitialData() {
         SetDataVal(gfx, frame.velocity_buffer, glm::vec2(0.0f));
         SetDataVal(gfx, frame.density_buffer, glm::vec2(0.0f));
     }
+}
 
+void World::SetInitialData() {
     const float smoothing_radius = 0.35f;
     sim_uniform_data = SimulationUniformData{
         .gravity = -12.0f,
@@ -283,6 +285,8 @@ void World::SetInitialData() {
     };
 
     UpdateUniforms();
+
+    ResetSimulation();
 }
 
 void World::HandleEvent(Platform& platform, const SDL_Event& e) {
@@ -438,6 +442,13 @@ void World::DrawUI(VkCommandBuffer cmd) {
         if (ImGui::Button("Pause")) {
             paused = true;
         }
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Reset")) {
+        paused = true;
+        ResetSimulation();
     }
 
     if (ImGui::CollapsingHeader("Stats")) {

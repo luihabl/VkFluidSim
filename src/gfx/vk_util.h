@@ -6,6 +6,7 @@
 #include <span>
 
 #include "gfx/common.h"
+#include "pipeline.h"
 
 namespace vk::util {
 

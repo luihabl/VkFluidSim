@@ -24,7 +24,6 @@ struct Device {
     struct FrameData {
         VkCommandPool cmd_pool;
         VkCommandBuffer cmd_buffer;
-        // descriptor::DynamicAllocator descriptors;
     };
 
     void Init(const Config& config);

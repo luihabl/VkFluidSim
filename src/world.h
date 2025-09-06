@@ -70,15 +70,7 @@ private:
 
     DescriptorManager global_desc_manager;
 
-    ComputePipelineSet<SimulationPushConstants> simulation_pipelines;
-    u32 sim_pos;
-    u32 sim_ext_forces;
-    u32 sim_reorder;
-    u32 sim_spatial_hash;
-    u32 sim_reorder_copyback;
-    u32 sim_pressure;
-    u32 sim_density;
-    u32 sim_viscosity;
+    ComputePipeline simulation_pipeline;
 
     GPUCountSort sort;
     SpatialOffset offset;

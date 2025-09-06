@@ -25,7 +25,6 @@ private:
     };
 
     ComputePipeline scan_pipeline;
-    ComputePipeline combine_pipeline;
     std::unordered_map<int, gfx::Buffer> free_buffers;
 };
 
@@ -50,10 +49,7 @@ private:
         u32 item_count;
     };
 
-    ComputePipeline clear_counts_pipeline;
-    ComputePipeline count_pipeline;
-    ComputePipeline scatter_pipeline;
-    ComputePipeline copy_back_pipeline;
+    ComputePipeline sort_pipeline;
 
     GPUScan gpu_scan;
 
@@ -79,8 +75,7 @@ private:
         u32 num_inputs;
     };
 
-    ComputePipeline offset_init_pipeline;
-    ComputePipeline offset_calc_pipeline;
+    ComputePipeline offset_pipeline;
 };
 
 }  // namespace vfs

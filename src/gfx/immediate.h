@@ -1,5 +1,5 @@
+#pragma once
 #include "gfx/common.h"
-#pragma
 
 namespace gfx {
 class ImmediateRunner {

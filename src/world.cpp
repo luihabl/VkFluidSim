@@ -13,6 +13,19 @@
 #include "pipeline.h"
 #include "platform.h"
 
+namespace {
+enum SimKernel : u32 {
+    KernelUpdatePositions = 0,
+    KernelExternalForces,
+    KernelReorderCopyback,
+    KernelReorder,
+    KernelCalculateDensities,
+    KernelCalculatePressureForces,
+    KernelCalculateViscosityForces,
+    KernelUpdateSpatialHash
+};
+}
+
 namespace vfs {
 
 namespace {
@@ -183,17 +196,37 @@ void World::InitSimulationPipelines() {
     global_desc_manager.Init(gfx.GetCoreCtx(), sizeof(SimulationUniformData));
     global_desc_manager.SetUniformData(&sim_uniform_data);
 
-    simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
+    simulation_pipeline.Init(gfx.GetCoreCtx(),
+                             {
+                                 .desc_manager = &global_desc_manager,
+                                 .push_const_size = sizeof(SimulationPushConstants),
+                                 .shader_path = "shaders/compiled/simulation.slang.spv",
+                                 .kernels =
+                                     {
+                                         "update_positions",
+                                         "external_forces",
+                                         "reorder_copyback",
+                                         "reorder",
+                                         "calculate_densities",
+                                         "calculate_pressure_forces",
+                                         "calculate_viscosity_forces",
+                                         "update_spatial_hash",
+                                     },
+                             });
 
-    std::string spath = "shaders/compiled/simulation.slang.spv";
-    sim_pos = simulation_pipelines.Add(spath, "update_positions");
-    sim_ext_forces = simulation_pipelines.Add(spath, "external_forces");
-    sim_reorder_copyback = simulation_pipelines.Add(spath, "reorder_copyback");
-    sim_reorder = simulation_pipelines.Add(spath, "reorder");
-    sim_density = simulation_pipelines.Add(spath, "calculate_densities");
-    sim_pressure = simulation_pipelines.Add(spath, "calculate_pressure_forces");
-    sim_viscosity = simulation_pipelines.Add(spath, "calculate_viscosity_forces");
-    sim_spatial_hash = simulation_pipelines.Add(spath, "update_spatial_hash");
+    // simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
+    // std::string spath = "shaders/compiled/simulation.slang.spv";
+    // sim_pos = simulation_pipelines.Add(spath, "update_positions");
+    // sim_ext_forces = simulation_pipelines.Add(spath, "external_forces");
+    // sim_reorder_copyback = simulation_pipelines.Add(spath, "reorder_copyback");
+    // sim_reorder = simulation_pipelines.Add(spath, "reorder");
+    // sim_density = simulation_pipelines.Add(spath, "calculate_densities");
+    // sim_pressure = simulation_pipelines.Add(spath, "calculate_pressure_forces");
+    // sim_viscosity = simulation_pipelines.Add(spath, "calculate_viscosity_forces");
+    // sim_spatial_hash = simulation_pipelines.Add(spath, "update_spatial_hash");
+    //
+    //
+    //
 }
 
 void World::SetBox(float w, float h) {
@@ -291,14 +324,13 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
     };
 
     auto n_groups = glm::ivec3(n_particles / 64 + 1, 1, 1);
-    simulation_pipelines.UpdatePushConstants(comp_consts);
 
     for (int i = 0; i < iterations; i++) {
-        simulation_pipelines.Run(sim_ext_forces, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelExternalForces, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
         // RunSpatial
-        simulation_pipelines.Run(sim_spatial_hash, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelUpdateSpatialHash, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
         sort.Run(cmd, gfx.GetCoreCtx(), spatial_indices, spatial_keys, n_particles - 1);
@@ -307,22 +339,22 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         offset.Run(cmd, gfx.GetCoreCtx(), true, spatial_keys, spatial_offsets);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipelines.Run(sim_reorder, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelReorder, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipelines.Run(sim_reorder_copyback, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelReorderCopyback, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipelines.Run(sim_density, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipelines.Run(sim_pressure, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipelines.Run(sim_viscosity, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelCalculateViscosityForces, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipelines.Run(sim_pos, cmd, n_groups);
+        simulation_pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
     }
 }
@@ -485,7 +517,7 @@ void World::Clear() {
         frame.density_buffer.Destroy();
     }
 
-    simulation_pipelines.Clear();
+    simulation_pipeline.Clear(gfx.GetCoreCtx());
     global_desc_manager.Clear(gfx.GetCoreCtx());
     gfx::DestroyMesh(gfx, circle_mesh);
     renderer.Clear(gfx);

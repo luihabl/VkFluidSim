@@ -7,6 +7,23 @@ namespace vfs {
 
 namespace {
 
+enum OffsetKernels : u32 {
+    KernelInitOffsets = 0,
+    KernelCalculateOffsets,
+};
+
+enum ScanKernels : u32 {
+    KernelScanBlock = 0,
+    KernelScanCombine,
+};
+
+enum SortKernels : u32 {
+    KernelClearCounts = 0,
+    KernelCalcCounts,
+    KernelScatter,
+    KernelCopyBack,
+};
+
 bool CreateBufferIfNeeded(const gfx::CoreCtx& ctx, gfx::Buffer& buf, u32 size) {
     bool create_buf = buf.buffer == nullptr || buf.size < size;
     if (create_buf) {
@@ -23,16 +40,13 @@ bool CreateBufferIfNeeded(const gfx::CoreCtx& ctx, gfx::Buffer& buf, u32 size) {
 }  // namespace
 
 void GPUScan::Init(const gfx::CoreCtx& ctx) {
-    auto config = ComputePipeline::Config{.shader_path = "shaders/compiled/scan.slang.spv",
-                                          .push_const_size = sizeof(PushConstants)};
-
-    scan_pipeline.Init(ctx, config, "scan_block");
-    combine_pipeline.Init(ctx, config, "scan_combine");
+    scan_pipeline.Init(ctx, {.shader_path = "shaders/compiled/scan.slang.spv",
+                             .push_const_size = sizeof(PushConstants),
+                             .kernels = {"scan_block", "scan_combine"}});
 }
 
 void GPUScan::Clear(const gfx::CoreCtx& ctx) {
     scan_pipeline.Clear(ctx);
-    combine_pipeline.Clear(ctx);
     for (auto& [k, v] : free_buffers) {
         v.Destroy();
     }
@@ -59,26 +73,21 @@ void GPUScan::Run(VkCommandBuffer cmd, const gfx::CoreCtx& ctx, const gfx::Buffe
         .item_count = count,
     };
 
-    scan_pipeline.Compute(cmd, {num_groups, 1, 1}, &push_constants);
+    scan_pipeline.Compute(cmd, KernelScanBlock, {num_groups, 1, 1}, &push_constants);
     ComputeToComputePipelineBarrier(cmd);
 
     if (num_groups > 1) {
         // Recursively scan group_sums
         Run(cmd, ctx, group_sum_buffer);
-        combine_pipeline.Compute(cmd, {num_groups, 1, 1}, &push_constants);
+        scan_pipeline.Compute(cmd, KernelScanCombine, {num_groups, 1, 1}, &push_constants);
     }
 }
 
 void GPUCountSort::Init(const gfx::CoreCtx& ctx) {
-    auto config = ComputePipeline::Config{
-        .shader_path = "shaders/compiled/sort.slang.spv",
-        .push_const_size = sizeof(PushConstants),
-    };
-
-    clear_counts_pipeline.Init(ctx, config, "clear_counts");
-    count_pipeline.Init(ctx, config, "calculate_counts");
-    scatter_pipeline.Init(ctx, config, "scatter_output");
-    copy_back_pipeline.Init(ctx, config, "copy_back");
+    sort_pipeline.Init(
+        ctx, {.shader_path = "shaders/compiled/sort.slang.spv",
+              .push_const_size = sizeof(PushConstants),
+              .kernels = {"clear_counts", "calculate_counts", "scatter_output", "copy_back"}});
 
     gpu_scan.Init(ctx);
 }
@@ -86,10 +95,7 @@ void GPUCountSort::Init(const gfx::CoreCtx& ctx) {
 void GPUCountSort::Clear(const gfx::CoreCtx& ctx) {
     gpu_scan.Clear(ctx);
 
-    clear_counts_pipeline.Clear(ctx);
-    count_pipeline.Clear(ctx);
-    scatter_pipeline.Clear(ctx);
-    copy_back_pipeline.Clear(ctx);
+    sort_pipeline.Clear(ctx);
 
     sorted_items_buffer.Destroy();
     sorted_values_buffer.Destroy();
@@ -118,34 +124,30 @@ void GPUCountSort::Run(VkCommandBuffer cmd,
 
     u32 n_groups = item_count / 256 + 1;
 
-    clear_counts_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    sort_pipeline.Compute(cmd, KernelClearCounts, {n_groups, 1, 1}, &push_consts);
     ComputeToComputePipelineBarrier(cmd);
 
-    count_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    sort_pipeline.Compute(cmd, KernelCalcCounts, {n_groups, 1, 1}, &push_consts);
     ComputeToComputePipelineBarrier(cmd);
 
     gpu_scan.Run(cmd, ctx, counts_buffer);
     ComputeToComputePipelineBarrier(cmd);
 
-    scatter_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    sort_pipeline.Compute(cmd, KernelScatter, {n_groups, 1, 1}, &push_consts);
     ComputeToComputePipelineBarrier(cmd);
 
-    copy_back_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    sort_pipeline.Compute(cmd, KernelCopyBack, {n_groups, 1, 1}, &push_consts);
     ComputeToComputePipelineBarrier(cmd);
 }
 
 void SpatialOffset::Init(const gfx::CoreCtx& ctx) {
-    auto config =
-        ComputePipeline::Config{.shader_path = "shaders/compiled/spatial_offsets.slang.spv",
-                                .push_const_size = sizeof(PushConstants)};
-
-    offset_init_pipeline.Init(ctx, config, "init_offsets");
-    offset_calc_pipeline.Init(ctx, config, "calculate_offsets");
+    offset_pipeline.Init(ctx, {.shader_path = "shaders/compiled/spatial_offsets.slang.spv",
+                               .push_const_size = sizeof(PushConstants),
+                               .kernels = {"init_offsets", "calculate_offsets"}});
 }
 
 void SpatialOffset::Clear(const gfx::CoreCtx& ctx) {
-    offset_init_pipeline.Clear(ctx);
-    offset_calc_pipeline.Clear(ctx);
+    offset_pipeline.Clear(ctx);
 }
 
 void SpatialOffset::Run(VkCommandBuffer cmd,
@@ -164,11 +166,11 @@ void SpatialOffset::Run(VkCommandBuffer cmd,
     u32 n_groups = num_inputs / 256 + 1;
 
     if (init) {
-        offset_init_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+        offset_pipeline.Compute(cmd, KernelInitOffsets, {n_groups, 1, 1}, &push_consts);
         ComputeToComputePipelineBarrier(cmd);
     }
 
-    offset_calc_pipeline.Compute(cmd, {n_groups, 1, 1}, &push_consts);
+    offset_pipeline.Compute(cmd, KernelCalculateOffsets, {n_groups, 1, 1}, &push_consts);
 }
 
 }  // namespace vfs

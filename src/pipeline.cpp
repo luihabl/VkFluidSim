@@ -120,9 +120,7 @@ void DescriptorManager::SetUniformData(void* data) {
     memcpy(global_constants_ubo.Map(), data, size);
 }
 
-void ComputePipeline::Init(const gfx::CoreCtx& ctx,
-                           const Config& input_config,
-                           const std::string& entry_point) {
+void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) {
     config = input_config;
 
     auto shader = vk::util::LoadShaderModule(
@@ -141,13 +139,25 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx,
         layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
     }
 
-    pipeline = vk::util::BuildComputePipeline(ctx.device, layout, shader, entry_point.c_str());
+    i32 id = 0;
+    for (const auto& kernel : config.kernels) {
+        ids[kernel] = id++;
+        pipelines.push_back(
+            vk::util::BuildComputePipeline(ctx.device, layout, shader, kernel.c_str()));
+    }
 
     vkDestroyShaderModule(ctx.device, shader, nullptr);
 }
 
-void ComputePipeline::Compute(VkCommandBuffer cmd, glm::ivec3 group_count, void* push_constants) {
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+u32 ComputePipeline::FindKernelId(const std::string& entry_point) {
+    return ids.at(entry_point);
+}
+
+void ComputePipeline::Compute(VkCommandBuffer cmd,
+                              u32 kernel_id,
+                              glm::ivec3 group_count,
+                              void* push_constants) {
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelines[kernel_id]);
 
     if (config.desc_manager) {
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
@@ -162,7 +172,9 @@ void ComputePipeline::Compute(VkCommandBuffer cmd, glm::ivec3 group_count, void*
 }
 
 void ComputePipeline::Clear(const gfx::CoreCtx& ctx) {
-    vkDestroyPipeline(ctx.device, pipeline, nullptr);
+    for (auto& pipeline : pipelines) {
+        vkDestroyPipeline(ctx.device, pipeline, nullptr);
+    }
 }
 
 void ComputeToComputePipelineBarrier(VkCommandBuffer cmd) {

@@ -109,10 +109,27 @@ void DrawCircleFill(gfx::CPUMesh& mesh,
 
         const unsigned int n = (unsigned int)mesh.vertices.size();
         mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1});
-        mesh.vertices.insert(mesh.vertices.end(), {{.pos = p0, .color = color},
-                                                   {.pos = p1, .color = color},
-                                                   {.pos = p2, .color = color}});
+        mesh.vertices.insert(mesh.vertices.end(), {{.pos = p0, .color = color, .uv = {}},
+                                                   {.pos = p1, .color = color, .uv = {}},
+                                                   {.pos = p2, .color = color, .uv = {}}});
     }
+}
+
+void DrawSquare(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm::vec4& color) {
+    const unsigned int n = (unsigned int)mesh.vertices.size();
+
+    float hs = 0.5 * side;
+
+    auto ll = glm::vec3(center.x - hs, center.y - hs, 0.0f);
+    auto lr = glm::vec3(center.x + hs, center.y - hs, 0.0f);
+    auto ur = glm::vec3(center.x + hs, center.y + hs, 0.0f);
+    auto ul = glm::vec3(center.x - hs, center.y + hs, 0.0f);
+
+    mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1, n + 0, n + 3, n + 2});
+    mesh.vertices.push_back({.pos = ll, .color = color, .uv = {0.0f, 0.0f}});
+    mesh.vertices.push_back({.pos = lr, .color = color, .uv = {1.0f, 0.0f}});
+    mesh.vertices.push_back({.pos = ur, .color = color, .uv = {1.0f, 1.0f}});
+    mesh.vertices.push_back({.pos = ul, .color = color, .uv = {0.0f, 1.0f}});
 }
 
 std::vector<glm::vec2> SpawnParticlesInBox(glm::vec4 box, u32 count) {
@@ -161,7 +178,8 @@ void World::Init(Platform& platform) {
     InitSimulationPipelines();
 
     gfx::CPUMesh mesh;
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 3);
+    // DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 3);
+    DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     circle_mesh = gfx::UploadMesh(gfx, mesh);
 
     SetInitialData();

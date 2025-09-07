@@ -1,15 +1,18 @@
 import colormap;
 
 static const float v_max = 6.5f;
+static const float radius = 0.2;
 
 struct Vertex {
     float3 position : POSITION;
     float4 color : COLOR;
+    float2 uv : UV;
 }
 
 struct VertexOutput {
     float4 position : SV_Position;
     float4 color;
+    float2 uv : UV;
 };
 
 struct FragmentOutput {
@@ -33,6 +36,7 @@ VertexOutput vertex_main(uint id: SV_VulkanInstanceID, Vertex vertex, uniform In
     VertexOutput out;
     out.position = mul(pc.matrix, float4(vertex.position + offset, 1.0f));
     out.color = IDL::Mac_Style::colormap(grad);
+    out.uv = vertex.uv;
 
     return out;
 }
@@ -40,6 +44,15 @@ VertexOutput vertex_main(uint id: SV_VulkanInstanceID, Vertex vertex, uniform In
 [shader("fragment")]
 FragmentOutput frag_main(VertexOutput input) {
     FragmentOutput out;
-    out.color = input.color;
-    return out;
+
+    let uv_centered = input.uv - float2(0.5, 0.5);
+    float sqr_dist = dot(uv_centered, uv_centered);
+
+    if (sqr_dist <= radius * radius) {
+        out.color = input.color;
+        return out;
+    } else {
+        out.color = float4(0, 0, 0, 0);
+        return out;
+    }
 }

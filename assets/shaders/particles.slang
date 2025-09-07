@@ -1,7 +1,8 @@
 import colormap;
 
 static const float v_max = 6.5f;
-static const float radius = 0.2;
+static const float radius = 0.35;
+static const float smooth_delta = 0.03f;
 
 struct Vertex {
     float3 position : POSITION;
@@ -46,13 +47,10 @@ FragmentOutput frag_main(VertexOutput input) {
     FragmentOutput out;
 
     let uv_centered = input.uv - float2(0.5, 0.5);
-    float sqr_dist = dot(uv_centered, uv_centered);
+    let squared_dist = dot(uv_centered, uv_centered);
+    let r = radius * radius;
+    let intensity = 1 - smoothstep(r - smooth_delta, r + smooth_delta, squared_dist);
 
-    if (sqr_dist <= radius * radius) {
-        out.color = input.color;
-        return out;
-    } else {
-        out.color = float4(0, 0, 0, 0);
-        return out;
-    }
+    out.color = float4(input.color.r, input.color.g, input.color.b, intensity);
+    return out;
 }

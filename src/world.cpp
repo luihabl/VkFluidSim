@@ -178,9 +178,8 @@ void World::Init(Platform& platform) {
     InitSimulationPipelines();
 
     gfx::CPUMesh mesh;
-    // DrawCircleFill(mesh, glm::vec3(0.0f), 0.05f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), 3);
     DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-    circle_mesh = gfx::UploadMesh(gfx, mesh);
+    particle_mesh = gfx::UploadMesh(gfx, mesh);
 
     SetInitialData();
 
@@ -415,7 +414,7 @@ void World::Update(Platform& platform) {
         .velocities = frame_buffers[current_frame].velocity_buffer.device_addr,
     };
 
-    renderer.Draw(gfx, cmd, circle_mesh, draw_push_constants, n_particles);
+    renderer.Draw(gfx, cmd, particle_mesh, draw_push_constants, n_particles);
 
     gfx.SetBottomTimestamp(cmd, 2);
 
@@ -548,7 +547,7 @@ void World::Clear() {
 
     simulation_pipeline.Clear(gfx.GetCoreCtx());
     global_desc_manager.Clear(gfx.GetCoreCtx());
-    gfx::DestroyMesh(gfx, circle_mesh);
+    gfx::DestroyMesh(gfx, particle_mesh);
     renderer.Clear(gfx);
     gfx.Clear();
 }

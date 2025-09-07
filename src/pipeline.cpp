@@ -12,9 +12,7 @@ namespace vfs {
 
 void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
     auto gfx_shader = vk::util::LoadShaderModule(
-        ctx, Platform::Info::ResourcePath("shaders/compiled/gfx.slang.spv").c_str());
-
-    // TODO: FILL THIS!!! Add the descriptor layouts hrere
+        ctx, Platform::Info::ResourcePath("shaders/compiled/particles.slang.spv").c_str());
 
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,

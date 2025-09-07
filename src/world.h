@@ -85,7 +85,7 @@ private:
     gfx::Buffer sort_target_pred_position;
     gfx::Buffer sort_target_velocity;
 
-    gfx::GPUMesh circle_mesh;
+    gfx::GPUMesh particle_mesh;
 
     glm::vec4 box;
     glm::vec4 cbox;

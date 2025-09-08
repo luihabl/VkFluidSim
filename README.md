@@ -24,4 +24,4 @@ Some other dependencies used in this small project are
 - fmt
 - glm
 
-Also a bit thanks to Sebastien Lague's project [SebLague/Fluid-Sim](https://github.com/SebLague/Fluid-Sim) which served as the main inspiration and base of this project.
+Also a big thanks to Sebastien Lague's project [SebLague/Fluid-Sim](https://github.com/SebLague/Fluid-Sim) which served as the main inspiration and base of this project.

@@ -49,11 +49,9 @@ PUBLIC
 
 target_link_libraries(imgui PRIVATE Vulkan::Vulkan SDL3::SDL3)
 
-#CPMAddPackage("gh:tinyobjloader/tinyobjloader#release")
 CPMAddPackage("gh:charles-lunarg/vk-bootstrap@1.4.323")
 CPMAddPackage("gh:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator@3.3.0")
 CPMAddPackage("gh:fmtlib/fmt#11.2.0")
-#CPMAddPackage("gh:spnda/fastgltf@0.9.0")
 
 # executable
 add_executable(vfs

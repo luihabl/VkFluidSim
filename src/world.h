@@ -94,7 +94,7 @@ private:
 
     float time_scale = 1.0f;
     int iterations = 3;
-    int n_particles = 4536;
+    int n_particles;
     float spacing = 0.2f;
     float scale = 1.5e-2;
     float fixed_dt = 1 / 120.0f;

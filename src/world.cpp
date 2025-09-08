@@ -230,20 +230,6 @@ void World::InitSimulationPipelines() {
                                          "update_spatial_hash",
                                      },
                              });
-
-    // simulation_pipelines.Init(gfx.GetCoreCtx(), &global_desc_manager);
-    // std::string spath = "shaders/compiled/simulation.slang.spv";
-    // sim_pos = simulation_pipelines.Add(spath, "update_positions");
-    // sim_ext_forces = simulation_pipelines.Add(spath, "external_forces");
-    // sim_reorder_copyback = simulation_pipelines.Add(spath, "reorder_copyback");
-    // sim_reorder = simulation_pipelines.Add(spath, "reorder");
-    // sim_density = simulation_pipelines.Add(spath, "calculate_densities");
-    // sim_pressure = simulation_pipelines.Add(spath, "calculate_pressure_forces");
-    // sim_viscosity = simulation_pipelines.Add(spath, "calculate_viscosity_forces");
-    // sim_spatial_hash = simulation_pipelines.Add(spath, "update_spatial_hash");
-    //
-    //
-    //
 }
 
 void World::SetBox(float w, float h) {
@@ -500,12 +486,22 @@ void World::DrawUI(VkCommandBuffer cmd) {
         }
 
         if (ImGui::SliderFloat("Pressure multiplier", &sim_uniform_data.pressure_multiplier, 0.0f,
-                               1000.0f)) {
+                               2000.0f)) {
             update_uniform_data = true;
         }
 
         if (ImGui::SliderFloat("Smoothing radius", &sim_uniform_data.smoothing_radius, 0.0f,
                                0.6f)) {
+            sim_uniform_data.poly6_scale =
+                4.0f / (glm::pi<float>() * (float)std::pow(sim_uniform_data.smoothing_radius, 8));
+            sim_uniform_data.spiky_pow3_scale =
+                10.0f / (glm::pi<float>() * (float)std::pow(sim_uniform_data.smoothing_radius, 5));
+            sim_uniform_data.spiky_pow2_scale =
+                6.0f / (glm::pi<float>() * (float)std::pow(sim_uniform_data.smoothing_radius, 4));
+            sim_uniform_data.spiky_pow3_diff_scale =
+                30.0f / (glm::pi<float>() * (float)std::pow(sim_uniform_data.smoothing_radius, 5));
+            sim_uniform_data.spiky_pow2_diff_scale =
+                12.0f / (glm::pi<float>() * (float)std::pow(sim_uniform_data.smoothing_radius, 4));
             update_uniform_data = true;
         }
 

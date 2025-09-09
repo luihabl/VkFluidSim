@@ -98,9 +98,11 @@ float2 calculate_density(float2 pos, uint n_particles) {
 float2 calculate_pressure_force(uint id, PushConstants k) {
     float density = k.densities[id].x;
     float density_near = k.densities[id].y;
+    let velocity = k.velocities[id];
     float pressure = PressureFromDensity(density);
     float near_pressure = NearPressureFromDensity(density_near);
     var pressure_force = float2(0.0f);
+    var viscous_force = float2(0.0f);
 
     let pos = ubo.predicted_positions[id];
     let origin_cell = GetCell2D(pos, ubo.smoothing_radius);
@@ -133,8 +135,9 @@ float2 calculate_pressure_force(uint id, PushConstants k) {
             float dst = sqrt(sqr_dst_to_neighbor);
             float2 dir_to_neighbor = dst > 0 ? offset_to_neighbor / dst : float2(0, 1);
 
-            float neighbor_density = k.densities[neighbor_index].x;
-            float neighbor_near_density = k.densities[neighbor_index].y;
+            const float2 dens = k.densities[neighbor_index];
+            float neighbor_density = dens.x;
+            float neighbor_near_density = dens.y;
             float neighbor_pressure = PressureFromDensity(neighbor_density);
             float neighbor_near_pressure = NearPressureFromDensity(neighbor_near_density);
 
@@ -145,10 +148,14 @@ float2 calculate_pressure_force(uint id, PushConstants k) {
                               shared_pressure / neighbor_density;
             pressure_force += dir_to_neighbor * NearDensityDerivative(dst, ubo.smoothing_radius) *
                               shared_near_pressure / neighbor_near_density;
+
+            let neighbor_velocity = k.velocities[neighbor_index];
+            viscous_force +=
+                (neighbor_velocity - velocity) * ViscosityKernel(dst, ubo.smoothing_radius);
         }
     }
 
-    return pressure_force / density;
+    return pressure_force / density + viscous_force * ubo.viscosity_strenght;
 }
 
 float2 calculate_viscosity_force(uint id, PushConstants k) {

@@ -109,9 +109,8 @@ void DrawCircleFill(gfx::CPUMesh& mesh,
 
         const unsigned int n = (unsigned int)mesh.vertices.size();
         mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1});
-        mesh.vertices.insert(mesh.vertices.end(), {{.pos = p0, .color = color, .uv = {}},
-                                                   {.pos = p1, .color = color, .uv = {}},
-                                                   {.pos = p2, .color = color, .uv = {}}});
+        mesh.vertices.insert(mesh.vertices.end(),
+                             {{.pos = p0, .uv = {}}, {.pos = p1, .uv = {}}, {.pos = p2, .uv = {}}});
     }
 }
 
@@ -126,10 +125,10 @@ void DrawSquare(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const g
     auto ul = glm::vec3(center.x - hs, center.y + hs, 0.0f);
 
     mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1, n + 0, n + 3, n + 2});
-    mesh.vertices.push_back({.pos = ll, .color = color, .uv = {0.0f, 0.0f}});
-    mesh.vertices.push_back({.pos = lr, .color = color, .uv = {1.0f, 0.0f}});
-    mesh.vertices.push_back({.pos = ur, .color = color, .uv = {1.0f, 1.0f}});
-    mesh.vertices.push_back({.pos = ul, .color = color, .uv = {0.0f, 1.0f}});
+    mesh.vertices.push_back({.pos = ll, .uv = {0.0f, 0.0f}});
+    mesh.vertices.push_back({.pos = lr, .uv = {1.0f, 0.0f}});
+    mesh.vertices.push_back({.pos = ur, .uv = {1.0f, 1.0f}});
+    mesh.vertices.push_back({.pos = ul, .uv = {0.0f, 1.0f}});
 }
 
 std::vector<glm::vec2> SpawnParticlesInBox(glm::vec4 box, u32 count) {
@@ -158,7 +157,7 @@ void World::Init(Platform& platform) {
     gfx.Init({
         .name = "Vulkan fluid sim",
         .window = platform.GetWindow(),
-        .validation_layers = false,
+        .validation_layers = true,
     });
 
     gpu_times.resize(6, 0);
@@ -167,12 +166,10 @@ void World::Init(Platform& platform) {
     renderer.Init(gfx, ext.width, ext.height);
     ui.Init(gfx);
 
-    // TODO: Add options to ImGui and make time profilers to discover the performance bottlenecks.
-
     iterations = 3;
     time_scale = 1.0f;
     scale = 1.5e-2;
-    n_particles = 4505;
+    n_particles = 16324;
     SetBox(17.1, 9.3);
 
     InitSimulationPipelines();
@@ -258,14 +255,14 @@ void World::ResetSimulation() {
 }
 
 void World::SetInitialData() {
-    const float smoothing_radius = 0.35f;
+    const float smoothing_radius = 0.2;
     sim_uniform_data = SimulationUniformData{
-        .gravity = -12.0f,
-        .damping_factor = 0.95f,
+        .gravity = -13.0f,
+        .damping_factor = 0.5f,
         .smoothing_radius = smoothing_radius,
-        .target_density = 55.0f,
-        .pressure_multiplier = 500.0f,
-        .near_pressure_multiplier = 5.0f,
+        .target_density = 234.0f,
+        .pressure_multiplier = 225.0f,
+        .near_pressure_multiplier = 18.0f,
         .viscosity_strenght = 0.03f,
 
         .box = box,
@@ -318,8 +315,6 @@ void World::CopyBuffersToNextFrame(VkCommandBuffer cmd) {
 }  // namespace vfs
 
 void World::RunSimulationStep(VkCommandBuffer cmd) {
-    auto group_count = glm::ivec3{n_particles / 64 + 1, 1, 1};
-
     auto comp_consts = SimulationPushConstants{
         .time = Platform::Info::GetTime(),
         .dt = time_scale * fixed_dt / (float)iterations,
@@ -358,8 +353,8 @@ void World::RunSimulationStep(VkCommandBuffer cmd) {
         simulation_pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);
 
-        simulation_pipeline.Compute(cmd, KernelCalculateViscosityForces, n_groups, &comp_consts);
-        ComputeToComputePipelineBarrier(cmd);
+        // simulation_pipeline.Compute(cmd, KernelCalculateViscosityForces, n_groups, &comp_consts);
+        // ComputeToComputePipelineBarrier(cmd);
 
         simulation_pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &comp_consts);
         ComputeToComputePipelineBarrier(cmd);

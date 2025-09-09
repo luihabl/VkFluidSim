@@ -1,12 +1,11 @@
 import colormap;
 
 static const float v_max = 6.5f;
-static const float radius = 0.35;
-static const float smooth_delta = 0.03f;
+static const float radius = 0.1;
+static const float smooth_delta = 0.01f;
 
 struct Vertex {
     float3 position : POSITION;
-    float4 color : COLOR;
     float2 uv : UV;
 }
 

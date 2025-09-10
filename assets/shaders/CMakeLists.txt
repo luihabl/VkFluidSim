@@ -6,12 +6,15 @@ set(SLANG_SHADERS
     sort.slang
     scan.slang
     simulation.slang
+    simulation_3d.slang
 )
 
 set(SLANG_DEPENDENT_FILES
     colormap.slang
     simulation/kernels.slang
+    simulation/kernels_3d.slang
     simulation/spatial_hash.slang
+    simulation/spatial_hash_3d.slang
 )
 
 set(SLANG_COMPILER_FLAGS

@@ -15,6 +15,11 @@ struct PushConstants {
     float2* densities;
 }
 
+struct BoundingBox {
+    float2 size;
+    float2 pos;
+}
+
 struct UniformConstants {
     float gravity;
     float damping_factor;
@@ -24,7 +29,7 @@ struct UniformConstants {
     float near_pressure_multiplier;
     float viscosity_strenght;
 
-    float4 box;
+    BoundingBox box;
 
     float poly6_scale;
     float spiky_pow3_scale;
@@ -201,23 +206,23 @@ float2 calculate_viscosity_force(uint id, PushConstants k) {
 }
 
 void ProcessBoundaries(inout float2 p, inout float2 v) {
-    if (p.x < ubo.box.x) {
-        p.x = ubo.box.x;  // 2 * ubo.box.x - p.x;
+    if (p.x < ubo.box.pos.x) {
+        p.x = ubo.box.pos.x;  // 2 * ubo.box.x - p.x;
         v.x = -v.x * ubo.damping_factor;
     }
 
-    if (p.y < ubo.box.y) {
-        p.y = ubo.box.y;  // 2*ubo.box.y-p.y;
+    if (p.y < ubo.box.pos.y) {
+        p.y = ubo.box.pos.y;  // 2*ubo.box.y-p.y;
         v.y = -v.y * ubo.damping_factor;
     }
 
-    if (p.x > ubo.box.x + ubo.box.z) {
-        p.x = ubo.box.x + ubo.box.z;  // 2 * (ubo.box.x + ubo.box.z) - p.x;
+    if (p.x > ubo.box.pos.x + ubo.box.size.x) {
+        p.x = ubo.box.pos.x + ubo.box.size.x;  // 2 * (ubo.box.x + ubo.box.z) - p.x;
         v.x = -v.x * ubo.damping_factor;
     }
 
-    if (p.y > ubo.box.y + ubo.box.w) {
-        p.y = ubo.box.y + ubo.box.w;  // 2 * (ubo.box.y + ubo.box.w) - p.y;
+    if (p.y > ubo.box.pos.y + ubo.box.size.y) {
+        p.y = ubo.box.pos.y + ubo.box.size.y;  // 2 * (ubo.box.y + ubo.box.w) - p.y;
         v.y = -v.y * ubo.damping_factor;
     }
 }

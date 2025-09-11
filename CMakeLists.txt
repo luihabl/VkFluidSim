@@ -65,11 +65,12 @@ src/gfx/descriptor.cpp
 src/gfx/common.cpp
 src/platform.cpp
 src/world.cpp
-src/world_3d.cpp
+# src/world_3d.cpp
 src/renderer.cpp
 src/pipeline.cpp
 src/sort.cpp
 src/ui.cpp
+src/simulation.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

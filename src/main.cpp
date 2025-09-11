@@ -1,5 +1,5 @@
 #include "platform.h"
-#include "world_3d.h"
+#include "world.h"
 
 std::filesystem::path GetResourcesFolder(int argc, char* argv[]) {
     if (argc > 1) {
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
     auto platform = vfs::Platform{};
 
-    auto world = vfs::World3D{};
+    auto world = vfs::World{};
 
     platform.Init({
         .name = "Vulkan fluid sim",

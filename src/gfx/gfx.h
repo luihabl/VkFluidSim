@@ -44,6 +44,58 @@ struct Device {
 
     void ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) const;
 
+    template <typename T>
+    void SetDataVal(const gfx::Buffer& buf, const T& value) const {
+        auto staging = gfx::Buffer::Create(core, buf.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                           VMA_MEMORY_USAGE_CPU_ONLY);
+        void* data = staging.Map();
+
+        size_t n = buf.size / sizeof(T);
+        auto* dp = (T*)data;
+
+        for (int i = 0; i < n; i++) {
+            dp[i] = value;
+        }
+
+        ImmediateSubmit([&](VkCommandBuffer cmd) {
+            auto cpy_info = VkBufferCopy{
+                .dstOffset = 0,
+                .srcOffset = 0,
+                .size = buf.size,
+            };
+
+            vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
+        });
+
+        staging.Destroy();
+    }
+
+    template <typename T>
+    void SetDataVec(const gfx::Buffer& buf, const std::vector<T>& value) const {
+        auto staging = gfx::Buffer::Create(core, buf.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                           VMA_MEMORY_USAGE_CPU_ONLY);
+        void* data = staging.Map();
+
+        size_t n = buf.size / sizeof(T);
+        auto* dp = (T*)data;
+
+        for (int i = 0; i < n; i++) {
+            dp[i] = value[i];
+        }
+
+        ImmediateSubmit([&](VkCommandBuffer cmd) {
+            auto cpy_info = VkBufferCopy{
+                .dstOffset = 0,
+                .srcOffset = 0,
+                .size = buf.size,
+            };
+
+            vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
+        });
+
+        staging.Destroy();
+    }
+
     void SetTopTimestamp(VkCommandBuffer cmd, u32 id);
     void SetBottomTimestamp(VkCommandBuffer cmd, u32 id);
 

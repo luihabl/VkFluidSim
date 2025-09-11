@@ -78,6 +78,12 @@ void World::Init(Platform& platform) {
     DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 
+    camera.GetTransform().scale = glm::vec3(65.0f);
+
+    auto win_size = glm::vec2(Platform::Info::GetConfig()->w, Platform::Info::GetConfig()->h);
+    auto box_size = simulation.GetBoundingBox().size / particle_scale;
+    camera.GetTransform().position = -glm::vec3((win_size - box_size) / 2.0f, 0.0f);
+
     ResetSimulation();
 }
 
@@ -108,19 +114,9 @@ void World::Update(Platform& platform) {
 
     gfx.SetBottomTimestamp(cmd, 1);
 
-    // Run graphics step
-    auto transform = glm::ortho(0.0f, (float)platform.GetConfig().w, (float)platform.GetConfig().h,
-                                0.0f, -1.0f, 1.0f);
-
-    auto win_size = glm::vec2(Platform::Info::GetConfig()->w, Platform::Info::GetConfig()->h);
-    auto box_size = simulation.GetBoundingBox().size / particle_scale;
-    transform = glm::translate(transform, glm::vec3((win_size - box_size) / 2.0f, 0.0f));
-
-    transform = glm::scale(transform, glm::vec3(1 / particle_scale, 1 / particle_scale, 1.0f));
-
     const auto& buffers = simulation.GetFrameData(current_frame);
     auto draw_push_constants = DrawPushConstants{
-        .matrix = transform,
+        .matrix = camera.ViewProjectionMatrix(),
         .positions = buffers.position_buffer.device_addr,
         .velocities = buffers.velocity_buffer.device_addr,
     };
@@ -192,6 +188,15 @@ void World::DrawUI(VkCommandBuffer cmd) {
         ImGui::Text("All render: %.2f ms", gpu_times[2]);
         ImGui::Text("Particle render: %.2f ms", gpu_times[3]);
         ImGui::Text("UI render: %.2f ms", gpu_times[4]);
+    }
+
+    if (ImGui::CollapsingHeader("Camera")) {
+        ImGui::SliderFloat3("Position", &camera.GetTransform().position.x, -300.0f, 300.0f);
+
+        float zoom = camera.GetTransform().scale.x;
+        if (ImGui::SliderFloat("Scale", &zoom, 1.0f, 100.0f)) {
+            camera.GetTransform().scale = glm::vec3(zoom);
+        }
     }
 
     if (ImGui::CollapsingHeader("Parameters")) {

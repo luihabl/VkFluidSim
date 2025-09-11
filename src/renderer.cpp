@@ -6,7 +6,7 @@
 
 namespace vfs {
 
-void Renderer::Init(const gfx::Device& gfx, int w, int h) {
+void SimulationRenderer2D::Init(const gfx::Device& gfx, int w, int h) {
     VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
 
     // draw image
@@ -43,11 +43,11 @@ void Renderer::Init(const gfx::Device& gfx, int w, int h) {
     sprite_pipeline.Init(gfx.GetCoreCtx(), draw_img.format);
 }
 
-void Renderer::Draw(gfx::Device& gfx,
-                    VkCommandBuffer cmd,
-                    const gfx::GPUMesh& mesh,
-                    const DrawPushConstants& push_constants,
-                    uint32_t instances) {
+void SimulationRenderer2D::Draw(gfx::Device& gfx,
+                                VkCommandBuffer cmd,
+                                const gfx::GPUMesh& mesh,
+                                const DrawPushConstants& push_constants,
+                                uint32_t instances) {
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -72,7 +72,7 @@ void Renderer::Draw(gfx::Device& gfx,
     vkCmdEndRendering(cmd);
 }
 
-void Renderer::Clear(const gfx::Device& gfx) {
+void SimulationRenderer2D::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
     sprite_pipeline.Clear(gfx.GetCoreCtx());

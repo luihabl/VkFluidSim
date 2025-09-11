@@ -20,7 +20,8 @@ public:
 
 private:
     gfx::Device gfx;
-    Renderer renderer;
+    OrthoCamera camera;
+    SimulationRenderer2D renderer;
     Simulation2D simulation;
 
     gfx::GPUMesh particle_mesh;

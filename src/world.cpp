@@ -84,7 +84,7 @@ void World::Init(Platform& platform) {
 void World::ResetSimulation() {
     auto box = simulation.GetBoundingBox();
     auto size = box.size / 3.0f;
-    auto pos = box.pos + (box.size - size.x) / 2.0f;
+    auto pos = box.pos + (box.size - size) / 2.0f;
 
     simulation.SetParticleInBox(gfx, {.size = size, .pos = pos});
 }
@@ -109,14 +109,18 @@ void World::Update(Platform& platform) {
     gfx.SetBottomTimestamp(cmd, 1);
 
     // Run graphics step
-    auto tr = glm::ortho(0.0f, (float)platform.GetConfig().w, (float)platform.GetConfig().h, 0.0f,
-                         -1.0f, 1.0f);
+    auto transform = glm::ortho(0.0f, (float)platform.GetConfig().w, (float)platform.GetConfig().h,
+                                0.0f, -1.0f, 1.0f);
 
-    tr = glm::scale(tr, glm::vec3(1 / particle_scale, 1 / particle_scale, 1.0f));
+    auto win_size = glm::vec2(Platform::Info::GetConfig()->w, Platform::Info::GetConfig()->h);
+    auto box_size = simulation.GetBoundingBox().size / particle_scale;
+    transform = glm::translate(transform, glm::vec3((win_size - box_size) / 2.0f, 0.0f));
+
+    transform = glm::scale(transform, glm::vec3(1 / particle_scale, 1 / particle_scale, 1.0f));
 
     const auto& buffers = simulation.GetFrameData(current_frame);
     auto draw_push_constants = DrawPushConstants{
-        .matrix = tr,
+        .matrix = transform,
         .positions = buffers.position_buffer.device_addr,
         .velocities = buffers.velocity_buffer.device_addr,
     };

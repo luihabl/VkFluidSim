@@ -24,8 +24,6 @@ private:
     SimulationRenderer2D renderer;
     Simulation2D simulation;
 
-    gfx::GPUMesh particle_mesh;
-
     UI ui;
 
     float particle_scale = 1.5e-2;

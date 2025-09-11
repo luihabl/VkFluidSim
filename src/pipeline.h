@@ -27,21 +27,21 @@ public:
     std::vector<u8> uniform_constant_data;
 };
 
-struct DrawPushConstants {
-    glm::mat4 matrix;
-    VkDeviceAddress positions;
-    VkDeviceAddress velocities;
-};
-
-class SpriteDrawPipeline {
+class ParticleDrawPipeline {
 public:
+    struct PushConstants {
+        glm::mat4 matrix;
+        VkDeviceAddress positions;
+        VkDeviceAddress velocities;
+    };
+
     void Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format);
     void Clear(const gfx::CoreCtx& ctx);
     void Draw(VkCommandBuffer cmd,
               gfx::Device& gfx,
               const gfx::Image& draw_img,
               const gfx::GPUMesh& mesh,
-              const DrawPushConstants& push_constants,
+              const PushConstants& push_constants,
               uint32_t instances);
 
 private:

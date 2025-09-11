@@ -48,17 +48,17 @@ public:
     void Init(const gfx::Device& gfx, int w, int h);
     void Draw(gfx::Device& gfx,
               VkCommandBuffer cmd,
-              const gfx::GPUMesh& mesh,
-              const DrawPushConstants& push_constants,
+              const ParticleDrawPipeline::PushConstants& push_constants,
               uint32_t instances);
     void Clear(const gfx::Device& gfx);
 
     const gfx::Image& GetDrawImage() const { return draw_img; }
 
 private:
+    gfx::GPUMesh particle_mesh;
     gfx::Image draw_img;
     gfx::Image depth_img;
     glm::vec4 clear_color;
-    SpriteDrawPipeline sprite_pipeline;
+    ParticleDrawPipeline sprite_pipeline;
 };
 }  // namespace vfs

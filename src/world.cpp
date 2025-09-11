@@ -15,50 +15,6 @@ namespace {}
 
 namespace vfs {
 
-namespace {
-
-void DrawCircleFill(gfx::CPUMesh& mesh,
-                    const glm::vec3& center,
-                    float radius,
-                    const glm::vec4& color,
-                    int steps) {
-    float cx = center.x;
-    float cy = center.y;
-
-    for (int i = 0; i < steps; i++) {
-        float angle0 = (float)i * 2 * M_PI / (float)steps;
-        float angle1 = (float)(i + 1) * 2 * M_PI / (float)steps;
-
-        auto p0 = glm::vec3(cx, cy, 0.0f);
-        auto p1 = glm::vec3(cx + radius * sinf(angle0), cy + radius * cosf(angle0), 0.0f);
-        auto p2 = glm::vec3(cx + radius * sinf(angle1), cy + radius * cosf(angle1), 0.0f);
-
-        const unsigned int n = (unsigned int)mesh.vertices.size();
-        mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1});
-        mesh.vertices.insert(mesh.vertices.end(),
-                             {{.pos = p0, .uv = {}}, {.pos = p1, .uv = {}}, {.pos = p2, .uv = {}}});
-    }
-}
-
-void DrawSquare(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm::vec4& color) {
-    const unsigned int n = (unsigned int)mesh.vertices.size();
-
-    float hs = 0.5 * side;
-
-    auto ll = glm::vec3(center.x - hs, center.y - hs, 0.0f);
-    auto lr = glm::vec3(center.x + hs, center.y - hs, 0.0f);
-    auto ur = glm::vec3(center.x + hs, center.y + hs, 0.0f);
-    auto ul = glm::vec3(center.x - hs, center.y + hs, 0.0f);
-
-    mesh.indices.insert(mesh.indices.end(), {n + 0, n + 2, n + 1, n + 0, n + 3, n + 2});
-    mesh.vertices.push_back({.pos = ll, .uv = {0.0f, 0.0f}});
-    mesh.vertices.push_back({.pos = lr, .uv = {1.0f, 0.0f}});
-    mesh.vertices.push_back({.pos = ur, .uv = {1.0f, 1.0f}});
-    mesh.vertices.push_back({.pos = ul, .uv = {0.0f, 1.0f}});
-}
-
-}  // namespace
-
 void World::Init(Platform& platform) {
     gfx.Init({
         .name = "Vulkan fluid sim",
@@ -73,10 +29,6 @@ void World::Init(Platform& platform) {
     ui.Init(gfx);
 
     simulation.Init(gfx.GetCoreCtx());
-
-    gfx::CPUMesh mesh;
-    DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-    particle_mesh = gfx::UploadMesh(gfx, mesh);
 
     camera.GetTransform().scale = glm::vec3(65.0f);
 
@@ -115,14 +67,13 @@ void World::Update(Platform& platform) {
     gfx.SetBottomTimestamp(cmd, 1);
 
     const auto& buffers = simulation.GetFrameData(current_frame);
-    auto draw_push_constants = DrawPushConstants{
+    auto draw_push_constants = ParticleDrawPipeline::PushConstants{
         .matrix = camera.ViewProjectionMatrix(),
         .positions = buffers.position_buffer.device_addr,
         .velocities = buffers.velocity_buffer.device_addr,
     };
 
-    renderer.Draw(gfx, cmd, particle_mesh, draw_push_constants,
-                  simulation.GetParameters().n_particles);
+    renderer.Draw(gfx, cmd, draw_push_constants, simulation.GetParameters().n_particles);
 
     gfx.SetBottomTimestamp(cmd, 2);
 
@@ -258,7 +209,6 @@ void World::DrawUI(VkCommandBuffer cmd) {
 
 void World::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
-    gfx::DestroyMesh(gfx, particle_mesh);
     renderer.Clear(gfx);
     simulation.Clear(gfx.GetCoreCtx());
     gfx.Clear();

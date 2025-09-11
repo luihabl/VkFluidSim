@@ -10,13 +10,13 @@
 
 namespace vfs {
 
-void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
+void ParticleDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
     auto gfx_shader = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/compiled/particles.slang.spv").c_str());
 
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,
-        .size = sizeof(DrawPushConstants),
+        .size = sizeof(PushConstants),
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
     };
 
@@ -40,12 +40,12 @@ void SpriteDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format)
     vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
 }
 
-void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
-                              gfx::Device& gfx,
-                              const gfx::Image& draw_img,
-                              const gfx::GPUMesh& mesh,
-                              const DrawPushConstants& push_constants,
-                              uint32_t instances) {
+void ParticleDrawPipeline::Draw(VkCommandBuffer cmd,
+                                gfx::Device& gfx,
+                                const gfx::Image& draw_img,
+                                const gfx::GPUMesh& mesh,
+                                const PushConstants& push_constants,
+                                uint32_t instances) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
     const auto viewport = VkViewport{
@@ -66,7 +66,7 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(DrawPushConstants),
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
                        &push_constants);
 
     VkDeviceSize offsets[1]{0};
@@ -76,7 +76,7 @@ void SpriteDrawPipeline::Draw(VkCommandBuffer cmd,
     vkCmdDrawIndexed(cmd, mesh.index_count, instances, 0, 0, 0);
 }
 
-void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
+void ParticleDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 

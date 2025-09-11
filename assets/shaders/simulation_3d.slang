@@ -24,7 +24,9 @@ struct UniformConstants {
     float near_pressure_multiplier;
     float viscosity_strenght;
 
-    float4 box;
+    float3 box_pos;
+    float3 box_size;
+
     float4x4 world_to_local;
     float4x4 local_to_world;
 
@@ -165,27 +167,60 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
 }
 
 void resolve_collisions(inout float3 pos, inout float3 vel) {
-    float3 pos_local = mul(ubo.world_to_local, float4(pos, 1)).xyz;
-    float3 vel_local = mul(ubo.world_to_local, float4(vel, 0)).xyz;
+    let ll = ubo.box_pos;
+    let ur = ubo.box_pos + ubo.box_size;
 
-    const float3 half_size = 0.5;
-    const float3 edge_dst = half_size - abs(pos_local);
-
-    if (edge_dst.x <= 0) {
-        pos_local.x = half_size.x * sign(pos_local.x);
-        vel_local.x *= -1 * ubo.damping_factor;
-    }
-    if (edge_dst.y <= 0) {
-        pos_local.y = half_size.y * sign(pos_local.y);
-        vel_local.y *= -1 * ubo.damping_factor;
-    }
-    if (edge_dst.z <= 0) {
-        pos_local.z = half_size.z * sign(pos_local.z);
-        vel_local.z *= -1 * ubo.damping_factor;
+    if (pos.x < ll.x) {
+        pos.x = ll.x;
+        vel.x = -vel.x * ubo.damping_factor;
     }
 
-    pos = mul(ubo.local_to_world, float4(pos_local, 1)).xyz;
-    vel = mul(ubo.local_to_world, float4(vel_local, 0)).xyz;
+    if (pos.y < ll.y) {
+        pos.y = ll.y;
+        vel.y = -vel.y * ubo.damping_factor;
+    }
+
+    if (pos.z < ll.z) {
+        pos.z = ll.z;
+        vel.z = -vel.z * ubo.damping_factor;
+    }
+
+    if (pos.x > ur.x) {
+        pos.x = ur.x;
+        vel.x = -vel.x * ubo.damping_factor;
+    }
+
+    if (pos.y > ur.y) {
+        pos.y = ur.y;
+        vel.y = -vel.y * ubo.damping_factor;
+    }
+
+    if (pos.z > ur.z) {
+        pos.z = ur.z;
+        vel.z = -vel.z * ubo.damping_factor;
+    }
+
+    // float3 pos_local = mul(ubo.world_to_local, float4(pos, 1)).xyz;
+    // float3 vel_local = mul(ubo.world_to_local, float4(vel, 0)).xyz;
+
+    // const float3 half_size = 0.5;
+    // const float3 edge_dst = half_size - abs(pos_local);
+
+    // if (edge_dst.x <= 0) {
+    //     pos_local.x = half_size.x * sign(pos_local.x);
+    //     vel_local.x *= -1 * ubo.damping_factor;
+    // }
+    // if (edge_dst.y <= 0) {
+    //     pos_local.y = half_size.y * sign(pos_local.y);
+    //     vel_local.y *= -1 * ubo.damping_factor;
+    // }
+    // if (edge_dst.z <= 0) {
+    //     pos_local.z = half_size.z * sign(pos_local.z);
+    //     vel_local.z *= -1 * ubo.damping_factor;
+    // }
+
+    // pos = mul(ubo.local_to_world, float4(pos_local, 1)).xyz;
+    // vel = mul(ubo.local_to_world, float4(vel_local, 0)).xyz;
 }
 
 [shader("compute")]

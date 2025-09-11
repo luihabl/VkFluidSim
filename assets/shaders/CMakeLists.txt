@@ -2,6 +2,7 @@ find_program(SLANGC slangc)
 
 set(SLANG_SHADERS
     particles.slang
+    particles_3d.slang
     spatial_offsets.slang
     sort.slang
     scan.slang

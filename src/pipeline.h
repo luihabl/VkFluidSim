@@ -11,6 +11,22 @@
 
 namespace vfs {
 
+class DescriptorManager {
+public:
+    void Init(const gfx::CoreCtx& ctx, u32 ubo_size);
+    void Clear(const gfx::CoreCtx& ctx);
+
+    void SetUniformData(void* data);
+
+    gfx::DescriptorPoolAlloc desc_pool;
+    VkDescriptorSetLayout desc_layout;
+    VkDescriptorSet desc_set;
+    gfx::Buffer global_constants_ubo;
+
+    u32 size;
+    std::vector<u8> uniform_constant_data;
+};
+
 struct DrawPushConstants {
     glm::mat4 matrix;
     VkDeviceAddress positions;
@@ -33,20 +49,28 @@ private:
     VkPipelineLayout layout;
 };
 
-class DescriptorManager {
+class Particles3DPipeline {
 public:
-    void Init(const gfx::CoreCtx& ctx, u32 ubo_size);
+    struct Config {
+        uint32_t push_const_size{0};
+        VkFormat draw_img_format;
+        DescriptorManager* desc_manager{nullptr};
+        std::string shader_path{""};
+        std::string vertex_entry_point{"vertex_main"};
+        std::string frag_entry_point{"frag_main"};
+    };
+
+    void Init(const gfx::CoreCtx& ctx, const Config& config);
+    void Draw(VkCommandBuffer cmd,
+              const gfx::Image& draw_img,
+              const gfx::GPUMesh& mesh,
+              void* push_constants = nullptr);
     void Clear(const gfx::CoreCtx& ctx);
 
-    void SetUniformData(void* data);
-
-    gfx::DescriptorPoolAlloc desc_pool;
-    VkDescriptorSetLayout desc_layout;
-    VkDescriptorSet desc_set;
-    gfx::Buffer global_constants_ubo;
-
-    u32 size;
-    std::vector<u8> uniform_constant_data;
+private:
+    Config config;
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
 };
 
 class ComputePipeline {

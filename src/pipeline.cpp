@@ -80,6 +80,53 @@ void SpriteDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
+void Particles3DPipeline::Init(const gfx::CoreCtx& ctx, const Config& cfg) {
+    config = cfg;
+    auto gfx_shader = vk::util::LoadShaderModule(
+        ctx, Platform::Info::ResourcePath(config.shader_path.c_str()).c_str());
+
+    auto push_constant_range = VkPushConstantRange{
+        .offset = 0,
+        .size = config.push_const_size,
+        .stageFlags = VK_SHADER_STAGE_ALL,
+    };
+
+    if (config.desc_manager) {
+        layout = vk::util::CreatePipelineLayout(ctx, {{config.desc_manager->desc_layout}},
+                                                {{push_constant_range}});
+    } else {
+        layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
+    }
+
+    pipeline =
+        vk::util::GraphicsPipelineBuilder(layout)
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT,
+                            config.vertex_entry_point.c_str())
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT,
+                            config.frag_entry_point.c_str())
+            .AddVertexBinding(0, sizeof(gfx::Vertex))
+            .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
+            .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
+            .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetPolygonMode(VK_POLYGON_MODE_FILL)
+            .SetCullMode(VK_CULL_MODE_NONE,
+                         VK_FRONT_FACE_CLOCKWISE)  // Enable culling after everything is working
+            .SetMultisamplingDisabled()
+            .SetDepthTestDisabled()
+            .SetBlendingAlphaBlend()  // Check if this is OK
+            .SetColorAttachmentFormat(config.draw_img_format)
+            .Build(ctx.device);
+
+    vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
+}
+
+void Particles3DPipeline::Draw(VkCommandBuffer cmd,
+                               const gfx::Image& draw_img,
+                               const gfx::GPUMesh& mesh,
+                               void* push_constants) {}
+
+void Particles3DPipeline::Clear(const gfx::CoreCtx& ctx) {}
+
 void DescriptorManager::Init(const gfx::CoreCtx& ctx, u32 ubo_size) {
     size = ubo_size;
     uniform_constant_data.resize(size);

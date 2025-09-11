@@ -2,7 +2,6 @@
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "gfx/mesh.h"
 #include "platform.h"
 #include "renderer.h"
 #include "simulation.h"
@@ -25,8 +24,6 @@ private:
     Simulation2D simulation;
 
     UI ui;
-
-    float particle_scale = 1.5e-2;
 
     int current_frame = 0;
     bool paused{true};

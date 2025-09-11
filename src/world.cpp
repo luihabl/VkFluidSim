@@ -6,7 +6,6 @@
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "gfx/mesh.h"
 #include "imgui.h"
 #include "pipeline.h"
 #include "platform.h"
@@ -30,10 +29,11 @@ void World::Init(Platform& platform) {
 
     simulation.Init(gfx.GetCoreCtx());
 
-    camera.GetTransform().scale = glm::vec3(65.0f);
+    float zoom = 65.0f;
+    camera.GetTransform().scale = glm::vec3(zoom);
 
     auto win_size = glm::vec2(Platform::Info::GetConfig()->w, Platform::Info::GetConfig()->h);
-    auto box_size = simulation.GetBoundingBox().size / particle_scale;
+    auto box_size = simulation.GetBoundingBox().size * zoom;
     camera.GetTransform().position = -glm::vec3((win_size - box_size) / 2.0f, 0.0f);
 
     ResetSimulation();

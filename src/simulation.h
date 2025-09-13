@@ -77,8 +77,8 @@ public:
     void SetBoundingBoxSize(float w, float h);
 
     BoundingBox GetBoundingBox() { return bounding_box; }
-    const FrameBuffers& GetFrameData(u32 frame_idx) { return frame_buffers[frame_idx]; }
-    const SimulationParameters& GetParameters() { return par; }
+    const FrameBuffers& GetFrameData(u32 frame_idx) const { return frame_buffers[frame_idx]; }
+    const SimulationParameters& GetParameters() const { return par; }
     void Clear(const gfx::CoreCtx& ctx);
 
 private:

@@ -23,8 +23,7 @@ int main(int argc, char* argv[]) {
 
     platform.Init({
         .name = "Vulkan fluid sim",
-        .w = 1600,
-        .h = 800,
+        .size = {1600, 800},
         .init = [&world](auto& p) { world.Init(p); },
         .update = [&world](auto& p) { world.Update(p); },
         .clean = [&world](auto& p) { world.Clear(); },

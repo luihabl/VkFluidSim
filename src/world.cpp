@@ -1,14 +1,17 @@
 #include "world.h"
 
 #include <glm/ext.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/fwd.hpp>
+#include <iterator>
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "imgui.h"
 #include "pipeline.h"
 #include "platform.h"
+#include "renderer.h"
 
 namespace {}
 
@@ -29,12 +32,14 @@ void World::Init(Platform& platform) {
 
     simulation.Init(gfx.GetCoreCtx());
 
-    float zoom = 65.0f;
-    camera.GetTransform().scale = glm::vec3(zoom);
+    camera.SetOrtho2D(static_cast<glm::vec2>(Platform::Info::GetScreenSize()), -1.0f, 1.0f,
+                      OriginType::Center);
 
-    auto win_size = glm::vec2(Platform::Info::GetConfig()->w, Platform::Info::GetConfig()->h);
-    auto box_size = simulation.GetBoundingBox().size * zoom;
-    camera.GetTransform().position = -glm::vec3((win_size - box_size) / 2.0f, 0.0f);
+    float scale = 65.0f;
+    renderer.GetTransform().SetScale(glm::vec3(scale));
+
+    auto box_size = simulation.GetBoundingBox().size * scale;
+    renderer.GetTransform().SetPosition(-glm::vec3(box_size / 2, 0.0f));
 
     ResetSimulation();
 }
@@ -66,14 +71,7 @@ void World::Update(Platform& platform) {
 
     gfx.SetBottomTimestamp(cmd, 1);
 
-    const auto& buffers = simulation.GetFrameData(current_frame);
-    auto draw_push_constants = ParticleDrawPipeline::PushConstants{
-        .matrix = camera.ViewProjectionMatrix(),
-        .positions = buffers.position_buffer.device_addr,
-        .velocities = buffers.velocity_buffer.device_addr,
-    };
-
-    renderer.Draw(gfx, cmd, draw_push_constants, simulation.GetParameters().n_particles);
+    renderer.Draw(gfx, cmd, simulation, current_frame, camera.GetViewProj());
 
     gfx.SetBottomTimestamp(cmd, 2);
 
@@ -142,12 +140,12 @@ void World::DrawUI(VkCommandBuffer cmd) {
     }
 
     if (ImGui::CollapsingHeader("Camera")) {
-        ImGui::SliderFloat3("Position", &camera.GetTransform().position.x, -300.0f, 300.0f);
+        // ImGui::SliderFloat3("Position", &camera.GetTransform().position.x, -300.0f, 300.0f);
 
-        float zoom = camera.GetTransform().scale.x;
-        if (ImGui::SliderFloat("Scale", &zoom, 1.0f, 100.0f)) {
-            camera.GetTransform().scale = glm::vec3(zoom);
-        }
+        // float zoom = camera.GetTransform().scale.x;
+        // if (ImGui::SliderFloat("Scale", &zoom, 1.0f, 100.0f)) {
+        //     camera.GetTransform().scale = glm::vec3(zoom);
+        // }
     }
 
     if (ImGui::CollapsingHeader("Parameters")) {

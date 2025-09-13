@@ -39,13 +39,13 @@ float Platform::Info::GetTime() {
     return (float)SDL_GetTicks() / 1000.0f;
 }
 
-const Platform::Config* Platform::Info::GetConfig() {
+glm::ivec2 Platform::Info::GetScreenSize() {
     if (platform_instance) {
-        return &platform_instance->GetConfig();
+        return platform_instance->GetConfig().size;
     }
 
     fmt::println("No platform instance set");
-    return nullptr;
+    return {};
 }
 
 SDL_Window* Platform::Info::GetWindow() {
@@ -59,8 +59,8 @@ SDL_Window* Platform::Info::GetWindow() {
 void Platform::Init(Config&& config_) {
     config = std::move(config_);
 
-    SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
-    window = SDL_CreateWindow(config.name.c_str(), config.w, config.h, flags);
+    SDL_WindowFlags flags = SDL_WINDOW_VULKAN;
+    window = SDL_CreateWindow(config.name.c_str(), config.size.x, config.size.y, flags);
 
     fmt::println("{}", config.name);
 

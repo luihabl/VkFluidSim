@@ -89,4 +89,7 @@ PUBLIC
     fmt::fmt
 )
 
-target_compile_definitions(vfs PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(vfs PUBLIC
+    GLM_FORCE_DEPTH_ZERO_TO_ONE
+    GLM_ENABLE_EXPERIMENTAL
+)

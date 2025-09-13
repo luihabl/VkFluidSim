@@ -19,7 +19,8 @@ public:
 
 private:
     gfx::Device gfx;
-    OrthoCamera camera;
+
+    Camera camera;
     SimulationRenderer2D renderer;
     Simulation2D simulation;
 

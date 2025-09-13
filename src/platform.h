@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <glm/glm.hpp>
 #include <string>
 
 #include "SDL3/SDL_video.h"
@@ -17,8 +18,7 @@ public:
     using Path = std::filesystem::path;
 
     struct Config {
-        int w;
-        int h;
+        glm::ivec2 size;
         std::string name;
         EventHandler handler;
         PlatformFunc init;
@@ -32,7 +32,7 @@ public:
         static Path ResourcePath(const char* resource);
         static Path ResourceFolder();
         static float GetTime();
-        static const Config* GetConfig();
+        static glm::ivec2 GetScreenSize();
         static SDL_Window* GetWindow();
     };
 

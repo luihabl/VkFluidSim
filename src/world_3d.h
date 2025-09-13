@@ -19,9 +19,10 @@ public:
 
 private:
     gfx::Device gfx;
-    OrthoCamera camera;
-    SimulationRenderer2D renderer;
-    Simulation2D simulation;
+
+    // OrthoCamera camera;
+    // SimulationRenderer2D renderer;
+    // Simulation2D simulation;
 
     UI ui;
 

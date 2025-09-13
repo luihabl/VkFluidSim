@@ -1,8 +1,14 @@
 #include "renderer.h"
 
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
 #include "gfx/gfx.h"
 #include "gfx/vk_util.h"
 #include "pipeline.h"
+#include "simulation.h"
 
 namespace vfs {
 
@@ -93,8 +99,13 @@ void SimulationRenderer2D::Init(const gfx::Device& gfx, int w, int h) {
 
 void SimulationRenderer2D::Draw(gfx::Device& gfx,
                                 VkCommandBuffer cmd,
-                                const ParticleDrawPipeline::PushConstants& push_constants,
-                                u32 instances) {
+                                const Simulation2D& simulation,
+                                u32 current_frame,
+                                const glm::mat4 view_proj) {
+    const auto& buffers = simulation.GetFrameData(current_frame);
+    auto pos_buffer = buffers.position_buffer.device_addr;
+    auto vel_buffer = buffers.velocity_buffer.device_addr;
+
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -114,7 +125,14 @@ void SimulationRenderer2D::Draw(gfx::Device& gfx,
 
     vkCmdBeginRendering(cmd, &render_info);
 
-    sprite_pipeline.Draw(cmd, gfx, draw_img, particle_mesh, push_constants, instances);
+    const auto pc = ParticleDrawPipeline::PushConstants{
+        .matrix = view_proj * transform.Matrix(),
+        .positions = pos_buffer,
+        .velocities = vel_buffer,
+    };
+
+    sprite_pipeline.Draw(cmd, gfx, draw_img, particle_mesh, pc,
+                         simulation.GetParameters().n_particles);
 
     vkCmdEndRendering(cmd);
 }
@@ -124,6 +142,165 @@ void SimulationRenderer2D::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
     sprite_pipeline.Clear(gfx.GetCoreCtx());
+}
+
+Transform::Transform(const glm::mat4& matrix) {
+    glm::vec3 out_scale;
+    glm::quat out_rotation;
+    glm::vec3 out_translation;
+    glm::vec3 out_skew;
+    glm::vec4 out_perspective;
+    glm::decompose(matrix, out_scale, out_rotation, out_translation, out_skew, out_perspective);
+
+    position = out_translation;
+    rotation = out_rotation;
+    scale = out_scale;
+    dirty = true;
+}
+
+void Transform::SetPosition(const glm::vec3& p) {
+    position = p;
+    dirty = true;
+}
+
+void Transform::SetRotation(const glm::quat& q) {
+    rotation = glm::normalize(q);
+    dirty = true;
+}
+
+void Transform::SetScale(const glm::vec3& s) {
+    scale = s;
+    dirty = true;
+}
+
+const glm::mat4& Transform::Matrix() const {
+    if (!dirty) {
+        return transform;
+    }
+
+    transform = glm::translate(glm::mat4{1.0f}, position);
+    if (rotation != glm::identity<glm::quat>()) {
+        transform *= glm::mat4_cast(rotation);
+    }
+    transform = glm::scale(transform, scale);
+    dirty = false;
+    return transform;
+}
+
+bool Transform::IsIdentity() const {
+    return Matrix() == glm::mat4{1.0f};
+}
+
+Transform Transform::Inverse() const {
+    if (IsIdentity()) {
+        return Transform{};
+    }
+
+    return Transform(glm::inverse(Matrix()));
+}
+
+void Camera::SetPerspective(float fov_x, float z_near, float z_far, float aspect_ratio) {
+    proj_type = ProjType::Perspective;
+
+    this->fov_x = fov_x;
+    this->aspect_ratio = aspect_ratio;
+
+    float g = aspect_ratio / glm::tan(fov_x / 2.0);
+    fov_y = 2.0f * glm::atan(1.0f / g);
+
+    if (inverse_depth) {
+        projection = glm::perspective(fov_y, aspect_ratio, z_far, z_near);
+    } else {
+        projection = glm::perspective(fov_y, aspect_ratio, z_near, z_far);
+    }
+
+    if (clip_space_y_down) {
+        projection[1][1] *= -1;
+    }
+}
+
+void Camera::SetOrtho(float scale, float z_near, float z_far) {
+    SetOrtho(glm::vec2(scale), z_near, z_far);
+}
+
+void Camera::SetOrtho(const glm::vec2& scale, float z_near, float z_far) {
+    proj_type = ProjType::Orthographic;
+    ortho_scale = scale;
+    this->z_near = z_near;
+    this->z_far = z_far;
+    aspect_ratio = ortho_scale.x / ortho_scale.y;
+
+    if (inverse_depth) {
+        projection =
+            glm::ortho(-ortho_scale.x, ortho_scale.x, -ortho_scale.y, ortho_scale.y, z_far, z_near);
+    } else {
+        projection =
+            glm::ortho(-ortho_scale.x, ortho_scale.x, -ortho_scale.y, ortho_scale.y, z_near, z_far);
+    }
+}
+
+void Camera::SetOrtho2D(const glm::vec2& size, float z_near, float z_far, OriginType origin) {
+    proj_type = ProjType::Orthographic2D;
+    clip_space_y_down = true;
+    ortho_view_size = size;
+    this->z_near = z_near;
+    this->z_far = z_far;
+    aspect_ratio = size.x / size.y;
+
+    switch (origin) {
+        case vfs::OriginType::TopLeft: {
+            projection = glm::ortho(0.0f, size.x, 0.0f, size.y, z_near, z_far);
+            break;
+        }
+        case vfs::OriginType::BottomLeft: {
+            projection = glm::ortho(0.0f, size.x, size.y, 0.0f, z_near, z_far);
+            break;
+        }
+        case vfs::OriginType::Center: {
+            auto half = size / 2.0f;
+            projection = glm::ortho(-half.x, half.x, half.y, -half.y, z_near, z_far);
+            break;
+        }
+    }
+}
+
+void Camera::SetPosition(const glm::vec3& pos) {
+    transform.SetPosition(pos);
+}
+
+void Camera::SetPosition2D(const glm::vec2& pos) {
+    transform.SetPosition(glm::vec3(pos, 0.0f));
+}
+
+glm::vec3 Camera::GetPosition() const {
+    return transform.Position();
+}
+
+void Camera::SetRotation(const glm::quat& q) {
+    transform.SetRotation(q);
+}
+
+const glm::quat& Camera::GetRotation() const {
+    return transform.Rotation();
+}
+
+glm::mat4 Camera::GetView() const {
+    if (proj_type == ProjType::Orthographic2D) {
+        return glm::translate(glm::mat4{1.0f}, -transform.Position());
+    }
+
+    const auto up = transform.LocalUp();
+    const auto pos = GetPosition();
+    const auto target = pos + transform.LocalFront();
+    return glm::lookAt(pos, target, up);
+}
+
+glm::mat4 Camera::GetViewProj() const {
+    return projection * GetView();
+}
+
+const glm::mat4& Camera::GetProj() const {
+    return projection;
 }
 
 }  // namespace vfs

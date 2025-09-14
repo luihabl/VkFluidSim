@@ -140,12 +140,15 @@ void World::DrawUI(VkCommandBuffer cmd) {
     }
 
     if (ImGui::CollapsingHeader("Camera")) {
-        // ImGui::SliderFloat3("Position", &camera.GetTransform().position.x, -300.0f, 300.0f);
+        auto pos = camera.GetPosition();
+        if (ImGui::SliderFloat2("Position", &pos.x, -300.0f, 300.0f)) {
+            camera.SetPosition(pos);
+        }
 
-        // float zoom = camera.GetTransform().scale.x;
-        // if (ImGui::SliderFloat("Scale", &zoom, 1.0f, 100.0f)) {
-        //     camera.GetTransform().scale = glm::vec3(zoom);
-        // }
+        auto scale = renderer.GetTransform().Scale().x;
+        if (ImGui::SliderFloat("Scale", &scale, 1.0f, 100.0f)) {
+            renderer.GetTransform().SetScale(glm::vec3(scale));
+        }
     }
 
     if (ImGui::CollapsingHeader("Parameters")) {

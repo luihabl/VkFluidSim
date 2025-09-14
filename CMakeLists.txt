@@ -47,7 +47,10 @@ PUBLIC
     ${imgui_SOURCE_DIR}/backends
 )
 
-target_link_libraries(imgui PRIVATE Vulkan::Vulkan SDL3::SDL3)
+add_library(vfs_gfx_platform INTERFACE)
+target_link_libraries(vfs_gfx_platform INTERFACE Vulkan::Vulkan SDL3::SDL3)
+
+target_link_libraries(imgui PUBLIC vfs_gfx_platform)
 
 CPMAddPackage("gh:charles-lunarg/vk-bootstrap@1.4.323")
 CPMAddPackage("gh:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator@3.3.0")
@@ -80,9 +83,8 @@ add_dependencies(vfs shaders)
 # link stuff
 target_link_libraries(vfs
 PUBLIC
-    Vulkan::Vulkan
+    vfs_gfx_platform
     glm::glm-header-only
-    SDL3::SDL3
     imgui
     vk-bootstrap::vk-bootstrap
     GPUOpen::VulkanMemoryAllocator

@@ -27,10 +27,10 @@ void World::Init(Platform& platform) {
     gpu_times.resize(6, 0);
 
     auto ext = gfx.GetSwapchainExtent();
-    renderer.Init(gfx, ext.width, ext.height);
     ui.Init(gfx);
 
     simulation.Init(gfx.GetCoreCtx());
+    renderer.Init(gfx, simulation, ext.width, ext.height);
 
     camera.SetOrtho2D(static_cast<glm::vec2>(Platform::Info::GetScreenSize()), -1.0f, 1.0f,
                       OriginType::Center);

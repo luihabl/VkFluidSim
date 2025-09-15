@@ -194,10 +194,20 @@ void Device::Init(const Config& config) {
     features12.descriptorIndexing = true;
     features12.scalarBlockLayout = true;
 
+    auto features11 = VkPhysicalDeviceVulkan11Features{
+        .shaderDrawParameters = true,
+    };
+
+    auto features_base = VkPhysicalDeviceFeatures{
+        .fillModeNonSolid = true,
+    };
+
     auto selector = vkb::PhysicalDeviceSelector{vkb_instance};
     auto physical_device = selector.set_minimum_version(1, 3)
+                               .set_required_features(features_base)
                                .set_required_features_13(features13)
                                .set_required_features_12(features12)
+                               .set_required_features_11(features11)
                                .set_surface(core.surface)
                                .select()
                                .value();

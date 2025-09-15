@@ -76,7 +76,7 @@ public:
     void SetParticleInBox(const gfx::Device& gfx, const BoundingBox& box);
     void SetBoundingBoxSize(float w, float h);
 
-    BoundingBox GetBoundingBox() { return bounding_box; }
+    BoundingBox GetBoundingBox() const { return bounding_box; }
     const FrameBuffers& GetFrameData(u32 frame_idx) const { return frame_buffers[frame_idx]; }
     const SimulationParameters& GetParameters() const { return par; }
     void Clear(const gfx::CoreCtx& ctx);

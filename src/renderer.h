@@ -96,7 +96,7 @@ private:
 
 class SimulationRenderer2D {
 public:
-    void Init(const gfx::Device& gfx, int w, int h);
+    void Init(const gfx::Device& gfx, const Simulation2D& simulation, int w, int h);
     void Draw(gfx::Device& gfx,
               VkCommandBuffer cmd,
               const Simulation2D& simulation,
@@ -108,11 +108,13 @@ public:
     const gfx::Image& GetDrawImage() const { return draw_img; }
 
 private:
+    Transform box_transform;
     Transform transform;
     gfx::GPUMesh particle_mesh;
     gfx::Image draw_img;
     gfx::Image depth_img;
     glm::vec4 clear_color;
     ParticleDrawPipeline sprite_pipeline;
+    BoxDrawPipeline box_pipeline;
 };
 }  // namespace vfs

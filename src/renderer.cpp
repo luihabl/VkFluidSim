@@ -56,7 +56,10 @@ void DrawSquare(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const g
 
 }  // namespace
 
-void SimulationRenderer2D::Init(const gfx::Device& gfx, int w, int h) {
+void SimulationRenderer2D::Init(const gfx::Device& gfx,
+                                const Simulation2D& simulation,
+                                int w,
+                                int h) {
     VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
 
     // draw image
@@ -95,6 +98,8 @@ void SimulationRenderer2D::Init(const gfx::Device& gfx, int w, int h) {
     gfx::CPUMesh mesh;
     DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     particle_mesh = gfx::UploadMesh(gfx, mesh);
+
+    box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format);
 }
 
 void SimulationRenderer2D::Draw(gfx::Device& gfx,
@@ -102,6 +107,10 @@ void SimulationRenderer2D::Draw(gfx::Device& gfx,
                                 const Simulation2D& simulation,
                                 u32 current_frame,
                                 const glm::mat4 view_proj) {
+    auto bbox = simulation.GetBoundingBox();
+    box_transform.SetScale(glm::vec3(bbox.size, 1.0f));
+    box_transform.SetPosition(glm::vec3(bbox.pos, 0.0f));
+
     const auto& buffers = simulation.GetFrameData(current_frame);
     auto pos_buffer = buffers.position_buffer.device_addr;
     auto vel_buffer = buffers.velocity_buffer.device_addr;
@@ -134,6 +143,12 @@ void SimulationRenderer2D::Draw(gfx::Device& gfx,
     sprite_pipeline.Draw(cmd, gfx, draw_img, particle_mesh, pc,
                          simulation.GetParameters().n_particles);
 
+    const auto pc_box = BoxDrawPipeline::PushConstants{
+        .color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        .matrix = view_proj * transform.Matrix() * box_transform.Matrix(),
+    };
+    box_pipeline.Draw(cmd, gfx, draw_img, pc_box);
+
     vkCmdEndRendering(cmd);
 }
 
@@ -142,6 +157,7 @@ void SimulationRenderer2D::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
     sprite_pipeline.Clear(gfx.GetCoreCtx());
+    box_pipeline.Clear(gfx.GetCoreCtx());
 }
 
 Transform::Transform(const glm::mat4& matrix) {

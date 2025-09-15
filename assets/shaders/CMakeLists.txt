@@ -8,6 +8,7 @@ set(SLANG_SHADERS
     scan.slang
     simulation.slang
     simulation_3d.slang
+    box.slang
 )
 
 set(SLANG_DEPENDENT_FILES

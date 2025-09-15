@@ -4,7 +4,6 @@
 #include "gfx/gfx.h"
 #include "platform.h"
 #include "renderer.h"
-#include "simulation.h"
 #include "ui.h"
 
 namespace vfs {
@@ -19,6 +18,7 @@ public:
 
 private:
     gfx::Device gfx;
+    Camera camera;
 
     // OrthoCamera camera;
     // SimulationRenderer2D renderer;
@@ -26,12 +26,10 @@ private:
 
     UI ui;
 
-    float particle_scale = 1.5e-2;
-
     int current_frame = 0;
     bool paused{true};
-    std::vector<float> gpu_times;
-    std::span<u64> gpu_timestamps;
+    // std::vector<float> gpu_times;
+    // std::span<u64> gpu_timestamps;
 
     void ResetSimulation();
     void DrawUI(VkCommandBuffer cmd);

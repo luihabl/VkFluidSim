@@ -1,10 +1,12 @@
 #include "renderer.h"
 
+#include <glm/ext.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "gfx/vk_util.h"
 #include "pipeline.h"
@@ -168,7 +170,10 @@ void SimulationRenderer3D::Init(const gfx::Device& gfx, int w, int h) {
     clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
 
     box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, true);
-    box_transform.SetScale({20.0f, 10.0f, 30.0f});
+
+    glm::vec3 box_size = {10.0f, 10.0f, 10.0f};
+    box_transform.SetScale(box_size);
+    box_transform.SetPosition(-box_size / 2.0f);
 }
 
 void SimulationRenderer3D::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const glm::mat4 view_proj) {
@@ -191,7 +196,7 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const glm
 
     auto pc = BoxDrawPipeline::PushConstants{
         .color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-        .matrix = view_proj * box_transform.Matrix(),
+        .matrix = view_proj * transform.Matrix() * box_transform.Matrix(),
     };
     box_pipeline.Draw(cmd, gfx, draw_img, pc);
 
@@ -347,10 +352,16 @@ const glm::quat& Camera::GetRotation() const {
 }
 
 void Camera::SetTarget(const glm::vec3& target) {
-    auto mat = glm::transpose(glm::lookAt(GetPosition(), target, gfx::axis::UP));
-    SetRotation(glm::toQuat(mat));
-    // Maybe need to change to axis = cross(gfx::axis::FRONT, target) and angle =
-    // acos(dot(gfx::axis::FRONT, target)), then perform rotation
+    auto target_dir = glm::normalize(target - transform.Position());
+
+    if (glm::length2(target_dir - transform.LocalFront()) < 1e-12) {
+        return;
+    }
+
+    auto axis = glm::cross(gfx::axis::FRONT, target_dir);
+    float angle = std::acos(glm::dot(gfx::axis::FRONT, glm::normalize(target_dir)));
+    auto r = glm::rotate(angle, axis);
+    SetRotation(r);
 }
 
 glm::mat4 Camera::GetView() const {

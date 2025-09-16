@@ -37,7 +37,7 @@ inline constexpr glm::vec3 FRONT{0.0f, 0.0f, 1.0};
 inline constexpr glm::vec3 BACK{0.0f, 0.0f, -1.0};
 inline constexpr glm::vec3 LEFT{1.0f, 0.0f, 0.0};
 inline constexpr glm::vec3 RIGHT{-1.0f, 0.0f, 0.0};
-};  // namespace axis
+}  // namespace axis
 
 constexpr u64 ONE_SEC_NS = 1000000000;
 constexpr u32 FRAME_COUNT = 2;

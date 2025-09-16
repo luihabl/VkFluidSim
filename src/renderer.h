@@ -35,11 +35,12 @@ public:
     bool IsIdentity() const;
 
 private:
-    mutable bool dirty{false};
+    mutable bool dirty{true};
     mutable glm::mat4 transform;
 
     glm::vec3 position{0.0f};
     glm::vec3 scale{1.0f, 1.0f, 1.0f};
+
     glm::quat rotation{glm::identity<glm::quat>()};
 };
 

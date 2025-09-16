@@ -54,38 +54,39 @@ void DrawSquare(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const g
     mesh.vertices.push_back({.pos = ul, .uv = {0.0f, 1.0f}});
 }
 
+gfx::Image CreateDrawImage(const gfx::Device& gfx, u32 w, u32 h) {
+    VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
+    VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
+
+    VkImageUsageFlags usage{0};
+    usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+    bool use_mipmaps = false;
+
+    return gfx.CreateImage(extent, format, usage, use_mipmaps);
+}
+
+gfx::Image CreateDepthImage(const gfx::Device& gfx, u32 w, u32 h) {
+    VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
+    VkFormat format = VK_FORMAT_D32_SFLOAT;
+
+    VkImageUsageFlags usage{0};
+    usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    return gfx.CreateImage(extent, format, usage, false);
+}
+
 }  // namespace
 
 void SimulationRenderer2D::Init(const gfx::Device& gfx,
                                 const Simulation2D& simulation,
                                 int w,
                                 int h) {
-    VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
-
-    // draw image
-    {
-        VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
-
-        VkImageUsageFlags usage{0};
-        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-        usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-
-        bool use_mipmaps = false;
-
-        draw_img = gfx.CreateImage(extent, format, usage, use_mipmaps);
-    }
-
-    // depth image
-    {
-        VkFormat format = VK_FORMAT_D32_SFLOAT;
-
-        VkImageUsageFlags usage{0};
-        usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-        depth_img = gfx.CreateImage(extent, format, usage, false);
-    }
+    draw_img = CreateDrawImage(gfx, w, h);
+    depth_img = CreateDepthImage(gfx, w, h);
 
     // TODO: Create other important images:
     //      1. Post fx image
@@ -157,6 +158,51 @@ void SimulationRenderer2D::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
     sprite_pipeline.Clear(gfx.GetCoreCtx());
+    box_pipeline.Clear(gfx.GetCoreCtx());
+}
+
+void SimulationRenderer3D::Init(const gfx::Device& gfx, int w, int h) {
+    draw_img = CreateDrawImage(gfx, w, h);
+    depth_img = CreateDepthImage(gfx, w, h);
+
+    clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, true);
+    box_transform.SetScale({20.0f, 10.0f, 30.0f});
+}
+
+void SimulationRenderer3D::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const glm::mat4 view_proj) {
+    auto color_attachment = vk::util::RenderingAttachmentInfo(
+        draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.clearValue.color = {
+        clear_color.r,
+        clear_color.g,
+        clear_color.b,
+        clear_color.a,
+    };
+
+    // auto depth_attachment = vk::util::DepthRenderingAttachmentInfo(
+    //     depth_img.view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+    auto render_info =
+        vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, nullptr);
+    vkCmdBeginRendering(cmd, &render_info);
+
+    auto pc = BoxDrawPipeline::PushConstants{
+        .color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        .matrix = view_proj * box_transform.Matrix(),
+    };
+    box_pipeline.Draw(cmd, gfx, draw_img, pc);
+
+    vkCmdEndRendering(cmd);
+}
+
+void SimulationRenderer3D::Clear(const gfx::Device& gfx) {
+    gfx::DestroyMesh(gfx, particle_mesh);
+    gfx.DestroyImage(draw_img);
+    gfx.DestroyImage(depth_img);
+    // sprite_pipeline.Clear(gfx.GetCoreCtx());
     box_pipeline.Clear(gfx.GetCoreCtx());
 }
 

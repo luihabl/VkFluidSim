@@ -1,10 +1,8 @@
 #pragma once
 
-#include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "platform.h"
 #include "renderer.h"
-#include "ui.h"
 
 namespace vfs {
 class World3D {
@@ -19,6 +17,7 @@ public:
 private:
     gfx::Device gfx;
     Camera camera;
+    SimulationRenderer3D renderer;
     // UI ui;
 
     int current_frame = 0;
@@ -26,17 +25,5 @@ private:
 
     void ResetSimulation();
     void DrawUI(VkCommandBuffer cmd);
-
-    // === Temporary ===
-
-    // Pipeline
-    VkPipeline pipeline;
-    VkPipelineLayout layout;
-
-    // Renderer
-    Transform transform;
-    gfx::Image draw_img;
-    gfx::Image depth_img;
-    glm::vec4 clear_color;
 };
 }  // namespace vfs

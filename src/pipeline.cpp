@@ -10,7 +10,7 @@
 
 namespace vfs {
 
-void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
+void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format, bool draw_3d) {
     auto box_shader = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/compiled/box.slang.spv").c_str());
 
@@ -22,9 +22,13 @@ void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
 
     layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
 
+    n_draw_vertices = draw_3d ? 24 : 8;
+
     pipeline = vk::util::GraphicsPipelineBuilder(layout)
-                   .AddShaderStage(box_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
-                   .AddShaderStage(box_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
+                   .AddShaderStage(box_shader, VK_SHADER_STAGE_VERTEX_BIT,
+                                   draw_3d ? "vertex_3d_main" : "vertex_main")
+                   .AddShaderStage(box_shader, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                   draw_3d ? "frag_3d_main" : "frag_main")
                    .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                    .SetPolygonMode(VK_POLYGON_MODE_LINE)
                    .SetCullDisabled()
@@ -67,7 +71,7 @@ void BoxDrawPipeline::Draw(VkCommandBuffer cmd,
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
                        &push_constants);
 
-    vkCmdDraw(cmd, 8, 1, 0, 0);
+    vkCmdDraw(cmd, n_draw_vertices, 1, 0, 0);
 }
 
 void ParticleDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format) {
@@ -138,6 +142,54 @@ void ParticleDrawPipeline::Draw(VkCommandBuffer cmd,
 
 void ParticleDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
     vkDestroyPipeline(ctx.device, pipeline, nullptr);
+}
+
+void Particle3DDrawPipeline::Init(const gfx::CoreCtx& ctx,
+                                  VkFormat draw_img_format,
+                                  VkFormat depth_img_format) {
+    auto gfx_shader = vk::util::LoadShaderModule(
+        ctx, Platform::Info::ResourcePath("shaders/compiled/particles_3d.slang.spv").c_str());
+
+    auto push_constant_range = VkPushConstantRange{
+        .offset = 0,
+        .size = sizeof(PushConstants),
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+    };
+
+    layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
+
+    pipeline = vk::util::GraphicsPipelineBuilder(layout)
+                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
+                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
+                   .AddVertexBinding(0, sizeof(gfx::Vertex))
+                   .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
+                   .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
+                   .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                   .SetPolygonMode(VK_POLYGON_MODE_FILL)
+                   .SetCullDisabled()
+                   .SetMultisamplingDisabled()
+                   .SetDepthFormat(depth_img_format)
+                   .SetDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL)
+                   .SetBlendingAlphaBlend()  // Check if this is OK
+                   .SetColorAttachmentFormat(draw_img_format)
+                   .Build(ctx.device);
+
+    vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
+}
+
+void Particle3DDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
+    fmt::println("not implemented");
+    assert(false);
+}
+
+void Particle3DDrawPipeline::Draw(VkCommandBuffer cmd,
+                                  gfx::Device& gfx,
+                                  const gfx::Image& draw_img,
+                                  const gfx::GPUMesh& mesh,
+                                  const PushConstants& push_constants,
+                                  uint32_t instances) {
+    fmt::println("not implemented");
+    assert(false);
 }
 
 void DescriptorManager::Init(const gfx::CoreCtx& ctx, u32 ubo_size) {

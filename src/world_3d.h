@@ -19,19 +19,24 @@ public:
 private:
     gfx::Device gfx;
     Camera camera;
-
-    // OrthoCamera camera;
-    // SimulationRenderer2D renderer;
-    // Simulation2D simulation;
-
-    UI ui;
+    // UI ui;
 
     int current_frame = 0;
     bool paused{true};
-    // std::vector<float> gpu_times;
-    // std::span<u64> gpu_timestamps;
 
     void ResetSimulation();
     void DrawUI(VkCommandBuffer cmd);
+
+    // === Temporary ===
+
+    // Pipeline
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+
+    // Renderer
+    Transform transform;
+    gfx::Image draw_img;
+    gfx::Image depth_img;
+    glm::vec4 clear_color;
 };
 }  // namespace vfs

@@ -300,6 +300,13 @@ const glm::quat& Camera::GetRotation() const {
     return transform.Rotation();
 }
 
+void Camera::SetTarget(const glm::vec3& target) {
+    auto mat = glm::transpose(glm::lookAt(GetPosition(), target, gfx::axis::UP));
+    SetRotation(glm::toQuat(mat));
+    // Maybe need to change to axis = cross(gfx::axis::FRONT, target) and angle =
+    // acos(dot(gfx::axis::FRONT, target)), then perform rotation
+}
+
 glm::mat4 Camera::GetView() const {
     if (proj_type == ProjType::Orthographic2D) {
         return glm::translate(glm::mat4{1.0f}, -transform.Position());

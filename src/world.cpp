@@ -4,7 +4,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/fwd.hpp>
-#include <iterator>
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/ext.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -72,6 +73,8 @@ public:
     void SetRotation(const glm::quat& q);
     const glm::quat& GetRotation() const;
 
+    void SetTarget(const glm::vec3& target);
+
     glm::mat4 GetView() const;
     glm::mat4 GetViewProj() const;
     const glm::mat4& GetProj() const;
@@ -117,4 +120,5 @@ private:
     ParticleDrawPipeline sprite_pipeline;
     BoxDrawPipeline box_pipeline;
 };
+
 }  // namespace vfs

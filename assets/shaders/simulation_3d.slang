@@ -15,6 +15,11 @@ struct PushConstants {
     float2* densities;
 }
 
+struct BoundingBox {
+    float3 size;
+    float3 pos;
+}
+
 struct UniformConstants {
     float gravity;
     float damping_factor;
@@ -24,11 +29,11 @@ struct UniformConstants {
     float near_pressure_multiplier;
     float viscosity_strenght;
 
-    float3 box_pos;
-    float3 box_size;
+    BoundingBox bounding_box;
 
-    float4x4 world_to_local;
-    float4x4 local_to_world;
+    // TODO: verify the need for these matrices
+    // float4x4 world_to_local;
+    // float4x4 local_to_world;
 
     float spiky_pow3_scale;
     float spiky_pow2_scale;
@@ -167,8 +172,8 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
 }
 
 void resolve_collisions(inout float3 pos, inout float3 vel) {
-    let ll = ubo.box_pos;
-    let ur = ubo.box_pos + ubo.box_size;
+    let ll = ubo.bounding_box.pos;
+    let ur = ll + ubo.bounding_box.size;
 
     if (pos.x < ll.x) {
         pos.x = ll.x;

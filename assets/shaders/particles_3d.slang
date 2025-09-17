@@ -28,13 +28,13 @@ struct InputConstants {
 [shader("vertex")]
 VertexOutput vertex_main(uint id: SV_VulkanInstanceID, Vertex vertex, uniform InputConstants pc) {
     var offset = pc.position[id];
-    offset.z = 1.0f;
 
     let v = pc.velocity[id];
     float grad = clamp(length(v) / v_max, 0.0f, 1.0f);
 
     VertexOutput out;
-    out.position = mul(pc.matrix, float4(vertex.position + offset, 1.0f));
+    out.position = mul(pc.matrix, float4(offset, 1.0f)) + float4(vertex.position, 0.0f);
+
     out.color = IDL::Mac_Style::colormap(grad);
     out.uv = vertex.uv;
 

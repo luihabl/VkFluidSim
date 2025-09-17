@@ -177,8 +177,7 @@ void Particle3DDrawPipeline::Init(const gfx::CoreCtx& ctx,
 }
 
 void Particle3DDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
-    fmt::println("not implemented");
-    assert(false);
+    vkDestroyPipeline(ctx.device, pipeline, nullptr);
 }
 
 void Particle3DDrawPipeline::Draw(VkCommandBuffer cmd,
@@ -187,8 +186,34 @@ void Particle3DDrawPipeline::Draw(VkCommandBuffer cmd,
                                   const gfx::GPUMesh& mesh,
                                   const PushConstants& push_constants,
                                   uint32_t instances) {
-    fmt::println("not implemented");
-    assert(false);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    const auto viewport = VkViewport{
+        .x = 0,
+        .y = 0,
+        .width = (float)draw_img.extent.width,
+        .height = (float)draw_img.extent.height,
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    const auto scissor = VkRect2D{
+        .offset = {0, 0},
+        .extent = {.width = draw_img.extent.width, .height = draw_img.extent.height},
+    };
+
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
+                       &push_constants);
+
+    VkDeviceSize offsets[1]{0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertices.buffer, offsets);
+    vkCmdBindIndexBuffer(cmd, mesh.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdDrawIndexed(cmd, mesh.index_count, instances, 0, 0, 0);
 }
 
 void DescriptorManager::Init(const gfx::CoreCtx& ctx, u32 ubo_size) {

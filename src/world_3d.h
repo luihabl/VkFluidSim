@@ -28,6 +28,8 @@ private:
     float camera_radius{20.0f};
 
     SimulationRenderer3D renderer;
+    Simulation3D simulation;
+
     UI ui;
 
     int current_frame = 0;

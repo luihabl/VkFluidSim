@@ -7,7 +7,6 @@
 #include <glm/trigonometric.hpp>
 
 #include "SDL3/SDL_events.h"
-#include "SDL3/SDL_keyboard.h"
 #include "SDL3/SDL_keycode.h"
 #include "SDL3/SDL_mouse.h"
 #include "gfx/common.h"
@@ -29,6 +28,8 @@ void World3D::Init(Platform& platform) {
         .validation_layers = true,
     });
 
+    simulation.Init(gfx.GetCoreCtx());
+
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, ext.width, ext.height);
 
@@ -39,6 +40,15 @@ void World3D::Init(Platform& platform) {
     camera.SetPosition(gfx::axis::BACK * 20.0f);
     camera_angles = {0.0f, -90.0f, 0.0f};
     last_camera_angles = camera_angles;
+
+    ResetSimulation();
+}
+
+void World3D::ResetSimulation() {
+    const auto& box = simulation.GetBoundingBox();
+    auto size = box.size / 3.0f;
+    auto pos = box.pos + (box.size - size) / 2.0f;
+    simulation.SetParticleInBox(gfx, {.size = size, .pos = pos});
 }
 
 void World3D::SetCameraPosition() {
@@ -74,7 +84,8 @@ void World3D::Update(Platform& platform) {
 
     auto cmd = gfx.BeginFrame();
 
-    renderer.Draw(gfx, cmd, camera.GetViewProj());
+    simulation.Step(cmd, gfx.GetCoreCtx(), current_frame);
+    renderer.Draw(gfx, cmd, simulation, current_frame, camera.GetViewProj());
     DrawUI(cmd);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
@@ -139,6 +150,7 @@ void World3D::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     ui.Clear(gfx);
     renderer.Clear(gfx);
+    simulation.Clear(gfx.GetCoreCtx());
     gfx.Clear();
 }
 

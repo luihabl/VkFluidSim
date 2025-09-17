@@ -301,15 +301,15 @@ void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstan
     k.velocities[id] += acc * k.dt;
 }
 
-[shader("compute")]
-[numthreads(group_size, 1, 1)]
-void calculate_viscosity_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
-    if (id >= k.n_particles)
-        return;
+// [shader("compute")]
+// [numthreads(group_size, 1, 1)]
+// void calculate_viscosity_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+//     if (id >= k.n_particles)
+//         return;
 
-    let viscosity_force = calculate_viscosity_force(id, k);
-    k.velocities[id] += viscosity_force * ubo.viscosity_strenght * k.dt;
-}
+//     let viscosity_force = calculate_viscosity_force(id, k);
+//     k.velocities[id] += viscosity_force * ubo.viscosity_strenght * k.dt;
+// }
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]

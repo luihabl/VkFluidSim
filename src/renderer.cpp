@@ -171,13 +171,23 @@ void SimulationRenderer3D::Init(const gfx::Device& gfx, int w, int h) {
     clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
 
     box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, true);
+    particles_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 
-    glm::vec3 box_size = {10.0f, 10.0f, 10.0f};
+    glm::vec3 box_size = {20.0f, 10.0f, 10.0f};
     box_transform.SetScale(box_size);
     box_transform.SetPosition(-box_size / 2.0f);
+    sim_transform.SetPosition(-box_size / 2.0f);
+
+    gfx::CPUMesh mesh;
+    DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    particle_mesh = gfx::UploadMesh(gfx, mesh);
 }
 
-void SimulationRenderer3D::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const glm::mat4 view_proj) {
+void SimulationRenderer3D::Draw(gfx::Device& gfx,
+                                VkCommandBuffer cmd,
+                                const Simulation3D& simulation,
+                                u32 current_frame,
+                                const glm::mat4 view_proj) {
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -201,6 +211,19 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const glm
     };
     box_pipeline.Draw(cmd, gfx, draw_img, pc);
 
+    const auto& buffers = simulation.GetFrameData(current_frame);
+    auto pos_buffer = buffers.position_buffer.device_addr;
+    auto vel_buffer = buffers.velocity_buffer.device_addr;
+
+    auto pc_particles = Particle3DDrawPipeline::PushConstants{
+        .matrix = view_proj * transform.Matrix() * sim_transform.Matrix(),
+        .positions = pos_buffer,
+        .velocities = vel_buffer,
+    };
+
+    particles_pipeline.Draw(cmd, gfx, draw_img, particle_mesh, pc_particles,
+                            simulation.GetParameters().n_particles);
+
     vkCmdEndRendering(cmd);
 }
 
@@ -208,7 +231,7 @@ void SimulationRenderer3D::Clear(const gfx::Device& gfx) {
     gfx::DestroyMesh(gfx, particle_mesh);
     gfx.DestroyImage(draw_img);
     gfx.DestroyImage(depth_img);
-    // sprite_pipeline.Clear(gfx.GetCoreCtx());
+    particles_pipeline.Clear(gfx.GetCoreCtx());
     box_pipeline.Clear(gfx.GetCoreCtx());
 }
 

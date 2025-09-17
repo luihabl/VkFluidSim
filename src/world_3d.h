@@ -34,6 +34,7 @@ private:
     bool paused{true};
 
     void ResetSimulation();
+    void SetCameraPosition();
     void DrawUI(VkCommandBuffer cmd);
 };
 }  // namespace vfs

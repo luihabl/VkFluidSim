@@ -41,48 +41,36 @@ void World3D::Init(Platform& platform) {
     last_camera_angles = camera_angles;
 }
 
-void World3D::Update(Platform& platform) {
-    {
-        constexpr float delta = 0.5f;
+void World3D::SetCameraPosition() {
+    constexpr float delta = 0.5f;
 
-        auto* keyboard = SDL_GetKeyboardState(nullptr);
-        if (keyboard[SDL_SCANCODE_A]) {
-            camera_angles.y += delta;
-        }
-        if (keyboard[SDL_SCANCODE_D]) {
-            camera_angles.y -= delta;
-        }
-        if (keyboard[SDL_SCANCODE_W]) {
-            camera_angles.x += delta;
-        }
-        if (keyboard[SDL_SCANCODE_S]) {
-            camera_angles.x -= delta;
-        }
-
-        if (orbit_move) {
-            glm::vec2 current_mouse_pos;
-            SDL_GetMouseState(&current_mouse_pos.x, &current_mouse_pos.y);
-            auto mouse_diff = current_mouse_pos - initial_mouse_pos;
-            mouse_diff = glm::vec2(mouse_diff.y, mouse_diff.x);
-            camera_angles = last_camera_angles + glm::vec3(mouse_diff * delta, 0.0f);
-        }
-
-        camera_angles.x = glm::clamp(camera_angles.x, -89.f, 89.f);
-
-        auto pos = camera.GetPosition();
-
-        float pitch = glm::radians(camera_angles.x);
-        float yaw = glm::radians(camera_angles.y);
-        float roll = glm::radians(camera_angles.z);
-
-        glm::vec3 camera_pos;
-        camera_pos.x = cos(yaw) * cos(pitch);
-        camera_pos.y = sin(pitch);
-        camera_pos.z = sin(yaw) * cos(pitch);
-
-        camera.SetPosition(camera_pos * camera_radius);
-        camera.SetTarget({0.0f, 0.0f, 0.0f});
+    if (orbit_move) {
+        glm::vec2 current_mouse_pos;
+        SDL_GetMouseState(&current_mouse_pos.x, &current_mouse_pos.y);
+        auto mouse_diff = current_mouse_pos - initial_mouse_pos;
+        mouse_diff = glm::vec2(mouse_diff.y, mouse_diff.x);
+        camera_angles = last_camera_angles + glm::vec3(mouse_diff * delta, 0.0f);
     }
+
+    camera_angles.x = glm::clamp(camera_angles.x, -89.f, 89.f);
+
+    auto pos = camera.GetPosition();
+
+    float pitch = glm::radians(camera_angles.x);
+    float yaw = glm::radians(camera_angles.y);
+    float roll = glm::radians(camera_angles.z);
+
+    glm::vec3 camera_pos;
+    camera_pos.x = cos(yaw) * cos(pitch);
+    camera_pos.y = sin(pitch);
+    camera_pos.z = sin(yaw) * cos(pitch);
+
+    camera.SetPosition(camera_pos * camera_radius);
+    camera.SetTarget({0.0f, 0.0f, 0.0f});
+}
+
+void World3D::Update(Platform& platform) {
+    SetCameraPosition();
 
     auto cmd = gfx.BeginFrame();
 

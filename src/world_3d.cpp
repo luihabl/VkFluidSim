@@ -127,6 +127,12 @@ void World3D::HandleEvent(Platform& platform, const Event& e) {
         orbit_move = false;
         last_camera_angles = camera_angles;
     }
+
+    if (e.type == SDL_EVENT_MOUSE_WHEEL && !io.WantCaptureMouse) {
+        float amount = e.wheel.y;
+        camera_radius += amount * 0.4f;
+        camera_radius = glm::clamp(camera_radius, 2.0f, 10000.0f);
+    }
 }
 
 void World3D::Clear() {

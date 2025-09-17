@@ -1,8 +1,11 @@
 #pragma once
 
+#include <glm/ext/scalar_constants.hpp>
+
 #include "gfx/gfx.h"
 #include "platform.h"
 #include "renderer.h"
+#include "ui.h"
 
 namespace vfs {
 class World3D {
@@ -16,9 +19,13 @@ public:
 
 private:
     gfx::Device gfx;
+
     Camera camera;
+    glm::vec3 camera_angles{0.0f};
+    float camera_radius{20.0f};
+
     SimulationRenderer3D renderer;
-    // UI ui;
+    UI ui;
 
     int current_frame = 0;
     bool paused{true};

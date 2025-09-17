@@ -70,7 +70,7 @@ VertexOutput vertex_3d_main(uint vertex_id: SV_VertexID, uniform PushConstants p
 
     let coord = coords_3d[index];
     out.position = mul(pc.matrix, float4(coord, 1.0f));
-    out.color = pc.color;
+    out.color = pc.color * (1 - coord.z * 0.9);
     return out;
 }
 

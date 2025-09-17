@@ -4,6 +4,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include "gfx/common.h"
@@ -347,21 +348,13 @@ void Camera::SetRotation(const glm::quat& q) {
     transform.SetRotation(q);
 }
 
-const glm::quat& Camera::GetRotation() const {
-    return transform.Rotation();
+void Camera::SetTarget(const glm::vec3& target) {
+    transform.SetRotation(
+        glm::quatLookAt(glm::normalize(transform.Position() - target), gfx::axis::UP));
 }
 
-void Camera::SetTarget(const glm::vec3& target) {
-    auto target_dir = glm::normalize(target - transform.Position());
-
-    if (glm::length2(target_dir - transform.LocalFront()) < 1e-12) {
-        return;
-    }
-
-    auto axis = glm::cross(gfx::axis::FRONT, target_dir);
-    float angle = std::acos(glm::dot(gfx::axis::FRONT, glm::normalize(target_dir)));
-    auto r = glm::rotate(angle, axis);
-    SetRotation(r);
+const glm::quat& Camera::GetRotation() const {
+    return transform.Rotation();
 }
 
 glm::mat4 Camera::GetView() const {

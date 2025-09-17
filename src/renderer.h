@@ -72,13 +72,13 @@ public:
     glm::vec3 GetPosition() const;
 
     void SetRotation(const glm::quat& q);
-    const glm::quat& GetRotation() const;
-
     void SetTarget(const glm::vec3& target);
+    const glm::quat& GetRotation() const;
 
     glm::mat4 GetView() const;
     glm::mat4 GetViewProj() const;
     const glm::mat4& GetProj() const;
+    Transform& GetTransform() { return transform; }
 
 private:
     ProjType proj_type{ProjType::None};

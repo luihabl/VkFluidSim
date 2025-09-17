@@ -21,6 +21,9 @@ private:
     gfx::Device gfx;
 
     Camera camera;
+    bool orbit_move{false};
+    glm::vec2 initial_mouse_pos{0.0f};
+    glm::vec3 last_camera_angles{0.0f};
     glm::vec3 camera_angles{0.0f};
     float camera_radius{20.0f};
 

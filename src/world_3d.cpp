@@ -6,8 +6,10 @@
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/trigonometric.hpp>
 
+#include "SDL3/SDL_events.h"
 #include "SDL3/SDL_keyboard.h"
 #include "SDL3/SDL_keycode.h"
+#include "SDL3/SDL_mouse.h"
 #include "gfx/common.h"
 #include "imgui.h"
 #include "platform.h"
@@ -36,6 +38,7 @@ void World3D::Init(Platform& platform) {
     camera.SetPerspective(90.0f, 0.1f, 100000.0f, (float)screen_size.x / screen_size.y);
     camera.SetPosition(gfx::axis::BACK * 20.0f);
     camera_angles = {0.0f, -90.0f, 0.0f};
+    last_camera_angles = camera_angles;
 }
 
 void World3D::Update(Platform& platform) {
@@ -54,6 +57,14 @@ void World3D::Update(Platform& platform) {
         }
         if (keyboard[SDL_SCANCODE_S]) {
             camera_angles.x -= delta;
+        }
+
+        if (orbit_move) {
+            glm::vec2 current_mouse_pos;
+            SDL_GetMouseState(&current_mouse_pos.x, &current_mouse_pos.y);
+            auto mouse_diff = current_mouse_pos - initial_mouse_pos;
+            mouse_diff = glm::vec2(mouse_diff.y, mouse_diff.x);
+            camera_angles = last_camera_angles + glm::vec3(mouse_diff * delta, 0.0f);
         }
 
         camera_angles.x = glm::clamp(camera_angles.x, -89.f, 89.f);
@@ -111,8 +122,22 @@ void World3D::DrawUI(VkCommandBuffer cmd) {
 void World3D::HandleEvent(Platform& platform, const Event& e) {
     ui.HandleEvent(e);
 
+    auto& io = ImGui::GetIO();
+
     if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_Q) {
         platform.ScheduleQuit();
+    }
+
+    if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT &&
+        !io.WantCaptureMouse) {
+        orbit_move = true;
+
+        SDL_GetMouseState(&initial_mouse_pos.x, &initial_mouse_pos.y);
+    }
+
+    if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_LEFT && orbit_move) {
+        orbit_move = false;
+        last_camera_angles = camera_angles;
     }
 }
 

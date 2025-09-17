@@ -25,10 +25,9 @@ void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format, bo
     n_draw_vertices = draw_3d ? 24 : 8;
 
     pipeline = vk::util::GraphicsPipelineBuilder(layout)
-                   .AddShaderStage(box_shader, VK_SHADER_STAGE_VERTEX_BIT,
-                                   draw_3d ? "vertex_3d_main" : "vertex_main")
+                   .AddShaderStage(box_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
                    .AddShaderStage(box_shader, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                   draw_3d ? "frag_3d_main" : "frag_main")
+                                   "frag_main")
                    .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                    .SetPolygonMode(VK_POLYGON_MODE_LINE)
                    .SetCullDisabled()

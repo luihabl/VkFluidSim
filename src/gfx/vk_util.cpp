@@ -387,10 +387,6 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetDepthTest(bool enable_depth
     depth_stencil.depthTestEnable = VK_TRUE;
     depth_stencil.depthWriteEnable = enable_depth_write;
     depth_stencil.depthCompareOp = op;
-    depth_stencil.depthBoundsTestEnable = VK_FALSE;
-    depth_stencil.stencilTestEnable = VK_FALSE;
-    depth_stencil.front = {};
-    depth_stencil.back = {};
     depth_stencil.minDepthBounds = 0.0f;
     depth_stencil.maxDepthBounds = 1.0f;
 

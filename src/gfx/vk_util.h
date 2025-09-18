@@ -193,7 +193,7 @@ inline auto DepthRenderingAttachmentInfo(VkImageView view, VkImageLayout layout)
         .imageLayout = layout,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue.depthStencil.depth = 0.f,
+        .clearValue.depthStencil.depth = 1.f,
     };
 }
 

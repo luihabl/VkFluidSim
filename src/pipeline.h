@@ -34,7 +34,10 @@ public:
         glm::vec4 color{1.0f};
     };
 
-    void Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format, bool draw_3d = false);
+    void Init(const gfx::CoreCtx& ctx,
+              VkFormat draw_img_format,
+              VkFormat depth_img_format,
+              bool draw_3d = false);
     void Clear(const gfx::CoreCtx& ctx);
     void Draw(VkCommandBuffer cmd,
               gfx::Device& gfx,

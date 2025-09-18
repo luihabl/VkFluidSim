@@ -287,7 +287,7 @@ void Simulation3D::Init(const gfx::CoreCtx& ctx) {
         .fixed_dt = 1.0f / 120.0f,
     };
 
-    SetBoundingBoxSize({20.0f, 10.0f, 10.0f});
+    SetBoundingBoxSize({5.0f, 4.0f, 4.0f});
 
     for (auto& bufs : frame_buffers) {
         bufs = {

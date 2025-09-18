@@ -10,7 +10,10 @@
 
 namespace vfs {
 
-void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format, bool draw_3d) {
+void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx,
+                           VkFormat draw_img_format,
+                           VkFormat depth_img_format,
+                           bool draw_3d) {
     auto box_shader = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/compiled/box.slang.spv").c_str());
 
@@ -26,13 +29,13 @@ void BoxDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format, bo
 
     pipeline = vk::util::GraphicsPipelineBuilder(layout)
                    .AddShaderStage(box_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
-                   .AddShaderStage(box_shader, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                   "frag_main")
+                   .AddShaderStage(box_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
                    .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                    .SetPolygonMode(VK_POLYGON_MODE_LINE)
                    .SetCullDisabled()
                    .SetMultisamplingDisabled()
-                   .SetDepthTestDisabled()
+                   .SetDepthFormat(depth_img_format)
+                   .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
                    .SetBlendingAlphaBlend()  // Check if this is OK
                    .SetColorAttachmentFormat(draw_img_format)
                    .Build(ctx.device);
@@ -168,8 +171,8 @@ void Particle3DDrawPipeline::Init(const gfx::CoreCtx& ctx,
                    .SetCullDisabled()
                    .SetMultisamplingDisabled()
                    .SetDepthFormat(depth_img_format)
-                   .SetDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL)
-                   .SetBlendingAlphaBlend()  // Check if this is OK
+                   .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
+                   .SetBlendingDisabled()  // Check if this is OK
                    .SetColorAttachmentFormat(draw_img_format)
                    .Build(ctx.device);
 

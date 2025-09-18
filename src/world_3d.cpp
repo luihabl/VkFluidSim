@@ -31,12 +31,14 @@ void World3D::Init(Platform& platform) {
     simulation.Init(gfx.GetCoreCtx());
 
     auto ext = gfx.GetSwapchainExtent();
-    renderer.Init(gfx, ext.width, ext.height);
+    renderer.Init(gfx, simulation, ext.width, ext.height);
 
     ui.Init(gfx);
 
     auto screen_size = Platform::Info::GetScreenSize();
-    camera.SetPerspective(90.0f, 0.1f, 100000.0f, (float)screen_size.x / screen_size.y);
+    camera.SetPerspective(90.0f, 0.1f, 1000.0f, (float)screen_size.x / screen_size.y);
+    camera.SetInverseDepth(false);
+
     camera.SetPosition(gfx::axis::BACK * 20.0f);
     camera_angles = {0.0f, -90.0f, 0.0f};
     last_camera_angles = camera_angles;
@@ -46,8 +48,10 @@ void World3D::Init(Platform& platform) {
 
 void World3D::ResetSimulation() {
     const auto& box = simulation.GetBoundingBox();
-    auto size = box.size / 3.0f;
-    auto pos = box.pos + (box.size - size) / 2.0f;
+    auto size = box.size;
+    size.x /= 5.0f;
+
+    auto pos = box.pos;  // + (box.size - size) / 2.0f;
     simulation.SetParticleInBox(gfx, {.size = size, .pos = pos});
 }
 

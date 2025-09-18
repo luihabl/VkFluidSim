@@ -75,6 +75,9 @@ public:
     void SetTarget(const glm::vec3& target);
     const glm::quat& GetRotation() const;
 
+    bool InverseDepth() const { return inverse_depth; }
+    void SetInverseDepth(bool inverse);
+
     glm::mat4 GetView() const;
     glm::mat4 GetViewProj() const;
     const glm::mat4& GetProj() const;
@@ -85,6 +88,9 @@ private:
     Transform transform;
     glm::mat4 projection;
 
+    // If this is set to true, the .clearValue.depthStencil.depth value in the should be
+    // set to 0.0f. Also, the compare op should be set to VK_COMPARE_OP_GREATER_OR_EQUAL in the
+    // pipeline creation
     bool inverse_depth{false};
     bool clip_space_y_down{true};
 
@@ -96,6 +102,7 @@ private:
 
     glm::vec2 ortho_scale{1.0f};
     glm::vec2 ortho_view_size{0.0f};
+    void Reset();
 };
 
 class SimulationRenderer2D {
@@ -124,7 +131,7 @@ private:
 
 class SimulationRenderer3D {
 public:
-    void Init(const gfx::Device& gfx, int w, int h);
+    void Init(const gfx::Device& gfx, const Simulation3D& simulation, int w, int h);
     void Draw(gfx::Device& gfx,
               VkCommandBuffer cmd,
               const Simulation3D& simulation,

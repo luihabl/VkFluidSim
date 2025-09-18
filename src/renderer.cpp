@@ -103,7 +103,7 @@ void SimulationRenderer2D::Init(const gfx::Device& gfx,
     DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 
-    box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format);
+    box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 }
 
 void SimulationRenderer2D::Draw(gfx::Device& gfx,
@@ -164,16 +164,19 @@ void SimulationRenderer2D::Clear(const gfx::Device& gfx) {
     box_pipeline.Clear(gfx.GetCoreCtx());
 }
 
-void SimulationRenderer3D::Init(const gfx::Device& gfx, int w, int h) {
+void SimulationRenderer3D::Init(const gfx::Device& gfx,
+                                const Simulation3D& simulation,
+                                int w,
+                                int h) {
     draw_img = CreateDrawImage(gfx, w, h);
     depth_img = CreateDepthImage(gfx, w, h);
 
     clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
 
-    box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, true);
+    box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format, true);
     particles_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 
-    glm::vec3 box_size = {20.0f, 10.0f, 10.0f};
+    glm::vec3 box_size = simulation.GetBoundingBox().size;
     box_transform.SetScale(box_size);
     box_transform.SetPosition(-box_size / 2.0f);
     sim_transform.SetPosition(-box_size / 2.0f);
@@ -198,11 +201,14 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
         clear_color.a,
     };
 
-    // auto depth_attachment = vk::util::DepthRenderingAttachmentInfo(
-    //     depth_img.view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    vk::util::TransitionImage(cmd, depth_img.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+    auto depth_attachment = vk::util::DepthRenderingAttachmentInfo(
+        depth_img.view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     auto render_info =
-        vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, nullptr);
+        vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, &depth_attachment);
     vkCmdBeginRendering(cmd, &render_info);
 
     auto pc = BoxDrawPipeline::PushConstants{
@@ -310,6 +316,14 @@ void Camera::SetPerspective(float fov_x, float z_near, float z_far, float aspect
     }
 }
 
+// If this is set to true, the .clearValue.depthStencil.depth value in the should be
+// set to 0.0f. Also, the compare op should be set to VK_COMPARE_OP_GREATER_OR_EQUAL in the pipeline
+// creation
+void Camera::SetInverseDepth(bool inverse) {
+    inverse_depth = inverse;
+    Reset();
+}
+
 void Camera::SetOrtho(float scale, float z_near, float z_far) {
     SetOrtho(glm::vec2(scale), z_near, z_far);
 }
@@ -352,6 +366,28 @@ void Camera::SetOrtho2D(const glm::vec2& size, float z_near, float z_far, Origin
             projection = glm::ortho(-half.x, half.x, half.y, -half.y, z_near, z_far);
             break;
         }
+    }
+}
+
+void Camera::Reset() {
+    switch (proj_type) {
+        case vfs::ProjType::Orthographic: {
+            SetOrtho(ortho_scale, z_near, z_far);
+            break;
+        }
+
+        case vfs::ProjType::Orthographic2D: {
+            SetOrtho2D(ortho_view_size, z_near, z_far);
+            break;
+        }
+
+        case vfs::ProjType::Perspective: {
+            SetPerspective(fov_x, z_near, z_far, aspect_ratio);
+            break;
+        }
+
+        default:
+            break;
     }
 }
 

@@ -91,7 +91,7 @@ void World3D::Update(Platform& platform) {
     if (!paused) {
         simulation.Step(cmd, gfx.GetCoreCtx(), current_frame);
     }
-    renderer.Draw(gfx, cmd, simulation, current_frame, camera.GetViewProj());
+    renderer.Draw(gfx, cmd, simulation, current_frame, camera);
     DrawUI(cmd);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());

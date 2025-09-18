@@ -281,13 +281,13 @@ void Simulation2D::Clear(const gfx::CoreCtx& ctx) {
 
 void Simulation3D::Init(const gfx::CoreCtx& ctx) {
     par = Parameters{
-        .n_particles = 16324,
+        .n_particles = 50000,
         .iterations = 3,
-        .time_scale = 1.0f,
+        .time_scale = 2.0f,
         .fixed_dt = 1.0f / 120.0f,
     };
 
-    SetBoundingBoxSize({5.0f, 4.0f, 4.0f});
+    SetBoundingBoxSize({15.0f, 10.0f, 5.0f});
 
     for (auto& bufs : frame_buffers) {
         bufs = {

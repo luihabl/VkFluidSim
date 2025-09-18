@@ -17,11 +17,7 @@ namespace vfs {
 
 namespace {
 
-void DrawCircleFill(gfx::CPUMesh& mesh,
-                    const glm::vec3& center,
-                    float radius,
-                    const glm::vec4& color,
-                    int steps) {
+void DrawCircleFill(gfx::CPUMesh& mesh, const glm::vec3& center, float radius, int steps) {
     float cx = center.x;
     float cy = center.y;
 
@@ -182,7 +178,8 @@ void SimulationRenderer3D::Init(const gfx::Device& gfx,
     sim_transform.SetPosition(-box_size / 2.0f);
 
     gfx::CPUMesh mesh;
-    DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    // DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 5);
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 }
 
@@ -190,7 +187,7 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
                                 VkCommandBuffer cmd,
                                 const Simulation3D& simulation,
                                 u32 current_frame,
-                                const glm::mat4 view_proj) {
+                                const Camera& camera) {
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -211,6 +208,8 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
         vk::util::RenderingInfo(gfx.GetSwapchainExtent(), &color_attachment, &depth_attachment);
     vkCmdBeginRendering(cmd, &render_info);
 
+    auto view_proj = camera.GetViewProj();
+
     auto pc = BoxDrawPipeline::PushConstants{
         .color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
         .matrix = view_proj * transform.Matrix() * box_transform.Matrix(),
@@ -223,6 +222,7 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
 
     auto pc_particles = Particle3DDrawPipeline::PushConstants{
         .matrix = view_proj * transform.Matrix() * sim_transform.Matrix(),
+        .proj = camera.GetProj(),
         .positions = pos_buffer,
         .velocities = vel_buffer,
     };

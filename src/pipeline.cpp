@@ -172,7 +172,7 @@ void Particle3DDrawPipeline::Init(const gfx::CoreCtx& ctx,
                    .SetMultisamplingDisabled()
                    .SetDepthFormat(depth_img_format)
                    .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
-                   .SetBlendingDisabled()  // Check if this is OK
+                   .SetBlendingAlphaBlend()  // Check if this is OK
                    .SetColorAttachmentFormat(draw_img_format)
                    .Build(ctx.device);
 

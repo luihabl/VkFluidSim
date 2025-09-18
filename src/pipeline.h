@@ -76,6 +76,7 @@ class Particle3DDrawPipeline {
 public:
     struct PushConstants {
         glm::mat4 matrix;
+        glm::mat4 proj;
         VkDeviceAddress positions;
         VkDeviceAddress velocities;
     };

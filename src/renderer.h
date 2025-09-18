@@ -136,7 +136,7 @@ public:
               VkCommandBuffer cmd,
               const Simulation3D& simulation,
               u32 current_frame,
-              const glm::mat4 view_proj);
+              const Camera& camera);
     void Clear(const gfx::Device& gfx);
     Transform& GetTransform() { return transform; }
     const gfx::Image& GetDrawImage() const { return draw_img; }

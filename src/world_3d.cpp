@@ -88,7 +88,9 @@ void World3D::Update(Platform& platform) {
 
     auto cmd = gfx.BeginFrame();
 
-    simulation.Step(cmd, gfx.GetCoreCtx(), current_frame);
+    if (!paused) {
+        simulation.Step(cmd, gfx.GetCoreCtx(), current_frame);
+    }
     renderer.Draw(gfx, cmd, simulation, current_frame, camera.GetViewProj());
     DrawUI(cmd);
 
@@ -99,6 +101,15 @@ void World3D::DrawUI(VkCommandBuffer cmd) {
     ui.BeginDraw(gfx, cmd, renderer.GetDrawImage());
 
     if (ImGui::Begin("Control")) {
+        if (paused) {
+            if (ImGui::Button("continue")) {
+                paused = false;
+            }
+        } else {
+            if (ImGui::Button("pause")) {
+                paused = true;
+            }
+        }
 #define TEXTV3(str, prop)                                     \
     {                                                         \
         auto a = prop;                                        \

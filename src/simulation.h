@@ -175,7 +175,8 @@ public:
                           const std::vector<glm::vec3>& vel);
     void SetParticleInBox(const gfx::Device& gfx, const BoundingBox& box);
     void SetBoundingBoxSize(const glm::vec3& size);
-    const BoundingBox& GetBoundingBox() const { return bounding_box; }
+    void SetSmoothingRadius(float radius);
+    const BoundingBox GetBoundingBox() const { return uniform_data.box; }
     const FrameBuffers& GetFrameData(u32 frame_idx) const { return frame_buffers[frame_idx]; }
     const Parameters& GetParameters() const { return par; }
     void Clear(const gfx::CoreCtx& ctx);

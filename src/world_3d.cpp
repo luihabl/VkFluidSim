@@ -36,18 +36,20 @@ void World3D::Init(Platform& platform) {
     ui.Init(gfx);
 
     auto screen_size = Platform::Info::GetScreenSize();
-    camera.SetPerspective(90.0f, 0.1f, 1000.0f, (float)screen_size.x / screen_size.y);
+    camera.SetPerspective(glm::radians(75.0f), 0.1f, 1000.0f, (float)screen_size.x / screen_size.y);
     camera.SetInverseDepth(false);
 
     camera.SetPosition(gfx::axis::BACK * 20.0f);
     camera_angles = {0.0f, -90.0f, 0.0f};
     last_camera_angles = camera_angles;
 
+    camera_radius = 25.0f;
+
     ResetSimulation();
 }
 
 void World3D::ResetSimulation() {
-    const auto& box = simulation.GetBoundingBox();
+    const auto box = simulation.GetUniformData().box;
     auto size = box.size;
     size.x /= 5.0f;
 
@@ -100,32 +102,89 @@ void World3D::Update(Platform& platform) {
 void World3D::DrawUI(VkCommandBuffer cmd) {
     ui.BeginDraw(gfx, cmd, renderer.GetDrawImage());
 
-    if (ImGui::Begin("Control")) {
-        if (paused) {
-            if (ImGui::Button("continue")) {
-                paused = false;
-            }
-        } else {
-            if (ImGui::Button("pause")) {
-                paused = true;
-            }
-        }
 #define TEXTV3(str, prop)                                     \
     {                                                         \
         auto a = prop;                                        \
         ImGui::Text(str ": %.2f, %.2f, %.2f", a.x, a.y, a.z); \
     }
-        auto pos = camera.GetPosition();
-        TEXTV3("Camera position", camera.GetPosition());
-        TEXTV3("Global up (+y)", gfx::axis::UP);
-        TEXTV3("Global left (+x)", gfx::axis::LEFT);
-        TEXTV3("Global front (+z)", gfx::axis::FRONT);
 
-        auto angles = glm::eulerAngles(camera.GetRotation());
+    if (ImGui::Begin("Control")) {
+        if (paused) {
+            if (ImGui::Button("Continue")) {
+                paused = false;
+            }
+        } else {
+            if (ImGui::Button("Pause")) {
+                paused = true;
+            }
+        }
 
-        ImGui::Text("pitch: %.2f deg", glm::degrees(angles.x));
-        ImGui::Text("yaw: %.2f deg", glm::degrees(angles.y));
-        ImGui::Text("roll: %.2f deg", glm::degrees(angles.z));
+        ImGui::SameLine();
+
+        if (ImGui::Button("Reset")) {
+            ResetSimulation();
+            paused = true;
+        }
+
+        if (ImGui::CollapsingHeader("Simulation")) {
+            glm::vec3 size = simulation.GetUniformData().box.size;
+            if (ImGui::DragFloat3("Bounding box", &size.x, 0.1f, 0.5f, 50.0f)) {
+                simulation.GetUniformData().box.size = size;
+                simulation.ScheduleUpdateUniforms();
+            }
+
+            if (ImGui::SliderFloat("Gravity", &simulation.GetUniformData().gravity, -25.0f,
+                                   25.0f)) {
+                simulation.ScheduleUpdateUniforms();
+            }
+
+            if (ImGui::SliderFloat("Wall damping factor",
+                                   &simulation.GetUniformData().damping_factor, 0.0f, 1.0f)) {
+                simulation.ScheduleUpdateUniforms();
+            }
+
+            if (ImGui::SliderFloat("Pressure multiplier",
+                                   &simulation.GetUniformData().pressure_multiplier, 0.0f,
+                                   2000.0f)) {
+                simulation.ScheduleUpdateUniforms();
+            }
+
+            float radius = simulation.GetUniformData().smoothing_radius;
+            if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
+                simulation.SetSmoothingRadius(radius);
+                simulation.ScheduleUpdateUniforms();
+            }
+
+            if (ImGui::SliderFloat("Viscosity", &simulation.GetUniformData().viscosity_strenght,
+                                   0.0f, 1.0f)) {
+                simulation.ScheduleUpdateUniforms();
+            }
+
+            if (ImGui::SliderFloat("Target density", &simulation.GetUniformData().target_density,
+                                   0.0f, 2000.0f)) {
+                simulation.ScheduleUpdateUniforms();
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Camera")) {
+            auto pos = camera.GetPosition();
+            TEXTV3("Position", camera.GetPosition());
+            // TEXTV3("Global up (+y)", gfx::axis::UP);
+            // TEXTV3("Global left (+x)", gfx::axis::LEFT);
+            // TEXTV3("Global front (+z)", gfx::axis::FRONT);
+
+            auto angles = glm::eulerAngles(camera.GetRotation());
+            ImGui::Text("pitch: %.2f deg", glm::degrees(angles.x));
+            ImGui::Text("yaw: %.2f deg", glm::degrees(angles.y));
+            ImGui::Text("roll: %.2f deg", glm::degrees(angles.z));
+
+            float fovx = glm::degrees(camera.GetFoV().x);
+            if (ImGui::DragFloat("FoV (x)", &fovx, 0.1f, 15.0f, 130.0f)) {
+                camera.SetFoVX(glm::radians(fovx));
+            }
+
+            ImGui::DragFloat("Orbit radius", &camera_radius, 0.1f, 0.0f, 90.0f);
+        }
     }
 
     ImGui::End();

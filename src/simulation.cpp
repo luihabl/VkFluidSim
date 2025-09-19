@@ -281,13 +281,13 @@ void Simulation2D::Clear(const gfx::CoreCtx& ctx) {
 
 void Simulation3D::Init(const gfx::CoreCtx& ctx) {
     par = Parameters{
-        .n_particles = 50000,
+        .n_particles = 400000,
         .iterations = 3,
         .time_scale = 2.0f,
         .fixed_dt = 1.0f / 120.0f,
     };
 
-    SetBoundingBoxSize({15.0f, 10.0f, 5.0f});
+    SetBoundingBoxSize({23.0f, 10.0f, 10.0f});
 
     for (auto& bufs : frame_buffers) {
         bufs = {
@@ -308,8 +308,6 @@ void Simulation3D::Init(const gfx::CoreCtx& ctx) {
     sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, par.n_particles);
 
     desc_manager.Init(ctx, sizeof(UniformData));
-    desc_manager.SetUniformData(&uniform_data);
-
     simulation_pipeline.Init(ctx, {
                                       .desc_manager = &desc_manager,
                                       .push_const_size = sizeof(PushConstants),
@@ -377,7 +375,7 @@ void Simulation3D::SetInitialData() {
         .sort_target_velocities = sort_target_velocity.device_addr,
     };
 
-    UpdateUniforms();
+    ScheduleUpdateUniforms();
 }
 
 void Simulation3D::ScheduleUpdateUniforms() {
@@ -394,7 +392,19 @@ void Simulation3D::SetBoundingBoxSize(const glm::vec3& size) {
         .pos = {0.0f, 0.0f, 0.0f},
     };
 
-    UniformData().box = bounding_box;
+    uniform_data.box = bounding_box;
+}
+
+void Simulation3D::SetSmoothingRadius(float smoothing_radius) {
+    uniform_data.smoothing_radius = smoothing_radius;
+    uniform_data.spiky_pow3_scale =
+        15.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 6));
+    uniform_data.spiky_pow2_scale =
+        15.0f / (2.0f * glm::pi<float>() * (float)std::pow(smoothing_radius, 5));
+    uniform_data.spiky_pow3_diff_scale =
+        45.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 6));
+    uniform_data.spiky_pow2_diff_scale =
+        15.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5));
 }
 
 void Simulation3D::CopyBuffersToNextFrame(VkCommandBuffer cmd, u32 current_frame) {

@@ -71,6 +71,9 @@ public:
     void SetPosition2D(const glm::vec2& pos);
     glm::vec3 GetPosition() const;
 
+    const glm::vec2& GetFoV() const { return fov; }
+    void SetFoVX(float fovx);
+
     void SetRotation(const glm::quat& q);
     void SetTarget(const glm::vec3& target);
     const glm::quat& GetRotation() const;
@@ -94,8 +97,7 @@ private:
     bool inverse_depth{false};
     bool clip_space_y_down{true};
 
-    float fov_x{glm::radians(90.0f)};
-    float fov_y{glm::radians(60.0f)};
+    glm::vec2 fov{glm::radians(90.0f), glm::radians(60.0f)};
     float aspect_ratio{16.0f / 9.0f};
     float z_near{1.0f};
     float z_far{75.0f};

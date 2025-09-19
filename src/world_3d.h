@@ -25,7 +25,7 @@ private:
     glm::vec2 initial_mouse_pos{0.0f};
     glm::vec3 last_camera_angles{0.0f};
     glm::vec3 camera_angles{0.0f};
-    float camera_radius{20.0f};
+    float camera_radius{0.0f};
 
     SimulationRenderer3D renderer;
     Simulation3D simulation;

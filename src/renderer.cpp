@@ -172,14 +172,9 @@ void SimulationRenderer3D::Init(const gfx::Device& gfx,
     box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format, true);
     particles_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 
-    glm::vec3 box_size = simulation.GetBoundingBox().size;
-    box_transform.SetScale(box_size);
-    box_transform.SetPosition(-box_size / 2.0f);
-    sim_transform.SetPosition(-box_size / 2.0f);
-
     gfx::CPUMesh mesh;
     // DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 5);
+    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 3);
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 }
 
@@ -209,6 +204,11 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
     vkCmdBeginRendering(cmd, &render_info);
 
     auto view_proj = camera.GetViewProj();
+
+    glm::vec3 box_size = simulation.GetBoundingBox().size;
+    box_transform.SetScale(box_size);
+    box_transform.SetPosition(-box_size / 2.0f);
+    sim_transform.SetPosition(-box_size / 2.0f);
 
     auto pc = BoxDrawPipeline::PushConstants{
         .color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
@@ -296,19 +296,19 @@ Transform Transform::Inverse() const {
     return Transform(glm::inverse(Matrix()));
 }
 
-void Camera::SetPerspective(float fov_x, float z_near, float z_far, float aspect_ratio) {
+void Camera::SetPerspective(float fov_x, float z_near, float z_far, float ar) {
     proj_type = ProjType::Perspective;
 
-    this->fov_x = fov_x;
-    this->aspect_ratio = aspect_ratio;
+    fov.x = fov_x;
+    aspect_ratio = ar;
 
-    float g = aspect_ratio / glm::tan(fov_x / 2.0);
-    fov_y = 2.0f * glm::atan(1.0f / g);
+    float g = aspect_ratio / glm::tan(fov.x / 2.0);
+    fov.y = 2.0f * glm::atan(1.0f / g);
 
     if (inverse_depth) {
-        projection = glm::perspective(fov_y, aspect_ratio, z_far, z_near);
+        projection = glm::perspective(fov.y, aspect_ratio, z_far, z_near);
     } else {
-        projection = glm::perspective(fov_y, aspect_ratio, z_near, z_far);
+        projection = glm::perspective(fov.y, aspect_ratio, z_near, z_far);
     }
 
     if (clip_space_y_down) {
@@ -321,6 +321,11 @@ void Camera::SetPerspective(float fov_x, float z_near, float z_far, float aspect
 // creation
 void Camera::SetInverseDepth(bool inverse) {
     inverse_depth = inverse;
+    Reset();
+}
+
+void Camera::SetFoVX(float fovx) {
+    this->fov.x = fovx;
     Reset();
 }
 
@@ -382,7 +387,7 @@ void Camera::Reset() {
         }
 
         case vfs::ProjType::Perspective: {
-            SetPerspective(fov_x, z_near, z_far, aspect_ratio);
+            SetPerspective(fov.x, z_near, z_far, aspect_ratio);
             break;
         }
 

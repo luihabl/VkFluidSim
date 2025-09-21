@@ -1,7 +1,7 @@
 import colormap;
 
 static const float v_max = 6.5f;
-static const float radius = 0.15;
+static const float radius = 0.5;
 static const float smooth_delta = 0.001f;
 
 struct Vertex {
@@ -46,11 +46,21 @@ VertexOutput vertex_main(uint id: SV_VulkanInstanceID, Vertex vertex, uniform In
 FragmentOutput frag_main(VertexOutput input) {
     FragmentOutput out;
 
-    // let uv_centered = input.uv - 0.5;
-    // let squared_dist = dot(uv_centered, uv_centered);
-    // let r = radius * radius;
-    let intensity = 1.0f;  // 1 - smoothstep(r - smooth_delta, r + smooth_delta, squared_dist);
+    float3 n;
+    n.xy = input.uv * 2.0f - 1.0f;
+    let r2 = dot(n.xy, n.xy);
 
-    out.color = float4(input.color.r, input.color.g, input.color.b, intensity);
+    if (r2 > 1.0f) {
+        discard;
+    }
+
+    n.z = -sqrt(1.0 - r2);
+
+    var light_dir = float3(0.0, 1.0, -1.0);
+    light_dir = normalize(light_dir);
+    float diffuse = max(0.0, dot(n, light_dir));
+
+    out.color = float4(input.color.r, input.color.g, input.color.b, 1.0f);
+    out.color.xyz *= diffuse;
     return out;
 }

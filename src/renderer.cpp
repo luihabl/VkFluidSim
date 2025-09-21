@@ -36,7 +36,7 @@ void DrawCircleFill(gfx::CPUMesh& mesh, const glm::vec3& center, float radius, i
     }
 }
 
-void DrawSquare(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm::vec4& color) {
+void DrawQuad(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm::vec4& color) {
     const unsigned int n = (unsigned int)mesh.vertices.size();
 
     float hs = 0.5 * side;
@@ -96,7 +96,7 @@ void SimulationRenderer2D::Init(const gfx::Device& gfx,
     sprite_pipeline.Init(gfx.GetCoreCtx(), draw_img.format);
 
     gfx::CPUMesh mesh;
-    DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    DrawQuad(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 
     box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
@@ -173,8 +173,8 @@ void SimulationRenderer3D::Init(const gfx::Device& gfx,
     particles_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 
     gfx::CPUMesh mesh;
-    // DrawSquare(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-    DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 3);
+    DrawQuad(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    // DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 3);
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 }
 

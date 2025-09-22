@@ -168,7 +168,7 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
         }
     }
 
-    return pressure_force / density;
+    return pressure_force / density + viscous_force * ubo.viscosity_strenght;
 }
 
 void resolve_collisions(inout float3 pos, inout float3 vel) {
@@ -306,6 +306,10 @@ void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     var vel = k.velocities[id];
 
     pos += vel * k.dt;
+
+    // TODO: Remove this method, use a particle-based representation (read Green thesis to
+    // understand the different types of boundaries). Try to find an example of implementation of
+    // particle-based boundary.
     resolve_collisions(pos, vel);
 
     k.positions[id] = pos;

@@ -155,7 +155,7 @@ void Particle3DDrawPipeline::Init(const gfx::CoreCtx& ctx,
     auto push_constant_range = VkPushConstantRange{
         .offset = 0,
         .size = sizeof(PushConstants),
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
     };
 
     layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
@@ -209,8 +209,8 @@ void Particle3DDrawPipeline::Draw(VkCommandBuffer cmd,
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants),
-                       &push_constants);
+    vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                       sizeof(PushConstants), &push_constants);
 
     VkDeviceSize offsets[1]{0};
     vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertices.buffer, offsets);

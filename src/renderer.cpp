@@ -221,7 +221,7 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
     auto vel_buffer = buffers.velocity_buffer.device_addr;
 
     auto pc_particles = Particle3DDrawPipeline::PushConstants{
-        .matrix = view_proj * transform.Matrix() * sim_transform.Matrix(),
+        .model_view = camera.GetView() * transform.Matrix() * sim_transform.Matrix(),
         .proj = camera.GetProj(),
         .positions = pos_buffer,
         .velocities = vel_buffer,

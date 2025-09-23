@@ -35,4 +35,20 @@ private:
     std::vector<VkDescriptorSetLayoutBinding> bindings;
 };
 
+class DescriptorManager {
+public:
+    void Init(const gfx::CoreCtx& ctx, u32 ubo_size);
+    void Clear(const gfx::CoreCtx& ctx);
+
+    void SetUniformData(void* data);
+
+    gfx::DescriptorPoolAlloc desc_pool;
+    VkDescriptorSetLayout desc_layout;
+    VkDescriptorSet desc_set;
+    gfx::Buffer global_constants_ubo;
+
+    u32 size;
+    std::vector<u8> uniform_constant_data;
+};
+
 }  // namespace gfx

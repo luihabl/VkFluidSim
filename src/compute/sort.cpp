@@ -1,7 +1,7 @@
 #include "sort.h"
 
+#include "compute_pipeline.h"
 #include "gfx/common.h"
-#include "pipeline.h"
 
 namespace vfs {
 

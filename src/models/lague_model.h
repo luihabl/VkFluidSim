@@ -1,7 +1,7 @@
 #pragma once
 
+#include "compute/sort.h"
 #include "models/model.h"
-#include "sort.h"
 namespace vfs {
 
 class LagueModel final : public SPHModel {

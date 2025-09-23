@@ -6,9 +6,9 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "common.h"
+#include "draw_pipelines.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "pipeline.h"
 #include "simulation.h"
 
 namespace vfs {

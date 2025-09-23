@@ -2,10 +2,10 @@
 
 #include <glm/glm.hpp>
 
+#include "compute/compute_pipeline.h"
+#include "compute/sort.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "pipeline.h"
-#include "sort.h"
 
 namespace vfs {
 
@@ -88,7 +88,7 @@ private:
     BoundingBox bounding_box;
 
     std::array<FrameBuffers, gfx::FRAME_COUNT> frame_buffers;
-    DescriptorManager desc_manager;
+    gfx::DescriptorManager desc_manager;
     ComputePipeline simulation_pipeline;
     SimulationUniformData sim_uniform_data;
 

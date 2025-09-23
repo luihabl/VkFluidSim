@@ -7,10 +7,10 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "draw_pipelines.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "gfx/vk_util.h"
-#include "pipeline.h"
 #include "simulation.h"
 
 namespace vfs {

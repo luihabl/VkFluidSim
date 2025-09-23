@@ -2,8 +2,8 @@
 
 #include <unordered_map>
 
+#include "compute_pipeline.h"
 #include "gfx/common.h"
-#include "pipeline.h"
 
 namespace vfs {
 

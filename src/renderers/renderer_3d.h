@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "draw_pipelines.h"
 #include "gfx/gfx.h"
 #include "models/model.h"
 

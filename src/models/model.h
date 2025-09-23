@@ -1,8 +1,10 @@
 #pragma once
 #include <optional>
 
+#include "compute/compute_pipeline.h"
 #include "gfx/common.h"
-#include "pipeline.h"
+#include "gfx/descriptor.h"
+#include "gfx/gfx.h"
 
 namespace vfs {
 class SPHModel {
@@ -54,7 +56,7 @@ public:
     void CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const;
 
 protected:
-    DescriptorManager desc_manager;
+    gfx::DescriptorManager desc_manager;
     ComputePipeline pipeline;
     DataBuffers buffers;
     SimulationParameters parameters;

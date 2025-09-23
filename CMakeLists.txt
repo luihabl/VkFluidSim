@@ -69,8 +69,6 @@ src/gfx/common.cpp
 src/platform.cpp
 src/world.cpp
 src/world_3d.cpp
-src/pipeline.cpp
-src/sort.cpp
 src/ui.cpp
 src/simulation.cpp
 src/models/model.cpp
@@ -78,6 +76,9 @@ src/models/lague_model.cpp
 src/renderers/renderer_2d.cpp
 src/renderers/renderer_3d.cpp
 src/renderers/common.cpp
+src/renderers/draw_pipelines.cpp
+src/compute/sort.cpp
+src/compute/compute_pipeline.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

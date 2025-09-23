@@ -8,7 +8,6 @@
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "imgui.h"
-#include "pipeline.h"
 #include "platform.h"
 
 namespace {}

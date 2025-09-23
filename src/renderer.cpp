@@ -160,14 +160,13 @@ void SimulationRenderer2D::Clear(const gfx::Device& gfx) {
     box_pipeline.Clear(gfx.GetCoreCtx());
 }
 
-void SimulationRenderer3D::Init(const gfx::Device& gfx,
-                                const Simulation3D& simulation,
-                                int w,
-                                int h) {
+void SimulationRenderer3D::Init(const gfx::Device& gfx, const SPHModel* simulation, int w, int h) {
     draw_img = CreateDrawImage(gfx, w, h);
     depth_img = CreateDepthImage(gfx, w, h);
 
     clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    render_buffers = simulation->CreateDataBuffers(gfx.GetCoreCtx());
 
     box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format, true);
     particles_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
@@ -180,9 +179,12 @@ void SimulationRenderer3D::Init(const gfx::Device& gfx,
 
 void SimulationRenderer3D::Draw(gfx::Device& gfx,
                                 VkCommandBuffer cmd,
-                                const Simulation3D& simulation,
-                                u32 current_frame,
+                                const SPHModel* simulation,
                                 const Camera& camera) {
+    ComputeToComputePipelineBarrier(cmd);
+    simulation->CopyDataBuffers(cmd, render_buffers);
+    ComputeToGraphicsPipelineBarrier(cmd);
+
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -205,7 +207,7 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
 
     auto view_proj = camera.GetViewProj();
 
-    glm::vec3 box_size = simulation.GetBoundingBox().size;
+    glm::vec3 box_size = simulation->GetBoundingBox().value().size;
     box_transform.SetScale(box_size);
     box_transform.SetPosition(-box_size / 2.0f);
     sim_transform.SetPosition(-box_size / 2.0f);
@@ -216,9 +218,8 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
     };
     box_pipeline.Draw(cmd, gfx, draw_img, pc);
 
-    const auto& buffers = simulation.GetFrameData(current_frame);
-    auto pos_buffer = buffers.position_buffer.device_addr;
-    auto vel_buffer = buffers.velocity_buffer.device_addr;
+    auto pos_buffer = render_buffers.position_buffer.device_addr;
+    auto vel_buffer = render_buffers.velocity_buffer.device_addr;
 
     auto pc_particles = Particle3DDrawPipeline::PushConstants{
         .model_view = camera.GetView() * transform.Matrix() * sim_transform.Matrix(),
@@ -228,7 +229,7 @@ void SimulationRenderer3D::Draw(gfx::Device& gfx,
     };
 
     particles_pipeline.Draw(cmd, gfx, draw_img, particle_mesh, pc_particles,
-                            simulation.GetParameters().n_particles);
+                            simulation->GetParameters().n_particles);
 
     vkCmdEndRendering(cmd);
 }
@@ -239,6 +240,9 @@ void SimulationRenderer3D::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(depth_img);
     particles_pipeline.Clear(gfx.GetCoreCtx());
     box_pipeline.Clear(gfx.GetCoreCtx());
+    render_buffers.position_buffer.Destroy();
+    render_buffers.velocity_buffer.Destroy();
+    render_buffers.density_buffer.Destroy();
 }
 
 Transform::Transform(const glm::mat4& matrix) {

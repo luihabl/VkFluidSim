@@ -3,6 +3,7 @@
 #include <glm/ext/scalar_constants.hpp>
 
 #include "gfx/gfx.h"
+#include "models/model.h"
 #include "platform.h"
 #include "renderer.h"
 #include "ui.h"
@@ -28,7 +29,7 @@ private:
     float camera_radius{0.0f};
 
     SimulationRenderer3D renderer;
-    Simulation3D simulation;
+    std::unique_ptr<SPHModel> simulation;
 
     UI ui;
 

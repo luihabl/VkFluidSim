@@ -11,6 +11,7 @@
 #include "SDL3/SDL_mouse.h"
 #include "gfx/common.h"
 #include "imgui.h"
+#include "models/lague_model.h"
 #include "platform.h"
 
 namespace vfs {
@@ -28,10 +29,11 @@ void World3D::Init(Platform& platform) {
         .validation_layers = true,
     });
 
-    simulation.Init(gfx.GetCoreCtx());
+    simulation = std::make_unique<LagueModel>();
+    simulation->Init(gfx.GetCoreCtx());
 
     auto ext = gfx.GetSwapchainExtent();
-    renderer.Init(gfx, simulation, ext.width, ext.height);
+    renderer.Init(gfx, simulation.get(), ext.width, ext.height);
 
     ui.Init(gfx);
 
@@ -49,12 +51,12 @@ void World3D::Init(Platform& platform) {
 }
 
 void World3D::ResetSimulation() {
-    const auto box = simulation.GetUniformData().box;
+    const auto box = simulation->GetBoundingBox().value();
     auto size = box.size;
     size.x /= 5.0f;
 
     auto pos = box.pos;  // + (box.size - size) / 2.0f;
-    simulation.SetParticleInBox(gfx, {.size = size, .pos = pos});
+    simulation->SetParticlesInBox(gfx, {.size = size, .pos = pos});
 }
 
 void World3D::SetCameraPosition() {
@@ -91,9 +93,9 @@ void World3D::Update(Platform& platform) {
     auto cmd = gfx.BeginFrame();
 
     if (!paused) {
-        simulation.Step(cmd, gfx.GetCoreCtx(), current_frame);
+        simulation->Step(gfx.GetCoreCtx(), cmd);
     }
-    renderer.Draw(gfx, cmd, simulation, current_frame, camera);
+    renderer.Draw(gfx, cmd, simulation.get(), camera);
     DrawUI(cmd);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
@@ -126,45 +128,47 @@ void World3D::DrawUI(VkCommandBuffer cmd) {
             paused = true;
         }
 
-        if (ImGui::CollapsingHeader("Simulation")) {
-            glm::vec3 size = simulation.GetUniformData().box.size;
-            if (ImGui::DragFloat3("Bounding box", &size.x, 0.1f, 0.5f, 50.0f)) {
-                simulation.GetUniformData().box.size = size;
-                simulation.ScheduleUpdateUniforms();
-            }
+        simulation->DrawDebugUI();
 
-            if (ImGui::SliderFloat("Gravity", &simulation.GetUniformData().gravity, -25.0f,
-                                   25.0f)) {
-                simulation.ScheduleUpdateUniforms();
-            }
+        // if (ImGui::CollapsingHeader("Simulation")) {
+        //     glm::vec3 size = simulation.GetUniformData().box.size;
+        //     if (ImGui::DragFloat3("Bounding box", &size.x, 0.1f, 0.5f, 50.0f)) {
+        //         simulation.GetUniformData().box.size = size;
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
 
-            if (ImGui::SliderFloat("Wall damping factor",
-                                   &simulation.GetUniformData().damping_factor, 0.0f, 1.0f)) {
-                simulation.ScheduleUpdateUniforms();
-            }
+        //     if (ImGui::SliderFloat("Gravity", &simulation.GetUniformData().gravity, -25.0f,
+        //                            25.0f)) {
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
 
-            if (ImGui::SliderFloat("Pressure multiplier",
-                                   &simulation.GetUniformData().pressure_multiplier, 0.0f,
-                                   2000.0f)) {
-                simulation.ScheduleUpdateUniforms();
-            }
+        //     if (ImGui::SliderFloat("Wall damping factor",
+        //                            &simulation.GetUniformData().damping_factor, 0.0f, 1.0f)) {
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
 
-            float radius = simulation.GetUniformData().smoothing_radius;
-            if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
-                simulation.SetSmoothingRadius(radius);
-                simulation.ScheduleUpdateUniforms();
-            }
+        //     if (ImGui::SliderFloat("Pressure multiplier",
+        //                            &simulation.GetUniformData().pressure_multiplier, 0.0f,
+        //                            2000.0f)) {
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
 
-            if (ImGui::SliderFloat("Viscosity", &simulation.GetUniformData().viscosity_strenght,
-                                   0.0f, 1.0f)) {
-                simulation.ScheduleUpdateUniforms();
-            }
+        //     float radius = simulation.GetUniformData().smoothing_radius;
+        //     if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
+        //         simulation.SetSmoothingRadius(radius);
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
 
-            if (ImGui::SliderFloat("Target density", &simulation.GetUniformData().target_density,
-                                   0.0f, 2000.0f)) {
-                simulation.ScheduleUpdateUniforms();
-            }
-        }
+        //     if (ImGui::SliderFloat("Viscosity", &simulation.GetUniformData().viscosity_strenght,
+        //                            0.0f, 1.0f)) {
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
+
+        //     if (ImGui::SliderFloat("Target density", &simulation.GetUniformData().target_density,
+        //                            0.0f, 2000.0f)) {
+        //         simulation.ScheduleUpdateUniforms();
+        //     }
+        // }
 
         if (ImGui::CollapsingHeader("Camera")) {
             auto pos = camera.GetPosition();
@@ -224,7 +228,7 @@ void World3D::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     ui.Clear(gfx);
     renderer.Clear(gfx);
-    simulation.Clear(gfx.GetCoreCtx());
+    simulation->Clear(gfx.GetCoreCtx());
     gfx.Clear();
 }
 

@@ -74,6 +74,8 @@ src/pipeline.cpp
 src/sort.cpp
 src/ui.cpp
 src/simulation.cpp
+src/models/model.cpp
+src/models/lague_model.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

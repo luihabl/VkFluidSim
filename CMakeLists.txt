@@ -83,6 +83,7 @@ src/renderers/common.cpp
 src/renderers/draw_pipelines.cpp
 
 src/compute/sort.cpp
+src/compute/spatial_hash.cpp
 src/compute/compute_pipeline.cpp
 )
 

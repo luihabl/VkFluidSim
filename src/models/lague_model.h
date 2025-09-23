@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compute/sort.h"
+#include "compute/spatial_hash.h"
 #include "models/model.h"
 namespace vfs {
 
@@ -46,16 +47,11 @@ private:
 
     gfx::Buffer predicted_positions;
 
-    gfx::Buffer spatial_keys;
-    gfx::Buffer spatial_indices;
-    gfx::Buffer spatial_offsets;
-
     gfx::Buffer sort_target_position;
     gfx::Buffer sort_target_pred_position;
     gfx::Buffer sort_target_velocity;
 
-    GPUCountSort sort;
-    SpatialOffset offset;
+    SpatialHash spatial_hash;
 
     void SetInitialData();
     void ScheduleUpdateUniforms();

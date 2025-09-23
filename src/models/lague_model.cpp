@@ -33,9 +33,7 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
 
     predicted_positions = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
 
-    spatial_keys = CreateDataBuffer<u32>(ctx, parameters.n_particles);
-    spatial_indices = CreateDataBuffer<u32>(ctx, parameters.n_particles);
-    spatial_offsets = CreateDataBuffer<u32>(ctx, parameters.n_particles);
+    spatial_hash.Init(ctx, parameters.n_particles);
 
     sort_target_position = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
     sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
@@ -58,8 +56,6 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
                                    "update_spatial_hash",
                                },
                        });
-    sort.Init(ctx);
-    offset.Init(ctx);
     SetInitialData();
 }
 
@@ -92,9 +88,9 @@ void LagueModel::SetInitialData() {
 
         .predicted_positions = predicted_positions.device_addr,
 
-        .spatial_keys = spatial_keys.device_addr,
-        .spatial_offsets = spatial_offsets.device_addr,
-        .sorted_indices = spatial_indices.device_addr,
+        .spatial_keys = spatial_hash.SpatialKeysAddr(),
+        .spatial_offsets = spatial_hash.SpatialOffsetsAddr(),
+        .sorted_indices = spatial_hash.SpatialIndicesAddr(),
 
         .sort_target_positions = sort_target_position.device_addr,
         .sort_target_pred_positions = sort_target_pred_position.device_addr,
@@ -134,10 +130,7 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         pipeline.Compute(cmd, KernelUpdateSpatialHash, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
-        sort.Run(cmd, ctx, spatial_indices, spatial_keys, parameters.n_particles - 1);
-        ComputeToComputePipelineBarrier(cmd);
-
-        offset.Run(cmd, ctx, true, spatial_keys, spatial_offsets);
+        spatial_hash.Run(ctx, cmd);
         ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelReorder, n_groups, &push);
@@ -164,16 +157,11 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
 void LagueModel::Clear(const gfx::CoreCtx& ctx) {
     predicted_positions.Destroy();
 
-    spatial_keys.Destroy();
-    spatial_indices.Destroy();
-    spatial_offsets.Destroy();
+    spatial_hash.Clear(ctx);
 
     sort_target_position.Destroy();
     sort_target_pred_position.Destroy();
     sort_target_velocity.Destroy();
-
-    sort.Clear(ctx);
-    offset.Clear(ctx);
 
     buffers.position_buffer.Destroy();
     buffers.velocity_buffer.Destroy();

@@ -69,13 +69,15 @@ src/gfx/common.cpp
 src/platform.cpp
 src/world.cpp
 src/world_3d.cpp
-src/renderer.cpp
 src/pipeline.cpp
 src/sort.cpp
 src/ui.cpp
 src/simulation.cpp
 src/models/model.cpp
 src/models/lague_model.cpp
+src/renderers/renderer_2d.cpp
+src/renderers/renderer_3d.cpp
+src/renderers/common.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

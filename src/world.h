@@ -3,7 +3,7 @@
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "platform.h"
-#include "renderer.h"
+#include "renderers/renderer_2d.h"
 #include "simulation.h"
 #include "ui.h"
 

@@ -5,7 +5,7 @@
 #include "gfx/gfx.h"
 #include "models/model.h"
 #include "platform.h"
-#include "renderer.h"
+#include "renderers/renderer_3d.h"
 #include "ui.h"
 
 namespace vfs {

@@ -10,7 +10,6 @@
 #include "imgui.h"
 #include "pipeline.h"
 #include "platform.h"
-#include "renderer.h"
 
 namespace {}
 

@@ -44,11 +44,13 @@ public:
     auto GetBoundingBox() const { return bounding_box; }
     const SimulationParameters& GetParameters() const { return parameters; }
     const DataBuffers& GetDataBuffers() const { return buffers; }
-    void SetBoundingBoxSize(const glm::vec3& size);
+
     void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
     void SetParticleState(const gfx::Device& gfx,
                           const std::vector<glm::vec3>& pos,
                           const std::vector<glm::vec3>& vel);
+    void SetBoundingBoxSize(const glm::vec3& size);
+
     void CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const;
 
 protected:

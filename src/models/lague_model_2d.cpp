@@ -1,4 +1,4 @@
-#include "simulation.h"
+#include "lague_model_2d.h"
 
 #include <glm/ext/scalar_constants.hpp>
 #include <random>

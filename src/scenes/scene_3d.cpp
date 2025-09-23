@@ -1,4 +1,4 @@
-#include "world_3d.h"
+#include "scene_3d.h"
 
 #include <glm/common.hpp>
 #include <glm/ext.hpp>

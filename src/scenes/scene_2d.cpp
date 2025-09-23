@@ -1,4 +1,4 @@
-#include "world.h"
+#include "scene_2d.h"
 
 #include <glm/ext.hpp>
 #include <glm/ext/matrix_transform.hpp>

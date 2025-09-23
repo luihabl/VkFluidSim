@@ -1,6 +1,5 @@
 #include "platform.h"
-// #include "world.h"
-#include "world_3d.h"
+#include "scenes/scene_3d.h"
 
 std::filesystem::path GetResourcesFolder(int argc, char* argv[]) {
     if (argc > 1) {

@@ -11,7 +11,7 @@
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "gfx/vk_util.h"
-#include "simulation.h"
+#include "models/lague_model_2d.h"
 
 namespace vfs {
 

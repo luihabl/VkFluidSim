@@ -9,7 +9,7 @@
 #include "draw_pipelines.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "simulation.h"
+#include "models/lague_model_2d.h"
 
 namespace vfs {
 

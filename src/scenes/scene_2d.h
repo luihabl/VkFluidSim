@@ -2,9 +2,9 @@
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"
+#include "models/lague_model_2d.h"
 #include "platform.h"
 #include "renderers/renderer_2d.h"
-#include "simulation.h"
 #include "ui.h"
 
 namespace vfs {

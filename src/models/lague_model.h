@@ -1,6 +1,5 @@
 #pragma once
 
-#include "compute/sort.h"
 #include "compute/spatial_hash.h"
 #include "models/model.h"
 namespace vfs {

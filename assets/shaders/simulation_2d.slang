@@ -1,7 +1,7 @@
-module simulation;
+module simulation_2d;
 
-__include simulation.spatial_hash;
-__include simulation.kernels;
+__include simulation.spatial_hash_2d;
+__include simulation.kernels_2d;
 
 static const uint group_size = 64;
 

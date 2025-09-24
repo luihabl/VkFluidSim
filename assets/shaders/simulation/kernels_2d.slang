@@ -1,4 +1,4 @@
-implementing "../simulation.slang";
+implementing "../simulation_2d.slang";
 
 public float SmoothingKernelPoly6(float dst, float radius) {
     if (dst < radius) {

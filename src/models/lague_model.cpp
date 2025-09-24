@@ -15,8 +15,6 @@ enum SimKernel : u32 {
     KernelReorder,
     KernelCalculateDensities,
     KernelCalculatePressureForces,
-    // KernelCalculateViscosityForces,
-    KernelUpdateSpatialHash
 };
 
 void LagueModel::Init(const gfx::CoreCtx& ctx) {
@@ -33,13 +31,12 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
 
     predicted_positions = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
 
-    spatial_hash.Init(ctx, parameters.n_particles);
-
     sort_target_position = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
     sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
     sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
 
     desc_manager.Init(ctx, sizeof(UniformData));
+    spatial_hash.Init(ctx, parameters.n_particles, 0.2);
 
     pipeline.Init(ctx, {
                            .desc_manager = &desc_manager,
@@ -53,9 +50,9 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
                                    "reorder",
                                    "calculate_densities",
                                    "calculate_pressure_forces",
-                                   "update_spatial_hash",
                                },
                        });
+
     SetInitialData();
 }
 
@@ -127,17 +124,16 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         ComputeToComputePipelineBarrier(cmd);
 
         // RunSpatial
-        pipeline.Compute(cmd, KernelUpdateSpatialHash, n_groups, &push);
-        ComputeToComputePipelineBarrier(cmd);
+        {
+            spatial_hash.Run(ctx, cmd, predicted_positions.device_addr);
+            ComputeToComputePipelineBarrier(cmd);
 
-        spatial_hash.Run(ctx, cmd);
-        ComputeToComputePipelineBarrier(cmd);
+            pipeline.Compute(cmd, KernelReorder, n_groups, &push);
+            ComputeToComputePipelineBarrier(cmd);
 
-        pipeline.Compute(cmd, KernelReorder, n_groups, &push);
-        ComputeToComputePipelineBarrier(cmd);
-
-        pipeline.Compute(cmd, KernelReorderCopyback, n_groups, &push);
-        ComputeToComputePipelineBarrier(cmd);
+            pipeline.Compute(cmd, KernelReorderCopyback, n_groups, &push);
+            ComputeToComputePipelineBarrier(cmd);
+        }
 
         pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
@@ -213,6 +209,8 @@ void LagueModel::SetSmoothingRadius(float radius) {
     uniform_data.spiky_pow2_scale = 15.0f / (2.0f * glm::pi<float>() * (float)std::pow(radius, 5));
     uniform_data.spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(radius, 6));
     uniform_data.spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius, 5));
+
+    spatial_hash.SetCellSize(radius);
 }
 
 }  // namespace vfs

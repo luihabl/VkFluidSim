@@ -1,6 +1,6 @@
 module simulation_3d;
+import simulation.spatial_hash_3d;
 
-__include simulation.spatial_hash_3d;
 __include simulation.kernels_3d;
 
 static const uint group_size = 256;
@@ -238,18 +238,6 @@ void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
 
     let prediction_factor = 1.0f / 120.0f;
     ubo.predicted_positions[id] = k.positions[id] + k.velocities[id] * prediction_factor;
-}
-
-[shader("compute")]
-[numthreads(group_size, 1, 1)]
-void update_spatial_hash(uint id: SV_DispatchThreadID, uniform PushConstants k) {
-    if (id >= k.n_particles)
-        return;
-
-    let cell = GetCell3D(ubo.predicted_positions[id], ubo.smoothing_radius);
-    uint hash = HashCell3D(cell);
-    uint key = KeyFromHash(hash, k.n_particles);
-    ubo.spatial_keys[id] = key;
 }
 
 [shader("compute")]

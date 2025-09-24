@@ -6,16 +6,17 @@ set(SLANG_SHADERS
     spatial_offsets.slang
     sort.slang
     scan.slang
-    simulation.slang
+    simulation_2d.slang
     simulation_3d.slang
     box.slang
+    spatial_hash.slang
 )
 
 set(SLANG_DEPENDENT_FILES
     colormap.slang
-    simulation/kernels.slang
+    simulation/kernels_2d.slang
     simulation/kernels_3d.slang
-    simulation/spatial_hash.slang
+    simulation/spatial_hash_2d.slang
     simulation/spatial_hash_3d.slang
 )
 

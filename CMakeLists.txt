@@ -84,6 +84,8 @@ src/models/lague_model.cpp
 src/compute/sort.cpp
 src/compute/spatial_hash.cpp
 src/compute/compute_pipeline.cpp
+
+src/scenes/lague_scene.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

@@ -13,6 +13,7 @@
 #include "imgui.h"
 #include "models/lague_model.h"
 #include "platform.h"
+#include "scenes/lague_scene.h"
 
 namespace vfs {
 
@@ -29,11 +30,11 @@ void GUI::Init(Platform& platform) {
         .validation_layers = true,
     });
 
-    simulation = std::make_unique<LagueModel>();
-    simulation->Init(gfx.GetCoreCtx());
+    scene = std::make_unique<LagueSimulationScene>(gfx);
+    scene->Init();
 
     auto ext = gfx.GetSwapchainExtent();
-    renderer.Init(gfx, simulation.get(), ext.width, ext.height);
+    renderer.Init(gfx, scene->GetModel(), ext.width, ext.height);
 
     ui.Init(gfx);
 
@@ -46,17 +47,6 @@ void GUI::Init(Platform& platform) {
     last_camera_angles = camera_angles;
 
     camera_radius = 25.0f;
-
-    ResetSimulation();
-}
-
-void GUI::ResetSimulation() {
-    const auto box = simulation->GetBoundingBox().value();
-    auto size = box.size;
-    size.x /= 5.0f;
-
-    auto pos = box.pos;  // + (box.size - size) / 2.0f;
-    simulation->SetParticlesInBox(gfx, {.size = size, .pos = pos});
 }
 
 void GUI::SetCameraPosition() {
@@ -93,9 +83,9 @@ void GUI::Update(Platform& platform) {
     auto cmd = gfx.BeginFrame();
 
     if (!paused) {
-        simulation->Step(gfx.GetCoreCtx(), cmd);
+        scene->Step(cmd);
     }
-    renderer.Draw(gfx, cmd, simulation.get(), camera);
+    renderer.Draw(gfx, cmd, scene->GetModel(), camera);
     DrawUI(cmd);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
@@ -124,51 +114,11 @@ void GUI::DrawUI(VkCommandBuffer cmd) {
         ImGui::SameLine();
 
         if (ImGui::Button("Reset")) {
-            ResetSimulation();
+            scene->Reset();
             paused = true;
         }
 
-        simulation->DrawDebugUI();
-
-        // if (ImGui::CollapsingHeader("Simulation")) {
-        //     glm::vec3 size = simulation.GetUniformData().box.size;
-        //     if (ImGui::DragFloat3("Bounding box", &size.x, 0.1f, 0.5f, 50.0f)) {
-        //         simulation.GetUniformData().box.size = size;
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-
-        //     if (ImGui::SliderFloat("Gravity", &simulation.GetUniformData().gravity, -25.0f,
-        //                            25.0f)) {
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-
-        //     if (ImGui::SliderFloat("Wall damping factor",
-        //                            &simulation.GetUniformData().damping_factor, 0.0f, 1.0f)) {
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-
-        //     if (ImGui::SliderFloat("Pressure multiplier",
-        //                            &simulation.GetUniformData().pressure_multiplier, 0.0f,
-        //                            2000.0f)) {
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-
-        //     float radius = simulation.GetUniformData().smoothing_radius;
-        //     if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
-        //         simulation.SetSmoothingRadius(radius);
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-
-        //     if (ImGui::SliderFloat("Viscosity", &simulation.GetUniformData().viscosity_strenght,
-        //                            0.0f, 1.0f)) {
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-
-        //     if (ImGui::SliderFloat("Target density", &simulation.GetUniformData().target_density,
-        //                            0.0f, 2000.0f)) {
-        //         simulation.ScheduleUpdateUniforms();
-        //     }
-        // }
+        // simulation->DrawDebugUI();
 
         if (ImGui::CollapsingHeader("Camera")) {
             auto pos = camera.GetPosition();
@@ -228,7 +178,7 @@ void GUI::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     ui.Clear(gfx);
     renderer.Clear(gfx);
-    simulation->Clear(gfx.GetCoreCtx());
+    scene->Clear();
     gfx.Clear();
 }
 

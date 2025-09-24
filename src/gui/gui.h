@@ -1,12 +1,13 @@
 #pragma once
 
 #include <glm/ext/scalar_constants.hpp>
+#include <memory>
 
 #include "gfx/gfx.h"
 #include "gui/imgui_setup.h"
 #include "imgui_setup.h"
-#include "models/model.h"
 #include "platform.h"
+#include "scenes/scene.h"
 #include "simulation_renderer.h"
 
 namespace vfs {
@@ -30,14 +31,14 @@ private:
     float camera_radius{0.0f};
 
     SimulationRenderer3D renderer;
-    std::unique_ptr<SPHModel> simulation;
+
+    std::unique_ptr<SceneBase> scene;
 
     ImGui_Setup ui;
 
     int current_frame = 0;
     bool paused{true};
 
-    void ResetSimulation();
     void SetCameraPosition();
     void DrawUI(VkCommandBuffer cmd);
 };

@@ -106,18 +106,19 @@ protected:
     void Reset();
 };
 
-// class OrbitCamera : public Camera {
-// public:
-//     glm::vec3 GetAngles() { return camera_angles; }
-//     void SetRadius(float radius) { camera_radius = radius; }
-//     float GetRadius() const { return camera_radius; }
+class OrbitCamera : public Camera {
+public:
+    void SetAngles(const glm::vec3& angles_deg);
+    glm::vec3 GetAngles() const { return camera_angles; }
 
-// private:
-//     glm::vec2 initial_mouse_pos{0.0f};
-//     glm::vec3 last_camera_angles{0.0f};
-//     glm::vec3 camera_angles{0.0f};
-//     float camera_radius{0.0f};
-// };
+    void SetRadius(float radius);
+    float GetRadius() const { return camera_radius; }
+
+private:
+    void Update();
+    glm::vec3 camera_angles{0.0f};
+    float camera_radius{20.0f};
+};
 
 void DrawCircleFill(gfx::CPUMesh& mesh, const glm::vec3& center, float radius, int steps);
 void DrawQuad(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm::vec4& color);

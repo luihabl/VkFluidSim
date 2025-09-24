@@ -42,11 +42,9 @@ void GUI::Init(Platform& platform) {
     camera.SetPerspective(glm::radians(75.0f), 0.1f, 1000.0f, (float)screen_size.x / screen_size.y);
     camera.SetInverseDepth(false);
 
-    camera.SetPosition(gfx::axis::BACK * 20.0f);
-    camera_angles = {0.0f, -90.0f, 0.0f};
-    last_camera_angles = camera_angles;
-
-    camera_radius = 25.0f;
+    camera.SetRadius(25.0f);
+    camera.SetAngles({0.0f, -90.0f, 0.0f});
+    last_camera_angles = camera.GetAngles();
 }
 
 void GUI::SetCameraPosition() {
@@ -57,24 +55,8 @@ void GUI::SetCameraPosition() {
         SDL_GetMouseState(&current_mouse_pos.x, &current_mouse_pos.y);
         auto mouse_diff = current_mouse_pos - initial_mouse_pos;
         mouse_diff = glm::vec2(mouse_diff.y, mouse_diff.x);
-        camera_angles = last_camera_angles + glm::vec3(mouse_diff * delta, 0.0f);
+        camera.SetAngles(last_camera_angles + glm::vec3(mouse_diff * delta, 0.0f));
     }
-
-    camera_angles.x = glm::clamp(camera_angles.x, -89.f, 89.f);
-
-    auto pos = camera.GetPosition();
-
-    float pitch = glm::radians(camera_angles.x);
-    float yaw = glm::radians(camera_angles.y);
-    float roll = glm::radians(camera_angles.z);
-
-    glm::vec3 camera_pos;
-    camera_pos.x = cos(yaw) * cos(pitch);
-    camera_pos.y = sin(pitch);
-    camera_pos.z = sin(yaw) * cos(pitch);
-
-    camera.SetPosition(camera_pos * camera_radius);
-    camera.SetTarget({0.0f, 0.0f, 0.0f});
 }
 
 void GUI::Update(Platform& platform) {
@@ -137,7 +119,10 @@ void GUI::DrawUI(VkCommandBuffer cmd) {
                 camera.SetFoVX(glm::radians(fovx));
             }
 
-            ImGui::DragFloat("Orbit radius", &camera_radius, 0.1f, 0.0f, 90.0f);
+            float radius = camera.GetRadius();
+            if (ImGui::DragFloat("Orbit radius", &radius, 0.1f, 0.0f, 90.0f)) {
+                camera.SetRadius(radius);
+            }
         }
     }
 
@@ -164,13 +149,16 @@ void GUI::HandleEvent(Platform& platform, const Event& e) {
 
     if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_LEFT && orbit_move) {
         orbit_move = false;
-        last_camera_angles = camera_angles;
+        last_camera_angles = camera.GetAngles();
     }
 
     if (e.type == SDL_EVENT_MOUSE_WHEEL && !io.WantCaptureMouse) {
         float amount = e.wheel.y;
+
+        float camera_radius = camera.GetRadius();
         camera_radius += amount * 0.4f;
         camera_radius = glm::clamp(camera_radius, 2.0f, 10000.0f);
+        camera.SetRadius(camera_radius);
     }
 }
 

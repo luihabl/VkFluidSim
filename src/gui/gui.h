@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "gfx/gfx.h"
+#include "gui/common.h"
 #include "gui/imgui_setup.h"
 #include "imgui_setup.h"
 #include "platform.h"
@@ -23,12 +24,10 @@ public:
 private:
     gfx::Device gfx;
 
-    Camera camera;
+    OrbitCamera camera;
     bool orbit_move{false};
     glm::vec2 initial_mouse_pos{0.0f};
     glm::vec3 last_camera_angles{0.0f};
-    glm::vec3 camera_angles{0.0f};
-    float camera_radius{0.0f};
 
     SimulationRenderer3D renderer;
 

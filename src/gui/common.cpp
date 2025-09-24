@@ -261,4 +261,37 @@ glm::mat4 Camera::GetViewProj() const {
 const glm::mat4& Camera::GetProj() const {
     return projection;
 }
+
+void OrbitCamera::SetAngles(const glm::vec3& angles) {
+    glm::vec3 new_angles = angles;
+    new_angles.x = glm::clamp(new_angles.x, -89.f, 89.f);
+
+    if (camera_angles != new_angles) {
+        camera_angles = new_angles;
+        Update();
+    }
+}
+
+void OrbitCamera::SetRadius(float radius) {
+    if (camera_radius != radius) {
+        camera_radius = radius;
+        Update();
+    }
+}
+
+void OrbitCamera::Update() {
+    float pitch = glm::radians(camera_angles.x);
+    float yaw = glm::radians(camera_angles.y);
+    float roll = glm::radians(camera_angles.z);
+
+    auto camera_pos = glm::vec3{
+        cos(yaw) * cos(pitch),
+        sin(pitch),
+        sin(yaw) * cos(pitch),
+    };
+
+    SetPosition(camera_radius * camera_pos);
+    SetTarget({0.0f, 0.0f, 0.0f});
+}
+
 }  // namespace vfs

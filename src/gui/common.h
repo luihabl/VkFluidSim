@@ -85,7 +85,7 @@ public:
     const glm::mat4& GetProj() const;
     Transform& GetTransform() { return transform; }
 
-private:
+protected:
     ProjType proj_type{ProjType::None};
     Transform transform;
     glm::mat4 projection;
@@ -105,6 +105,19 @@ private:
     glm::vec2 ortho_view_size{0.0f};
     void Reset();
 };
+
+// class OrbitCamera : public Camera {
+// public:
+//     glm::vec3 GetAngles() { return camera_angles; }
+//     void SetRadius(float radius) { camera_radius = radius; }
+//     float GetRadius() const { return camera_radius; }
+
+// private:
+//     glm::vec2 initial_mouse_pos{0.0f};
+//     glm::vec3 last_camera_angles{0.0f};
+//     glm::vec3 camera_angles{0.0f};
+//     float camera_radius{0.0f};
+// };
 
 void DrawCircleFill(gfx::CPUMesh& mesh, const glm::vec3& center, float radius, int steps);
 void DrawQuad(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm::vec4& color);

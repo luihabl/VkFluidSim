@@ -1,4 +1,4 @@
-#include "renderer_3d.h"
+#include "simulation_renderer.h"
 
 #include "gfx/vk_util.h"
 

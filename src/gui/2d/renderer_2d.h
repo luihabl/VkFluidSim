@@ -5,11 +5,11 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "common.h"
-#include "draw_pipelines.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "models/lague_model_2d.h"
+#include "gui/common.h"
+#include "gui/draw_pipelines.h"
+#include "models/2d/lague_model_2d.h"
 
 namespace vfs {
 

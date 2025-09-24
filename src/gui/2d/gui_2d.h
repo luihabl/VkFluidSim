@@ -2,10 +2,10 @@
 
 #include "gfx/common.h"
 #include "gfx/gfx.h"
-#include "models/lague_model_2d.h"
+#include "gui/2d/renderer_2d.h"
+#include "gui/imgui_setup.h"
+#include "models/2d/lague_model_2d.h"
 #include "platform.h"
-#include "renderers/renderer_2d.h"
-#include "ui.h"
 
 namespace vfs {
 class World {
@@ -24,7 +24,7 @@ private:
     SimulationRenderer2D renderer;
     Simulation2D simulation;
 
-    UI ui;
+    ImGui_Setup ui;
 
     int current_frame = 0;
     bool paused{true};

@@ -1,4 +1,4 @@
-#include "ui.h"
+#include "imgui_setup.h"
 
 #include "gfx/common.h"
 #include "gfx/vk_util.h"
@@ -9,7 +9,7 @@
 
 namespace vfs {
 
-void UI::Init(const gfx::Device& gfx) {
+void ImGui_Setup::Init(const gfx::Device& gfx) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
@@ -38,7 +38,9 @@ void UI::Init(const gfx::Device& gfx) {
     ImGui_ImplVulkan_Init(&init_info);
 }  // namespace vfs
 
-void UI::BeginDraw(const gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Image& draw_image) {
+void ImGui_Setup::BeginDraw(const gfx::Device& gfx,
+                            VkCommandBuffer cmd,
+                            const gfx::Image& draw_image) {
     auto color_att = vk::util::RenderingAttachmentInfo(draw_image.view, NULL,
                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     auto render_info = vk::util::RenderingInfo({draw_image.extent.width, draw_image.extent.height},
@@ -50,17 +52,17 @@ void UI::BeginDraw(const gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Image
     ImGui::NewFrame();
 }
 
-void UI::EndDraw(VkCommandBuffer cmd) {
+void ImGui_Setup::EndDraw(VkCommandBuffer cmd) {
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
     vkCmdEndRendering(cmd);
 }
 
-void UI::HandleEvent(const SDL_Event& event) {
+void ImGui_Setup::HandleEvent(const SDL_Event& event) {
     ImGui_ImplSDL3_ProcessEvent(&event);
 }
 
-void UI::Clear(const gfx::Device& gfx) {
+void ImGui_Setup::Clear(const gfx::Device& gfx) {
     ImGui_ImplVulkan_Shutdown();
 }
 

@@ -3,13 +3,14 @@
 #include <glm/ext/scalar_constants.hpp>
 
 #include "gfx/gfx.h"
+#include "gui/imgui_setup.h"
+#include "imgui_setup.h"
 #include "models/model.h"
 #include "platform.h"
-#include "renderers/renderer_3d.h"
-#include "ui.h"
+#include "simulation_renderer.h"
 
 namespace vfs {
-class World3D {
+class GUI {
 public:
     using Event = SDL_Event;
 
@@ -31,7 +32,7 @@ private:
     SimulationRenderer3D renderer;
     std::unique_ptr<SPHModel> simulation;
 
-    UI ui;
+    ImGui_Setup ui;
 
     int current_frame = 0;
     bool paused{true};

@@ -60,7 +60,6 @@ CPMAddPackage("gh:fmtlib/fmt#11.2.0")
 add_executable(vfs
 src/main.cpp
 src/platform.cpp
-src/ui.cpp
 
 src/gfx/gfx.cpp
 src/gfx/swapchain.cpp
@@ -70,17 +69,17 @@ src/gfx/immediate.cpp
 src/gfx/descriptor.cpp
 src/gfx/common.cpp
 
-src/scenes/scene_2d.cpp
-src/scenes/scene_3d.cpp
+src/gui/2d/renderer_2d.cpp
+src/gui/2d/gui_2d.cpp
+src/gui/simulation_renderer.cpp
+src/gui/common.cpp
+src/gui/draw_pipelines.cpp
+src/gui/gui.cpp
+src/gui/imgui_setup.cpp
 
+src/models/2d/lague_model_2d.cpp
 src/models/model.cpp
 src/models/lague_model.cpp
-src/models/lague_model_2d.cpp
-
-src/renderers/renderer_2d.cpp
-src/renderers/renderer_3d.cpp
-src/renderers/common.cpp
-src/renderers/draw_pipelines.cpp
 
 src/compute/sort.cpp
 src/compute/spatial_hash.cpp

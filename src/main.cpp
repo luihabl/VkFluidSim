@@ -1,5 +1,5 @@
+#include "gui/gui.h"
 #include "platform.h"
-#include "scenes/scene_3d.h"
 
 std::filesystem::path GetResourcesFolder(int argc, char* argv[]) {
     if (argc > 1) {
@@ -19,15 +19,15 @@ int main(int argc, char* argv[]) {
 
     auto platform = vfs::Platform{};
 
-    auto world = vfs::World3D{};
+    auto app = vfs::GUI{};
 
     platform.Init({
         .name = "Vulkan fluid sim",
         .size = {1200, 700},
-        .init = [&world](auto& p) { world.Init(p); },
-        .update = [&world](auto& p) { world.Update(p); },
-        .clean = [&world](auto& p) { world.Clear(); },
-        .handler = [&world](auto& p, auto& e) { world.HandleEvent(p, e); },
+        .init = [&app](auto& p) { app.Init(p); },
+        .update = [&app](auto& p) { app.Update(p); },
+        .clean = [&app](auto& p) { app.Clear(); },
+        .handler = [&app](auto& p, auto& e) { app.HandleEvent(p, e); },
         .resources_path = GetResourcesFolder(argc, argv),
     });
 

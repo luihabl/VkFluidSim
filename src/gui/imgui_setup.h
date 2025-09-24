@@ -2,7 +2,7 @@
 
 #include "gfx/gfx.h"
 namespace vfs {
-class UI {
+class ImGui_Setup {
 public:
     void Init(const gfx::Device& gfx);
     void BeginDraw(const gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Image& img);

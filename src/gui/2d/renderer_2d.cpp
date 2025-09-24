@@ -7,11 +7,11 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include "draw_pipelines.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
 #include "gfx/vk_util.h"
-#include "models/lague_model_2d.h"
+#include "gui/draw_pipelines.h"
+#include "models/2d/lague_model_2d.h"
 
 namespace vfs {
 

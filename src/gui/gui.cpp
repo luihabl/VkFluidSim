@@ -1,4 +1,4 @@
-#include "scene_3d.h"
+#include "gui.h"
 
 #include <glm/common.hpp>
 #include <glm/ext.hpp>
@@ -22,7 +22,7 @@ struct PushConstants3D {
     VkDeviceAddress velocities;
 };
 
-void World3D::Init(Platform& platform) {
+void GUI::Init(Platform& platform) {
     gfx.Init({
         .name = "Vulkan fluid sim 3D",
         .window = platform.GetWindow(),
@@ -50,7 +50,7 @@ void World3D::Init(Platform& platform) {
     ResetSimulation();
 }
 
-void World3D::ResetSimulation() {
+void GUI::ResetSimulation() {
     const auto box = simulation->GetBoundingBox().value();
     auto size = box.size;
     size.x /= 5.0f;
@@ -59,7 +59,7 @@ void World3D::ResetSimulation() {
     simulation->SetParticlesInBox(gfx, {.size = size, .pos = pos});
 }
 
-void World3D::SetCameraPosition() {
+void GUI::SetCameraPosition() {
     constexpr float delta = 0.5f;
 
     if (orbit_move) {
@@ -87,7 +87,7 @@ void World3D::SetCameraPosition() {
     camera.SetTarget({0.0f, 0.0f, 0.0f});
 }
 
-void World3D::Update(Platform& platform) {
+void GUI::Update(Platform& platform) {
     SetCameraPosition();
 
     auto cmd = gfx.BeginFrame();
@@ -101,7 +101,7 @@ void World3D::Update(Platform& platform) {
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 }
 
-void World3D::DrawUI(VkCommandBuffer cmd) {
+void GUI::DrawUI(VkCommandBuffer cmd) {
     ui.BeginDraw(gfx, cmd, renderer.GetDrawImage());
 
 #define TEXTV3(str, prop)                                     \
@@ -196,7 +196,7 @@ void World3D::DrawUI(VkCommandBuffer cmd) {
     ui.EndDraw(cmd);
 }
 
-void World3D::HandleEvent(Platform& platform, const Event& e) {
+void GUI::HandleEvent(Platform& platform, const Event& e) {
     ui.HandleEvent(e);
 
     auto& io = ImGui::GetIO();
@@ -224,7 +224,7 @@ void World3D::HandleEvent(Platform& platform, const Event& e) {
     }
 }
 
-void World3D::Clear() {
+void GUI::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     ui.Clear(gfx);
     renderer.Clear(gfx);

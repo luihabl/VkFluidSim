@@ -24,6 +24,13 @@ public:
         BoundingBox bounding_box;
     };
 
+    struct KernelCoefficients {
+        float spiky_pow3_scale;
+        float spiky_pow2_scale;
+        float spiky_pow3_diff_scale;
+        float spiky_pow2_diff_scale;
+    };
+
     struct DataBuffers {
         gfx::Buffer position_buffer;
         gfx::Buffer velocity_buffer;
@@ -68,7 +75,19 @@ protected:
     SpatialHash spatial_hash;
     u32 group_size{256};
 
-    std::vector<gfx::DescriptorManager::DescData> descriptors;
+    u32 global_parameter_id;
+    u32 kernel_coeff_id;
+    u32 model_parameter_id;
+    u32 AddDescriptor(
+        u32 size,
+        gfx::DescriptorManager::DescType type = gfx::DescriptorManager::DescType::Uniform);
+    void InitDescriptorManager(const gfx::CoreCtx& ctx);
+    void UpdateAllUniforms();
+    const gfx::DescriptorManager& GetDescManager() { return desc_manager; }
+    KernelCoefficients CalcKernelCoefficients(float r);
+
+private:
     gfx::DescriptorManager desc_manager;
+    std::vector<gfx::DescriptorManager::DescData> descriptors;
 };
 }  // namespace vfs

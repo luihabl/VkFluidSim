@@ -152,7 +152,7 @@ void DescriptorManager::Clear(const gfx::CoreCtx& ctx) {
     desc_pool.Clear(ctx);
 }
 
-void DescriptorManager::SetUniformData(u32 id, void* data) {
+void DescriptorManager::SetUniformData(u32 id, const void* data) const {
     memcpy(desc_buffers[id].Map(), data, desc_data[id].size);
 }
 

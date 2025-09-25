@@ -1,8 +1,14 @@
 #include "simulation.h"
 
 namespace vfs {
+
+class SimulationBuilder {
+public:
+    static Simulation Build() { return {}; }
+};
+
 namespace {
-Simulation g_simulation;
+Simulation g_simulation{SimulationBuilder::Build()};
 }
 
 Simulation& Simulation::Get() {

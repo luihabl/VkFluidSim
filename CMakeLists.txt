@@ -69,15 +69,15 @@ src/gfx/immediate.cpp
 src/gfx/descriptor.cpp
 src/gfx/common.cpp
 
-src/gui/2d/renderer_2d.cpp
-src/gui/2d/gui_2d.cpp
+# src/gui/2d/renderer_2d.cpp
+# src/gui/2d/gui_2d.cpp
 src/gui/simulation_renderer.cpp
 src/gui/common.cpp
 src/gui/draw_pipelines.cpp
 src/gui/gui.cpp
 src/gui/imgui_setup.cpp
 
-src/models/2d/lague_model_2d.cpp
+# src/models/2d/lague_model_2d.cpp
 src/models/model.cpp
 src/models/lague_model.cpp
 

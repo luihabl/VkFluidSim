@@ -46,11 +46,14 @@ public:
     void Init(const gfx::CoreCtx& ctx, const std::vector<DescData>& desc);
     void Clear(const gfx::CoreCtx& ctx);
 
-    void SetUniformData(u32 id, void* data);
+    void SetUniformData(u32 id, const void* data) const;
+    VkDescriptorSet Set() const { return desc_set; }
+    VkDescriptorSetLayout Layout() const { return desc_layout; }
 
     gfx::DescriptorPoolAlloc desc_pool;
-    VkDescriptorSetLayout desc_layout;
+
     VkDescriptorSet desc_set;
+    VkDescriptorSetLayout desc_layout;
 
     std::vector<DescData> desc_data;
     std::vector<gfx::Buffer> desc_buffers;

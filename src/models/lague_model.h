@@ -27,6 +27,9 @@ private:
     Parameters parameters;
 
     bool update_uniforms{false};
+    u32 parameter_id;
+    u32 spatial_hash_buf_id;
+    u32 buf_id;
 
     gfx::Buffer predicted_positions;
 
@@ -34,7 +37,7 @@ private:
     gfx::Buffer sort_target_pred_position;
     gfx::Buffer sort_target_velocity;
 
-    void UpdateUniformData();
+    void UpdateAllUniforms();
     void ScheduleUpdateUniforms();
     void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
     void SetSmoothingRadius(float radius);

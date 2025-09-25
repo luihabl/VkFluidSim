@@ -8,7 +8,7 @@ void* Buffer::GetMapped() {
     return mapped;
 }
 
-void* Buffer::Map() {
+void* Buffer::Map() const {
     if (mapped)
         return mapped;
 

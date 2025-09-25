@@ -11,8 +11,12 @@ struct SimulationParameters {
     float smooth_radius;
 };
 
+class SimulationBuilder;
+
 class Simulation {
 public:
+    friend SimulationBuilder;
+
     void Init();
     void Step(VkCommandBuffer cmd);
     void Clear();
@@ -27,6 +31,12 @@ public:
     SceneBase* GetScene();
 
 private:
+    Simulation() = default;
+    Simulation(const Simulation&) = delete;
+    Simulation(Simulation&&) = delete;
+    Simulation& operator=(const Simulation&) = delete;
+    Simulation& operator=(Simulation&&) = delete;
+
     std::function<void()> on_parameters_changed;
     SimulationParameters parameters;
     std::unique_ptr<SceneBase> scene;

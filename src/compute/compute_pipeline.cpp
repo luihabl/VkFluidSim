@@ -3,7 +3,6 @@
 #include <cstddef>
 
 #include "gfx/common.h"
-#include "gfx/descriptor.h"
 #include "gfx/vk_util.h"
 #include "platform.h"
 
@@ -21,9 +20,8 @@ void ComputePipeline::Init(const gfx::CoreCtx& ctx, const Config& input_config) 
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
     };
 
-    if (config.desc_manager) {
-        layout = vk::util::CreatePipelineLayout(ctx, {{config.desc_manager->desc_layout}},
-                                                {{push_constant_range}});
+    if (config.set && config.layout) {
+        layout = vk::util::CreatePipelineLayout(ctx, {{config.layout}}, {{push_constant_range}});
     } else {
         layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
     }
@@ -48,9 +46,9 @@ void ComputePipeline::Compute(VkCommandBuffer cmd,
                               void* push_constants) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelines[kernel_id]);
 
-    if (config.desc_manager) {
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1,
-                                &config.desc_manager->desc_set, 0, 0);
+    if (config.set) {
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &config.set, 0,
+                                0);
     }
 
     vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, config.push_const_size,

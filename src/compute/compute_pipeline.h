@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 #include "gfx/common.h"
-#include "gfx/descriptor.h"
 
 namespace vfs {
 
@@ -13,7 +12,8 @@ class ComputePipeline {
 public:
     struct Config {
         uint32_t push_const_size{0};
-        gfx::DescriptorManager* desc_manager{nullptr};
+        VkDescriptorSet set{nullptr};
+        VkDescriptorSetLayout layout{nullptr};
         std::string shader_path{""};
         std::vector<std::string> kernels{{"main"}};
     };

@@ -62,14 +62,14 @@ struct Image {
 struct Buffer {
     VkBuffer buffer{nullptr};
     VmaAllocation alloc{nullptr};
-    void* mapped{nullptr};
+    mutable void* mapped{nullptr};
     VmaAllocator allocator{nullptr};
     VkDescriptorBufferInfo desc_info{0};
     VkDeviceAddress device_addr{0};
     u32 size{0};
 
     void* GetMapped();
-    void* Map();
+    void* Map() const;
     void Unmap();
     void SetDescriptorInfo(VkDeviceSize size, VkDeviceSize offset);
 

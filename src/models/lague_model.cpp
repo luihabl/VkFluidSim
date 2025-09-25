@@ -6,7 +6,6 @@
 #include "imgui.h"
 #include "models/model.h"
 #include "platform.h"
-#include "simulation.h"
 
 namespace vfs {
 enum SimKernel : u32 {
@@ -18,28 +17,14 @@ enum SimKernel : u32 {
     KernelCalculatePressureForces,
 };
 
-struct UniformData {
-    float gravity;
-    float damping_factor;
-    float smoothing_radius;
-    float target_density;
-    float pressure_multiplier;
-    float near_pressure_multiplier;
-    float viscosity_strenght;
-
-    SPHModel::BoundingBox box;
-
-    float spiky_pow3_scale;
-    float spiky_pow2_scale;
-    float spiky_pow3_diff_scale;
-    float spiky_pow2_diff_scale;
-
-    VkDeviceAddress predicted_positions;
-
+struct SpatialHashBuffers {
     VkDeviceAddress spatial_keys;
     VkDeviceAddress spatial_offsets;
     VkDeviceAddress sorted_indices;
+};
 
+struct LagueModelBuffers {
+    VkDeviceAddress predicted_positions;
     VkDeviceAddress sort_target_positions;
     VkDeviceAddress sort_target_pred_positions;
     VkDeviceAddress sort_target_velocities;
@@ -72,14 +57,16 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
     sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
     sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
 
-    // desc_manager.Init(ctx, sizeof(UniformData));
-    descriptors.push_back(
-        {.size = sizeof(UniformData), .type = gfx::DescriptorManager::DescType::Uniform});
-    desc_manager.Init(ctx, descriptors);
+    parameter_id = AddDescriptor(sizeof(Parameters));
+    spatial_hash_buf_id = AddDescriptor(sizeof(SpatialHashBuffers));
+    buf_id = AddDescriptor(sizeof(LagueModelBuffers));
+
+    InitDescriptorManager(ctx);
 
     pipeline.Init(ctx, {
-                           .desc_manager = &desc_manager,
                            .push_const_size = sizeof(SPHModel::PushConstants),
+                           .set = GetDescManager().Set(),
+                           .layout = GetDescManager().Layout(),
                            .shader_path = "shaders/compiled/simulation_3d.slang.spv",
                            .kernels =
                                {
@@ -92,7 +79,7 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
                                },
                        });
 
-    UpdateUniformData();
+    UpdateAllUniforms();
 }
 
 SPHModel::DataBuffers LagueModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const {
@@ -103,38 +90,27 @@ SPHModel::DataBuffers LagueModel::CreateDataBuffers(const gfx::CoreCtx& ctx) con
     };
 }
 
-void LagueModel::UpdateUniformData() {
-    const auto& global_parameters = Simulation::Get().GetGlobalParameters();
-    const float smoothing_radius = global_parameters.smooth_radius;
-    auto uniform_data = UniformData{
-        .gravity = global_parameters.gravity.y,
-        .damping_factor = parameters.wall_damping_factor,
-        .smoothing_radius = smoothing_radius,
-        .target_density = SPHModel::parameters.target_density,
-        .pressure_multiplier = parameters.pressure_multiplier,
-        .near_pressure_multiplier = parameters.near_pressure_multiplier,
-        .viscosity_strenght = parameters.viscosity_strenght,
+void LagueModel::UpdateAllUniforms() {
+    SPHModel::UpdateAllUniforms();
 
-        .box = bounding_box.value(),
+    GetDescManager().SetUniformData(parameter_id, &parameters);
 
-        .spiky_pow3_scale = 15.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 6)),
-        .spiky_pow2_scale =
-            15.0f / (2.0f * glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
-        .spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 6)),
-        .spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(smoothing_radius, 5)),
-
-        .predicted_positions = predicted_positions.device_addr,
-
+    auto spatial_hash_bufs = SpatialHashBuffers{
         .spatial_keys = spatial_hash.SpatialKeysAddr(),
         .spatial_offsets = spatial_hash.SpatialOffsetsAddr(),
         .sorted_indices = spatial_hash.SpatialIndicesAddr(),
+    };
 
+    GetDescManager().SetUniformData(spatial_hash_buf_id, &spatial_hash_bufs);
+
+    auto model_bufs = LagueModelBuffers{
+        .predicted_positions = predicted_positions.device_addr,
         .sort_target_positions = sort_target_position.device_addr,
         .sort_target_pred_positions = sort_target_pred_position.device_addr,
         .sort_target_velocities = sort_target_velocity.device_addr,
     };
 
-    desc_manager.SetUniformData(0, &uniform_data);
+    GetDescManager().SetUniformData(buf_id, &model_bufs);
 }
 
 void LagueModel::ScheduleUpdateUniforms() {
@@ -145,7 +121,7 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
     SPHModel::Step(ctx, cmd);
 
     if (update_uniforms) {
-        UpdateUniformData();
+        UpdateAllUniforms();
         update_uniforms = false;
     }
 
@@ -207,7 +183,6 @@ void LagueModel::Clear(const gfx::CoreCtx& ctx) {
     buffers.density_buffer.Destroy();
 
     pipeline.Clear(ctx);
-    desc_manager.Clear(ctx);
 }
 
 void LagueModel::DrawDebugUI() {

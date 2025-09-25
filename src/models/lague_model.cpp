@@ -222,15 +222,4 @@ void LagueModel::DrawDebugUI() {
     // }
 }
 
-void LagueModel::SetSmoothingRadius(float radius) {
-    // uniform_data.smoothing_radius = radius;
-    // uniform_data.spiky_pow3_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius, 6));
-    // uniform_data.spiky_pow2_scale = 15.0f / (2.0f * glm::pi<float>() * (float)std::pow(radius,
-    // 5)); uniform_data.spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(radius,
-    // 6)); uniform_data.spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius,
-    // 5));
-
-    // spatial_hash.SetCellSize(radius);
-}
-
 }  // namespace vfs

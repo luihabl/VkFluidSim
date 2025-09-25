@@ -40,7 +40,6 @@ private:
     void UpdateAllUniforms();
     void ScheduleUpdateUniforms();
     void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
-    void SetSmoothingRadius(float radius);
 };
 
 }  // namespace vfs

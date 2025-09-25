@@ -17,15 +17,10 @@ enum SimKernel : u32 {
     KernelCalculatePressureForces,
 };
 
-void LagueModel::Init(const gfx::CoreCtx& ctx) {
-    parameters = {
-        .n_particles = 400000,
-        .iterations = 3,
-        .time_scale = 2.0f,
-        .fixed_dt = 1.0f / 120.0f,
-    };
+void LagueModel::Init(const gfx::CoreCtx& ctx, const Parameters& parameters) {
+    this->parameters = parameters;
 
-    SetBoundingBoxSize({23.0f, 10.0f, 10.0f});
+    SetBoundingBoxSize(parameters.bounding_box.size);
 
     buffers = CreateDataBuffers(ctx);
 

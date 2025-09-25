@@ -4,7 +4,7 @@
 
 namespace vfs {
 
-class LagueSimulationScene : public SceneBase {
+class DamBreakScene : public SceneBase {
 public:
     using SceneBase::SceneBase;
 

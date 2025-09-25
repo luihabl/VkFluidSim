@@ -14,11 +14,12 @@ public:
         glm::vec3 pos;
     };
 
-    struct SimulationParameters {
+    struct Parameters {
         float time_scale;
         int iterations;
         int n_particles;
         float fixed_dt;
+        BoundingBox bounding_box;
     };
 
     struct DataBuffers {
@@ -36,7 +37,7 @@ public:
         VkDeviceAddress densities;
     };
 
-    virtual void Init(const gfx::CoreCtx& ctx) = 0;
+    virtual void Init(const gfx::CoreCtx& ctx, const Parameters& parameters) = 0;
     virtual void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) = 0;
     virtual void Clear(const gfx::CoreCtx& ctx) = 0;
     virtual DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const = 0;
@@ -44,7 +45,7 @@ public:
     virtual ~SPHModel() = default;
 
     auto GetBoundingBox() const { return bounding_box; }
-    const SimulationParameters& GetParameters() const { return parameters; }
+    const Parameters& GetParameters() const { return parameters; }
     const DataBuffers& GetDataBuffers() const { return buffers; }
 
     void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
@@ -59,7 +60,7 @@ protected:
     gfx::DescriptorManager desc_manager;
     ComputePipeline pipeline;
     DataBuffers buffers;
-    SimulationParameters parameters;
+    Parameters parameters;
     std::optional<BoundingBox> bounding_box;
 
     u32 group_size{256};

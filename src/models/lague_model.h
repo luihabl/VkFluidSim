@@ -33,7 +33,7 @@ public:
         VkDeviceAddress sort_target_velocities;
     };
 
-    void Init(const gfx::CoreCtx& ctx) override;
+    void Init(const gfx::CoreCtx& ctx, const Parameters& parameters) override;
     void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) override;
     void Clear(const gfx::CoreCtx& ctx) override;
     DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const override;

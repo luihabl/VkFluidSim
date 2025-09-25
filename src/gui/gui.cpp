@@ -11,9 +11,8 @@
 #include "SDL3/SDL_mouse.h"
 #include "gfx/common.h"
 #include "imgui.h"
-#include "models/lague_model.h"
 #include "platform.h"
-#include "scenes/lague_scene.h"
+#include "scenes/dam_break_scene.h"
 
 namespace vfs {
 
@@ -30,7 +29,7 @@ void GUI::Init(Platform& platform) {
         .validation_layers = true,
     });
 
-    scene = std::make_unique<LagueSimulationScene>(gfx);
+    scene = std::make_unique<DamBreakScene>(gfx);
     scene->Init();
 
     auto ext = gfx.GetSwapchainExtent();

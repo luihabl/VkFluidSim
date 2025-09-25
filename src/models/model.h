@@ -2,6 +2,7 @@
 #include <optional>
 
 #include "compute/compute_pipeline.h"
+#include "compute/spatial_hash.h"
 #include "gfx/common.h"
 #include "gfx/descriptor.h"
 #include "gfx/gfx.h"
@@ -37,9 +38,11 @@ public:
         VkDeviceAddress densities;
     };
 
-    virtual void Init(const gfx::CoreCtx& ctx, const Parameters& parameters) = 0;
-    virtual void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) = 0;
-    virtual void Clear(const gfx::CoreCtx& ctx) = 0;
+    SPHModel(const Parameters* parameters = nullptr);
+
+    virtual void Init(const gfx::CoreCtx& ctx);
+    virtual void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd);
+    virtual void Clear(const gfx::CoreCtx& ctx);
     virtual DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const = 0;
     virtual void DrawDebugUI() = 0;
     virtual ~SPHModel() = default;
@@ -62,6 +65,7 @@ protected:
     DataBuffers buffers;
     Parameters parameters;
     std::optional<BoundingBox> bounding_box;
+    SpatialHash spatial_hash;
 
     u32 group_size{256};
 };

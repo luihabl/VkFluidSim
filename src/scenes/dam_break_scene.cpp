@@ -1,18 +1,22 @@
 #include "dam_break_scene.h"
 
 #include "models/lague_model.h"
+#include "models/model.h"
 
 namespace vfs {
 
 void DamBreakScene::Init() {
-    time_step_model = std::make_unique<LagueModel>();
-    time_step_model->Init(gfx.GetCoreCtx(), {
-                                                .time_scale = 1.0f,
-                                                .fixed_dt = 1.0f / 120.0f,
-                                                .iterations = 3,
-                                                .n_particles = 400000,
-                                                .bounding_box = {.size{23.0f, 10.0f, 10.0f}},
-                                            });
+    auto base_parameters = SPHModel::Parameters{
+        .time_scale = 1.0f,
+        .fixed_dt = 1.0f / 120.0f,
+        .iterations = 3,
+        .n_particles = 400000,
+        .bounding_box = {.size{23.0f, 10.0f, 10.0f}},
+    };
+
+    time_step_model = std::make_unique<LagueModel>(&base_parameters);
+
+    time_step_model->Init(gfx.GetCoreCtx());
     Reset();
 }
 void DamBreakScene::Step(VkCommandBuffer cmd) {

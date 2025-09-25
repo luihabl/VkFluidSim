@@ -18,7 +18,7 @@ void Swapchain::Create(const CoreCtx& ctx, u32 w, u32 h) {
         sc_builder
             .set_desired_format(VkSurfaceFormatKHR{.format = image_format,
                                                    .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
-            .set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
+            .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
             .set_desired_min_image_count(gfx::FRAME_COUNT)
             .set_desired_extent(w, h)
             .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)

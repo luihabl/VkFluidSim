@@ -1,11 +1,14 @@
 #pragma once
 
-#include "compute/spatial_hash.h"
+#include <cstddef>
+
 #include "models/model.h"
 namespace vfs {
 
 class LagueModel final : public SPHModel {
 public:
+    struct Parameters {};
+
     struct UniformData {
         float gravity;
         float damping_factor;
@@ -33,13 +36,18 @@ public:
         VkDeviceAddress sort_target_velocities;
     };
 
-    void Init(const gfx::CoreCtx& ctx, const Parameters& parameters) override;
+    LagueModel(const SPHModel::Parameters* base_parameters = nullptr,
+               const Parameters* parameters = nullptr);
+
+    void Init(const gfx::CoreCtx& ctx) override;
     void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) override;
     void Clear(const gfx::CoreCtx& ctx) override;
     DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const override;
     void DrawDebugUI() override;
 
 private:
+    Parameters parameters;
+
     bool update_uniforms{false};
 
     UniformData uniform_data;
@@ -49,8 +57,6 @@ private:
     gfx::Buffer sort_target_position;
     gfx::Buffer sort_target_pred_position;
     gfx::Buffer sort_target_velocity;
-
-    SpatialHash spatial_hash;
 
     void SetInitialData();
     void ScheduleUpdateUniforms();

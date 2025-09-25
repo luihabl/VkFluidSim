@@ -17,21 +17,20 @@ enum SimKernel : u32 {
     KernelCalculatePressureForces,
 };
 
-void LagueModel::Init(const gfx::CoreCtx& ctx, const Parameters& parameters) {
-    this->parameters = parameters;
+void LagueModel::Init(const gfx::CoreCtx& ctx) {
+    SPHModel::Init(ctx);
 
-    SetBoundingBoxSize(parameters.bounding_box.size);
+    SetBoundingBoxSize(SPHModel::parameters.bounding_box.size);
 
     buffers = CreateDataBuffers(ctx);
 
-    predicted_positions = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
+    predicted_positions = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
 
-    sort_target_position = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
-    sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
-    sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles);
+    sort_target_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
+    sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
+    sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
 
     desc_manager.Init(ctx, sizeof(UniformData));
-    spatial_hash.Init(ctx, parameters.n_particles, 0.2);
 
     pipeline.Init(ctx, {
                            .desc_manager = &desc_manager,
@@ -53,9 +52,9 @@ void LagueModel::Init(const gfx::CoreCtx& ctx, const Parameters& parameters) {
 
 SPHModel::DataBuffers LagueModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const {
     return {
-        .position_buffer = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles),
-        .velocity_buffer = CreateDataBuffer<glm::vec3>(ctx, parameters.n_particles),
-        .density_buffer = CreateDataBuffer<glm::vec2>(ctx, parameters.n_particles),
+        .position_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
+        .velocity_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
+        .density_buffer = CreateDataBuffer<glm::vec2>(ctx, SPHModel::parameters.n_particles),
     };
 }
 
@@ -97,6 +96,8 @@ void LagueModel::ScheduleUpdateUniforms() {
 }
 
 void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
+    SPHModel::Step(ctx, cmd);
+
     if (update_uniforms) {
         desc_manager.SetUniformData(&uniform_data);
         update_uniforms = false;
@@ -104,17 +105,18 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
 
     auto push = PushConstants{
         .time = Platform::Info::GetTime(),
-        .dt = parameters.time_scale * parameters.fixed_dt / (float)parameters.iterations,
-        .n_particles = (uint32_t)parameters.n_particles,
+        .dt = SPHModel::parameters.time_scale * SPHModel::parameters.fixed_dt /
+              (float)SPHModel::parameters.iterations,
+        .n_particles = (uint32_t)SPHModel::parameters.n_particles,
 
         .positions = buffers.position_buffer.device_addr,
         .velocities = buffers.velocity_buffer.device_addr,
         .densities = buffers.density_buffer.device_addr,
     };
 
-    auto n_groups = glm::ivec3(parameters.n_particles / group_size + 1, 1, 1);
+    auto n_groups = glm::ivec3(SPHModel::parameters.n_particles / group_size + 1, 1, 1);
 
-    for (int i = 0; i < parameters.iterations; i++) {
+    for (int i = 0; i < SPHModel::parameters.iterations; i++) {
         pipeline.Compute(cmd, KernelExternalForces, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
@@ -140,15 +142,15 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         // ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &push);
-        if (i < parameters.iterations - 1)
+        if (i < SPHModel::parameters.iterations - 1)
             ComputeToComputePipelineBarrier(cmd);
     }
 }
 
 void LagueModel::Clear(const gfx::CoreCtx& ctx) {
-    predicted_positions.Destroy();
+    SPHModel::Clear(ctx);
 
-    spatial_hash.Clear(ctx);
+    predicted_positions.Destroy();
 
     sort_target_position.Destroy();
     sort_target_pred_position.Destroy();
@@ -206,6 +208,13 @@ void LagueModel::SetSmoothingRadius(float radius) {
     uniform_data.spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius, 5));
 
     spatial_hash.SetCellSize(radius);
+}
+
+LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* par)
+    : SPHModel(base_par) {
+    if (par) {
+        parameters = *par;
+    }
 }
 
 }  // namespace vfs

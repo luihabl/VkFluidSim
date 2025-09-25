@@ -19,7 +19,7 @@ public:
 
     static Simulation& Get();
 
-    const SimulationParameters& GlobalParameters() { return parameters; }
+    const SimulationParameters& GetGlobalParameters() { return parameters; }
     void SetGlobalParameters(const SimulationParameters& p);
     void SetOnParametersChangedCallback(std::function<void()>&& callback);
 

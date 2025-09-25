@@ -3,6 +3,7 @@
 #include <random>
 
 #include "gfx/common.h"
+#include "simulation.h"
 
 namespace vfs {
 namespace {
@@ -29,6 +30,29 @@ std::vector<glm::vec3> SpawnParticlesInBox(const SPHModel::BoundingBox& box, u32
     return p;
 }
 }  // namespace
+
+SPHModel::SPHModel(const Parameters* par) {
+    if (par) {
+        parameters = *par;
+    } else {
+        parameters = Parameters{.time_scale = 1.0f,
+                                .fixed_dt = 1.0f / 60.0f,
+                                .iterations = 3,
+                                .n_particles = 8192,
+                                .bounding_box = {.pos{0.0f}, .size{10.0f}}};
+    }
+}
+
+void SPHModel::Init(const gfx::CoreCtx& ctx) {
+    spatial_hash.Init(ctx, parameters.n_particles,
+                      Simulation::Get().GetGlobalParameters().smooth_radius);
+}
+
+void SPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {}
+
+void SPHModel::Clear(const gfx::CoreCtx& ctx) {
+    spatial_hash.Clear(ctx);
+}
 
 void SPHModel::SetBoundingBoxSize(const glm::vec3& size) {
     bounding_box = BoundingBox{.size = size, .pos = {0.0f, 0.0f, 0.0f}};

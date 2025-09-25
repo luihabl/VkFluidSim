@@ -1,6 +1,6 @@
 module simulation_3d;
-import simulation.spatial_hash_3d;
-import simulation.kernels_3d;
+import spatial_hash.spatial_hash_3d;
+import kernels.kernels_3d;
 
 static const uint group_size = 256;
 

@@ -67,7 +67,7 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
                            .push_const_size = sizeof(SPHModel::PushConstants),
                            .set = GetDescManager().Set(),
                            .layout = GetDescManager().Layout(),
-                           .shader_path = "shaders/compiled/simulation_3d.slang.spv",
+                           .shader_path = "shaders/compiled/lague_model.slang.spv",
                            .kernels =
                                {
                                    "update_positions",

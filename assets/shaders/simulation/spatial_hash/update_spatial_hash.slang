@@ -1,11 +1,11 @@
-import simulation.spatial_hash_3d;
+import spatial_hash_3d;
 
 struct UniformConstants {
     float cell_size;
     uint* spatial_keys;
 }
 
-[[vk::binding(0, 0)]]
+[[vk::binding(0)]]
 ConstantBuffer<UniformConstants> ubo;
 
 struct PushConstants {

@@ -1,23 +1,22 @@
 find_program(SLANGC slangc)
 
 set(SLANG_SHADERS
-    particles.slang
-    particles_3d.slang
-    spatial_offsets.slang
-    sort.slang
-    scan.slang
-    simulation_2d.slang
-    simulation_3d.slang
-    box.slang
-    spatial_hash.slang
+    simulation/lague_model.slang
+
+    simulation/spatial_hash/scan.slang
+    simulation/spatial_hash/sort.slang
+    simulation/spatial_hash/update_spatial_hash.slang
+    simulation/spatial_hash/spatial_offsets.slang
+
+    draw/box.slang
+    draw/particles_3d.slang
+
 )
 
 set(SLANG_DEPENDENT_FILES
-    colormap.slang
-    simulation/kernels_2d.slang
-    simulation/kernels_3d.slang
-    simulation/spatial_hash_2d.slang
-    simulation/spatial_hash_3d.slang
+    draw/colormap.slang
+    simulation/kernels/kernels_3d.slang
+    simulation/spatial_hash/spatial_hash_3d.slang
 )
 
 set(SLANG_COMPILER_FLAGS

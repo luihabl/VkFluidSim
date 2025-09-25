@@ -86,6 +86,8 @@ src/compute/spatial_hash.cpp
 src/compute/compute_pipeline.cpp
 
 src/scenes/dam_break_scene.cpp
+
+src/simulation.cpp
 )
 
 target_include_directories(vfs PUBLIC src)

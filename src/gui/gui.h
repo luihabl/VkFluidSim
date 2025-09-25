@@ -31,8 +31,6 @@ private:
 
     SimulationRenderer3D renderer;
 
-    std::unique_ptr<SceneBase> scene;
-
     ImGui_Setup ui;
 
     int current_frame = 0;

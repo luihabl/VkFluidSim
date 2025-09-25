@@ -19,10 +19,6 @@ public:
     SPHModel* GetModel() const { return time_step_model.get(); }
 
 protected:
-    struct Parameters {
-        glm::vec3 gravity = {0.0f, -9.81, 0.0f};
-    };
-
     gfx::Device& gfx;
     std::unique_ptr<SPHModel> time_step_model;
     // TODO: add other models here such as the boundary or surface tension

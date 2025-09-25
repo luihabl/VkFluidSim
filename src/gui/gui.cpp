@@ -5,6 +5,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/trigonometric.hpp>
+#include <memory>
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_keycode.h"
@@ -13,6 +14,7 @@
 #include "imgui.h"
 #include "platform.h"
 #include "scenes/dam_break_scene.h"
+#include "simulation.h"
 
 namespace vfs {
 
@@ -29,11 +31,12 @@ void GUI::Init(Platform& platform) {
         .validation_layers = true,
     });
 
-    scene = std::make_unique<DamBreakScene>(gfx);
-    scene->Init();
+    auto& sim = Simulation::Get();
+    sim.Init();
+    sim.SetScene(std::make_unique<DamBreakScene>(gfx));
 
     auto ext = gfx.GetSwapchainExtent();
-    renderer.Init(gfx, scene->GetModel(), ext.width, ext.height);
+    renderer.Init(gfx, sim.GetScene()->GetModel(), ext.width, ext.height);
 
     ui.Init(gfx);
 
@@ -62,17 +65,19 @@ void GUI::Update(Platform& platform) {
     SetCameraPosition();
 
     auto cmd = gfx.BeginFrame();
+    auto& sim = Simulation::Get();
 
     if (!paused) {
-        scene->Step(cmd);
+        sim.Step(cmd);
     }
-    renderer.Draw(gfx, cmd, scene->GetModel(), camera);
+    renderer.Draw(gfx, cmd, sim.GetScene()->GetModel(), camera);
     DrawUI(cmd);
 
     gfx.EndFrame(cmd, renderer.GetDrawImage());
 }
 
 void GUI::DrawUI(VkCommandBuffer cmd) {
+    auto& sim = Simulation::Get();
     ui.BeginDraw(gfx, cmd, renderer.GetDrawImage());
 
 #define TEXTV3(str, prop)                                     \
@@ -95,7 +100,7 @@ void GUI::DrawUI(VkCommandBuffer cmd) {
         ImGui::SameLine();
 
         if (ImGui::Button("Reset")) {
-            scene->Reset();
+            sim.GetScene()->Reset();
             paused = true;
         }
 
@@ -165,7 +170,7 @@ void GUI::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     ui.Clear(gfx);
     renderer.Clear(gfx);
-    scene->Clear();
+    Simulation::Get().Clear();
     gfx.Clear();
 }
 

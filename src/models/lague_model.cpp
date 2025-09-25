@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "models/model.h"
 #include "platform.h"
+#include "simulation.h"
 
 namespace vfs {
 enum SimKernel : u32 {
@@ -16,6 +17,47 @@ enum SimKernel : u32 {
     KernelCalculateDensities,
     KernelCalculatePressureForces,
 };
+
+struct UniformData {
+    float gravity;
+    float damping_factor;
+    float smoothing_radius;
+    float target_density;
+    float pressure_multiplier;
+    float near_pressure_multiplier;
+    float viscosity_strenght;
+
+    SPHModel::BoundingBox box;
+
+    float spiky_pow3_scale;
+    float spiky_pow2_scale;
+    float spiky_pow3_diff_scale;
+    float spiky_pow2_diff_scale;
+
+    VkDeviceAddress predicted_positions;
+
+    VkDeviceAddress spatial_keys;
+    VkDeviceAddress spatial_offsets;
+    VkDeviceAddress sorted_indices;
+
+    VkDeviceAddress sort_target_positions;
+    VkDeviceAddress sort_target_pred_positions;
+    VkDeviceAddress sort_target_velocities;
+};
+
+LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* par)
+    : SPHModel(base_par) {
+    if (par) {
+        parameters = *par;
+    } else {
+        parameters = {
+            .wall_damping_factor = 0.05f,
+            .pressure_multiplier = 288.0f,
+            .near_pressure_multiplier = 2.16f,
+            .viscosity_strenght = 0.03f,
+        };
+    }
+}
 
 void LagueModel::Init(const gfx::CoreCtx& ctx) {
     SPHModel::Init(ctx);
@@ -47,7 +89,7 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
                                },
                        });
 
-    SetInitialData();
+    UpdateUniformData();
 }
 
 SPHModel::DataBuffers LagueModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const {
@@ -58,16 +100,17 @@ SPHModel::DataBuffers LagueModel::CreateDataBuffers(const gfx::CoreCtx& ctx) con
     };
 }
 
-void LagueModel::SetInitialData() {
-    const float smoothing_radius = 0.2;
-    uniform_data = UniformData{
-        .gravity = -10.0f,
-        .damping_factor = 0.05f,
+void LagueModel::UpdateUniformData() {
+    const auto& global_parameters = Simulation::Get().GetGlobalParameters();
+    const float smoothing_radius = global_parameters.smooth_radius;
+    auto uniform_data = UniformData{
+        .gravity = global_parameters.gravity.y,
+        .damping_factor = parameters.wall_damping_factor,
         .smoothing_radius = smoothing_radius,
-        .target_density = 630.0f,
-        .pressure_multiplier = 288.0f,
-        .near_pressure_multiplier = 2.16f,
-        .viscosity_strenght = 0.03f,
+        .target_density = SPHModel::parameters.target_density,
+        .pressure_multiplier = parameters.pressure_multiplier,
+        .near_pressure_multiplier = parameters.near_pressure_multiplier,
+        .viscosity_strenght = parameters.viscosity_strenght,
 
         .box = bounding_box.value(),
 
@@ -99,7 +142,7 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
     SPHModel::Step(ctx, cmd);
 
     if (update_uniforms) {
-        desc_manager.SetUniformData(&uniform_data);
+        UpdateUniformData();
         update_uniforms = false;
     }
 
@@ -165,56 +208,51 @@ void LagueModel::Clear(const gfx::CoreCtx& ctx) {
 }
 
 void LagueModel::DrawDebugUI() {
-    if (ImGui::CollapsingHeader("Simulation")) {
-        glm::vec3 size = uniform_data.box.size;
-        if (ImGui::DragFloat3("Bounding box", &uniform_data.box.size.x, 0.1f, 0.5f, 50.0f)) {
-            ScheduleUpdateUniforms();
-        }
+    // if (ImGui::CollapsingHeader("Simulation")) {
+    //     glm::vec3 size = uniform_data.box.size;
+    //     if (ImGui::DragFloat3("Bounding box", &uniform_data.box.size.x, 0.1f, 0.5f, 50.0f)) {
+    //         ScheduleUpdateUniforms();
+    //     }
 
-        if (ImGui::SliderFloat("Gravity", &uniform_data.gravity, -25.0f, 25.0f)) {
-            ScheduleUpdateUniforms();
-        }
+    //     if (ImGui::SliderFloat("Gravity", &uniform_data.gravity, -25.0f, 25.0f)) {
+    //         ScheduleUpdateUniforms();
+    //     }
 
-        if (ImGui::SliderFloat("Wall damping factor", &uniform_data.damping_factor, 0.0f, 1.0f)) {
-            ScheduleUpdateUniforms();
-        }
+    //     if (ImGui::SliderFloat("Wall damping factor", &uniform_data.damping_factor, 0.0f, 1.0f))
+    //     {
+    //         ScheduleUpdateUniforms();
+    //     }
 
-        if (ImGui::SliderFloat("Pressure multiplier", &uniform_data.pressure_multiplier, 0.0f,
-                               2000.0f)) {
-            ScheduleUpdateUniforms();
-        }
+    //     if (ImGui::SliderFloat("Pressure multiplier", &uniform_data.pressure_multiplier, 0.0f,
+    //                            2000.0f)) {
+    //         ScheduleUpdateUniforms();
+    //     }
 
-        float radius = uniform_data.smoothing_radius;
-        if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
-            SetSmoothingRadius(radius);
-            ScheduleUpdateUniforms();
-        }
+    //     float radius = uniform_data.smoothing_radius;
+    //     if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
+    //         SetSmoothingRadius(radius);
+    //         ScheduleUpdateUniforms();
+    //     }
 
-        if (ImGui::SliderFloat("Viscosity", &uniform_data.viscosity_strenght, 0.0f, 1.0f)) {
-            ScheduleUpdateUniforms();
-        }
+    //     if (ImGui::SliderFloat("Viscosity", &uniform_data.viscosity_strenght, 0.0f, 1.0f)) {
+    //         ScheduleUpdateUniforms();
+    //     }
 
-        if (ImGui::SliderFloat("Target density", &uniform_data.target_density, 0.0f, 2000.0f)) {
-            ScheduleUpdateUniforms();
-        }
-    }
+    //     if (ImGui::SliderFloat("Target density", &uniform_data.target_density, 0.0f, 2000.0f)) {
+    //         ScheduleUpdateUniforms();
+    //     }
+    // }
 }
 
 void LagueModel::SetSmoothingRadius(float radius) {
-    uniform_data.smoothing_radius = radius;
-    uniform_data.spiky_pow3_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius, 6));
-    uniform_data.spiky_pow2_scale = 15.0f / (2.0f * glm::pi<float>() * (float)std::pow(radius, 5));
-    uniform_data.spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(radius, 6));
-    uniform_data.spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius, 5));
+    // uniform_data.smoothing_radius = radius;
+    // uniform_data.spiky_pow3_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius, 6));
+    // uniform_data.spiky_pow2_scale = 15.0f / (2.0f * glm::pi<float>() * (float)std::pow(radius,
+    // 5)); uniform_data.spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(radius,
+    // 6)); uniform_data.spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(radius,
+    // 5));
 
-    spatial_hash.SetCellSize(radius);
-}
-
-LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* par)
-    : SPHModel(base_par) {
-    if (par) {
-        parameters = *par;
-    }
+    // spatial_hash.SetCellSize(radius);
 }
 
 }  // namespace vfs

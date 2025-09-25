@@ -7,33 +7,11 @@ namespace vfs {
 
 class LagueModel final : public SPHModel {
 public:
-    struct Parameters {};
-
-    struct UniformData {
-        float gravity;
-        float damping_factor;
-        float smoothing_radius;
-        float target_density;
+    struct Parameters {
+        float wall_damping_factor;
         float pressure_multiplier;
         float near_pressure_multiplier;
         float viscosity_strenght;
-
-        BoundingBox box;
-
-        float spiky_pow3_scale;
-        float spiky_pow2_scale;
-        float spiky_pow3_diff_scale;
-        float spiky_pow2_diff_scale;
-
-        VkDeviceAddress predicted_positions;
-
-        VkDeviceAddress spatial_keys;
-        VkDeviceAddress spatial_offsets;
-        VkDeviceAddress sorted_indices;
-
-        VkDeviceAddress sort_target_positions;
-        VkDeviceAddress sort_target_pred_positions;
-        VkDeviceAddress sort_target_velocities;
     };
 
     LagueModel(const SPHModel::Parameters* base_parameters = nullptr,
@@ -50,15 +28,13 @@ private:
 
     bool update_uniforms{false};
 
-    UniformData uniform_data;
-
     gfx::Buffer predicted_positions;
 
     gfx::Buffer sort_target_position;
     gfx::Buffer sort_target_pred_position;
     gfx::Buffer sort_target_velocity;
 
-    void SetInitialData();
+    void UpdateUniformData();
     void ScheduleUpdateUniforms();
     void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
     void SetSmoothingRadius(float radius);

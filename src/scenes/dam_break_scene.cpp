@@ -11,6 +11,7 @@ void DamBreakScene::Init() {
         .fixed_dt = 1.0f / 120.0f,
         .iterations = 3,
         .n_particles = 400000,
+        .target_density = 630.0f,
         .bounding_box = {.size{23.0f, 10.0f, 10.0f}},
     };
 

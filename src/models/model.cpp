@@ -39,6 +39,7 @@ SPHModel::SPHModel(const Parameters* par) {
                                 .fixed_dt = 1.0f / 60.0f,
                                 .iterations = 3,
                                 .n_particles = 8192,
+                                .target_density = 100.0f,
                                 .bounding_box = {.pos{0.0f}, .size{10.0f}}};
     }
 }

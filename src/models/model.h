@@ -20,6 +20,7 @@ public:
         int iterations;
         int n_particles;
         float fixed_dt;
+        float target_density;
         BoundingBox bounding_box;
     };
 

@@ -37,18 +37,23 @@ private:
 
 class DescriptorManager {
 public:
-    void Init(const gfx::CoreCtx& ctx, u32 ubo_size);
+    enum class DescType { Uniform, Storage };
+    struct DescData {
+        u32 size{0};
+        DescType type{DescType::Uniform};
+    };
+
+    void Init(const gfx::CoreCtx& ctx, const std::vector<DescData>& desc);
     void Clear(const gfx::CoreCtx& ctx);
 
-    void SetUniformData(void* data);
+    void SetUniformData(u32 id, void* data);
 
     gfx::DescriptorPoolAlloc desc_pool;
     VkDescriptorSetLayout desc_layout;
     VkDescriptorSet desc_set;
-    gfx::Buffer global_constants_ubo;
 
-    u32 size;
-    std::vector<u8> uniform_constant_data;
+    std::vector<DescData> desc_data;
+    std::vector<gfx::Buffer> desc_buffers;
 };
 
 }  // namespace gfx

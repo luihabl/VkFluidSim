@@ -72,7 +72,10 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
     sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
     sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
 
-    desc_manager.Init(ctx, sizeof(UniformData));
+    // desc_manager.Init(ctx, sizeof(UniformData));
+    descriptors.push_back(
+        {.size = sizeof(UniformData), .type = gfx::DescriptorManager::DescType::Uniform});
+    desc_manager.Init(ctx, descriptors);
 
     pipeline.Init(ctx, {
                            .desc_manager = &desc_manager,
@@ -131,7 +134,7 @@ void LagueModel::UpdateUniformData() {
         .sort_target_velocities = sort_target_velocity.device_addr,
     };
 
-    desc_manager.SetUniformData(&uniform_data);
+    desc_manager.SetUniformData(0, &uniform_data);
 }
 
 void LagueModel::ScheduleUpdateUniforms() {

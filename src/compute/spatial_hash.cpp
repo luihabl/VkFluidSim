@@ -25,12 +25,12 @@ void SpatialHash::Init(const gfx::CoreCtx& ctx, u32 n, float cell_size) {
     sort.Init(ctx);
     offset.Init(ctx);
 
-    spatial_hash_desc.Init(ctx, sizeof(UniformData));
+    spatial_hash_desc.Init(ctx, {{.size = sizeof(UniformData)}});
     auto uniforms = UniformData{
         .cell_size = cell_size,
         .spatial_keys = spatial_keys.device_addr,
     };
-    spatial_hash_desc.SetUniformData(&uniforms);
+    spatial_hash_desc.SetUniformData(0, &uniforms);
 
     spatial_hash_pipeline.Init(ctx, {.shader_path = "shaders/compiled/spatial_hash.slang.spv",
                                      .kernels = {"update_spatial_hash"},
@@ -66,7 +66,7 @@ void SpatialHash::SetCellSize(float size) {
         .cell_size = size,
         .spatial_keys = spatial_keys.device_addr,
     };
-    spatial_hash_desc.SetUniformData(&uniforms);
+    spatial_hash_desc.SetUniformData(0, &uniforms);
 }
 
 }  // namespace vfs

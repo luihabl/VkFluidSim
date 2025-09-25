@@ -61,13 +61,14 @@ public:
     void CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const;
 
 protected:
-    gfx::DescriptorManager desc_manager;
     ComputePipeline pipeline;
     DataBuffers buffers;
     Parameters parameters;
     std::optional<BoundingBox> bounding_box;
     SpatialHash spatial_hash;
-
     u32 group_size{256};
+
+    std::vector<gfx::DescriptorManager::DescData> descriptors;
+    gfx::DescriptorManager desc_manager;
 };
 }  // namespace vfs

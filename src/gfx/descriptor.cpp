@@ -92,9 +92,30 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::Build(const CoreCtx& ctx,
 
 void DescriptorLayoutBuilder::Clear() {}
 
-void DescriptorManager::Init(const gfx::CoreCtx& ctx, u32 ubo_size) {
-    size = ubo_size;
-    uniform_constant_data.resize(size);
+VkDescriptorType GetDescType(DescriptorManager::DescType type) {
+    switch (type) {
+        case DescriptorManager::DescType::Uniform:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            break;
+        case DescriptorManager::DescType::Storage:
+            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            break;
+    }
+}
+
+VkBufferUsageFlags GetBufferUsage(DescriptorManager::DescType type) {
+    switch (type) {
+        case DescriptorManager::DescType::Uniform:
+            return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            break;
+        case DescriptorManager::DescType::Storage:
+            return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            break;
+    }
+}
+
+void DescriptorManager::Init(const gfx::CoreCtx& ctx, const std::vector<DescData>& desc) {
+    desc_data = desc;
 
     desc_pool.Init(ctx,
                    {{
@@ -103,30 +124,36 @@ void DescriptorManager::Init(const gfx::CoreCtx& ctx, u32 ubo_size) {
                    }},
                    256, 256);
 
-    desc_layout = gfx::DescriptorLayoutBuilder{}
-                      .Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-                      .Build(ctx, VK_SHADER_STAGE_ALL);
+    auto layout_builder = gfx::DescriptorLayoutBuilder{};
 
-    global_constants_ubo = gfx::Buffer::Create(ctx, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    for (u32 i = 0; i < desc_data.size(); i++) {
+        layout_builder.Add(i, GetDescType(desc_data[i].type));
+        desc_buffers.push_back(
+            gfx::Buffer::Create(ctx, desc_data[i].size, GetBufferUsage(desc_data[i].type)));
+    }
+
+    desc_layout = layout_builder.Build(ctx, VK_SHADER_STAGE_ALL);
 
     desc_set = desc_pool.Alloc(ctx, desc_layout);
-    std::vector<VkWriteDescriptorSet> write_desc_sets = {
-        vk::util::WriteDescriptorSet(desc_set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                                     &global_constants_ubo.desc_info),
-    };
+    std::vector<VkWriteDescriptorSet> write_desc_sets;
+    for (u32 i = 0; i < desc_data.size(); i++) {
+        write_desc_sets.push_back(vk::util::WriteDescriptorSet(
+            desc_set, GetDescType(desc_data[i].type), i, &desc_buffers[i].desc_info));
+    }
 
     vkUpdateDescriptorSets(ctx.device, write_desc_sets.size(), write_desc_sets.data(), 0, nullptr);
 }
 
 void DescriptorManager::Clear(const gfx::CoreCtx& ctx) {
-    global_constants_ubo.Destroy();
+    for (auto& buf : desc_buffers) {
+        buf.Destroy();
+    }
     vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
     desc_pool.Clear(ctx);
 }
 
-void DescriptorManager::SetUniformData(void* data) {
-    memcpy(uniform_constant_data.data(), data, size);
-    memcpy(global_constants_ubo.Map(), data, size);
+void DescriptorManager::SetUniformData(u32 id, void* data) {
+    memcpy(desc_buffers[id].Map(), data, desc_data[id].size);
 }
 
 }  // namespace gfx

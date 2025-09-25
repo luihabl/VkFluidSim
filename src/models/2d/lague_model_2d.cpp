@@ -70,8 +70,8 @@ void Simulation2D::Init(const gfx::CoreCtx& ctx) {
     sort_target_pred_position = CreateDataBuffer<glm::vec2>(ctx, par.n_particles);
     sort_target_velocity = CreateDataBuffer<glm::vec2>(ctx, par.n_particles);
 
-    desc_manager.Init(ctx, sizeof(SimulationUniformData));
-    desc_manager.SetUniformData(&sim_uniform_data);
+    desc_manager.Init(ctx, {{.size = sizeof(SimulationUniformData)}});
+    desc_manager.SetUniformData(0, &sim_uniform_data);
 
     simulation_pipeline.Init(ctx, {
                                       .desc_manager = &desc_manager,
@@ -149,7 +149,7 @@ void Simulation2D::ScheduleUpdateUniforms() {
 }
 
 void Simulation2D::UpdateUniforms() {
-    desc_manager.SetUniformData(&sim_uniform_data);
+    desc_manager.SetUniformData(0, &sim_uniform_data);
 }
 
 void Simulation2D::SetBoundingBoxSize(float w, float h) {

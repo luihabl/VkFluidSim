@@ -1,4 +1,4 @@
-module simulation_3d;
+module lague_model;
 import spatial_hash.spatial_hash_3d;
 import kernels.kernels_3d;
 

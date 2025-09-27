@@ -17,12 +17,6 @@ enum SimKernel : u32 {
     KernelCalculatePressureForces,
 };
 
-struct SpatialHashBuffers {
-    VkDeviceAddress spatial_keys;
-    VkDeviceAddress spatial_offsets;
-    VkDeviceAddress sorted_indices;
-};
-
 struct LagueModelBuffers {
     VkDeviceAddress predicted_positions;
     VkDeviceAddress sort_target_positions;
@@ -47,10 +41,6 @@ LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* p
 void LagueModel::Init(const gfx::CoreCtx& ctx) {
     SPHModel::Init(ctx);
 
-    SetBoundingBoxSize(SPHModel::parameters.bounding_box.size);
-
-    buffers = CreateDataBuffers(ctx);
-
     predicted_positions = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
 
     sort_target_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
@@ -58,7 +48,6 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
     sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
 
     parameter_id = AddDescriptor(sizeof(Parameters));
-    spatial_hash_buf_id = AddDescriptor(sizeof(SpatialHashBuffers));
     buf_id = AddDescriptor(sizeof(LagueModelBuffers));
 
     InitDescriptorManager(ctx);
@@ -82,26 +71,10 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
     UpdateAllUniforms();
 }
 
-SPHModel::DataBuffers LagueModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const {
-    return {
-        .position_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
-        .velocity_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
-        .density_buffer = CreateDataBuffer<glm::vec2>(ctx, SPHModel::parameters.n_particles),
-    };
-}
-
 void LagueModel::UpdateAllUniforms() {
     SPHModel::UpdateAllUniforms();
 
     GetDescManager().SetUniformData(parameter_id, &parameters);
-
-    auto spatial_hash_bufs = SpatialHashBuffers{
-        .spatial_keys = spatial_hash.SpatialKeysAddr(),
-        .spatial_offsets = spatial_hash.SpatialOffsetsAddr(),
-        .sorted_indices = spatial_hash.SpatialIndicesAddr(),
-    };
-
-    GetDescManager().SetUniformData(spatial_hash_buf_id, &spatial_hash_bufs);
 
     auto model_bufs = LagueModelBuffers{
         .predicted_positions = predicted_positions.device_addr,

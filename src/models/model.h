@@ -31,6 +31,12 @@ public:
         float spiky_pow2_diff_scale;
     };
 
+    struct SpatialHashBuffers {
+        VkDeviceAddress spatial_keys;
+        VkDeviceAddress spatial_offsets;
+        VkDeviceAddress sorted_indices;
+    };
+
     struct DataBuffers {
         gfx::Buffer position_buffer;
         gfx::Buffer velocity_buffer;
@@ -51,7 +57,6 @@ public:
     virtual void Init(const gfx::CoreCtx& ctx);
     virtual void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd);
     virtual void Clear(const gfx::CoreCtx& ctx);
-    virtual DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const = 0;
     virtual void DrawDebugUI() = 0;
     virtual ~SPHModel() = default;
 
@@ -66,6 +71,7 @@ public:
     void SetBoundingBoxSize(const glm::vec3& size);
 
     void CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const;
+    DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const;
 
 protected:
     ComputePipeline pipeline;
@@ -78,6 +84,8 @@ protected:
     u32 global_parameter_id;
     u32 kernel_coeff_id;
     u32 model_parameter_id;
+    u32 spatial_hash_buf_id;
+
     u32 AddDescriptor(
         u32 size,
         gfx::DescriptorManager::DescType type = gfx::DescriptorManager::DescType::Uniform);

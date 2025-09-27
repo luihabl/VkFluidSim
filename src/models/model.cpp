@@ -52,6 +52,10 @@ void SPHModel::Init(const gfx::CoreCtx& ctx) {
     global_parameter_id = AddDescriptor(sizeof(SimulationParameters));
     kernel_coeff_id = AddDescriptor(sizeof(KernelCoefficients));
     model_parameter_id = AddDescriptor(sizeof(Parameters));
+    spatial_hash_buf_id = AddDescriptor(sizeof(SpatialHashBuffers));
+
+    SetBoundingBoxSize(parameters.bounding_box.size);
+    buffers = CreateDataBuffers(ctx);
 }
 
 void SPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {}
@@ -77,6 +81,14 @@ void SPHModel::SetParticleState(const gfx::Device& gfx,
     gfx.SetDataVec(buffers.position_buffer, pos);
     gfx.SetDataVec(buffers.velocity_buffer, vel);
     gfx.SetDataVal(buffers.density_buffer, glm::vec2(0.0f));
+}
+
+SPHModel::DataBuffers SPHModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const {
+    return {
+        .position_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
+        .velocity_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
+        .density_buffer = CreateDataBuffer<glm::vec2>(ctx, SPHModel::parameters.n_particles),
+    };
 }
 
 void SPHModel::CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const {
@@ -106,6 +118,14 @@ void SPHModel::UpdateAllUniforms() {
         CalcKernelCoefficients(Simulation::Get().GetGlobalParameters().smooth_radius);
     desc_manager.SetUniformData(kernel_coeff_id, &kernel_coeff);
     desc_manager.SetUniformData(model_parameter_id, &parameters);
+
+    auto spatial_hash_bufs = SpatialHashBuffers{
+        .spatial_keys = spatial_hash.SpatialKeysAddr(),
+        .spatial_offsets = spatial_hash.SpatialOffsetsAddr(),
+        .sorted_indices = spatial_hash.SpatialIndicesAddr(),
+    };
+
+    GetDescManager().SetUniformData(spatial_hash_buf_id, &spatial_hash_bufs);
 }
 
 SPHModel::KernelCoefficients SPHModel::CalcKernelCoefficients(float r) {

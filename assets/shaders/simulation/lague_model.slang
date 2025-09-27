@@ -52,6 +52,15 @@ namespace SPHModel {
 
     [[vk::binding(2)]]
     ConstantBuffer<SPHModel::Parameters> parameters;
+
+    struct SpatialHashBuffers {
+        uint* spatial_keys;
+        uint* spatial_offsets;
+        uint* sorted_indices;
+    };
+
+    [[vk::binding(3)]]
+    ConstantBuffer<SpatialHashBuffers> spatial_hash;
 }
 
 namespace LagueModel {
@@ -62,17 +71,8 @@ namespace LagueModel {
         float viscosity_strenght;
     };
 
-    [[vk::binding(3)]]
-    ConstantBuffer<LagueModel::Parameters> parameters;
-
-    struct SpatialHashBuffers {
-        uint* spatial_keys;
-        uint* spatial_offsets;
-        uint* sorted_indices;
-    };
-
     [[vk::binding(4)]]
-    ConstantBuffer<SpatialHashBuffers> spatial_hash;
+    ConstantBuffer<LagueModel::Parameters> parameters;
 
     struct LagueModelBuffers {
         float3* predicted_positions;
@@ -108,13 +108,13 @@ float2 calculate_density(float3 pos, uint n_particles) {
     for (int i = 0; i < 27; i++) {
         uint hash = HashCell3D(origin_cell + offsets_3d[i]);
         uint key = KeyFromHash(hash, n_particles);
-        uint curr_index = LagueModel::spatial_hash.spatial_offsets[key];
+        uint curr_index = SPHModel::spatial_hash.spatial_offsets[key];
 
         while (curr_index < n_particles) {
             uint neighbor_index = curr_index;
             curr_index++;
 
-            uint neighbor_key = LagueModel::spatial_hash.spatial_keys[neighbor_index];
+            uint neighbor_key = SPHModel::spatial_hash.spatial_keys[neighbor_index];
 
             if (neighbor_key != key)
                 break;
@@ -154,7 +154,7 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
     for (int i = 0; i < 27; i++) {
         uint hash = HashCell3D(origin_cell + offsets_3d[i]);
         uint key = KeyFromHash(hash, k.n_particles);
-        uint curr_index = LagueModel::spatial_hash.spatial_offsets[key];
+        uint curr_index = SPHModel::spatial_hash.spatial_offsets[key];
 
         while (curr_index < k.n_particles) {
             uint neighbor_index = curr_index;
@@ -163,7 +163,7 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
             if (neighbor_index == id)
                 continue;
 
-            uint neighbor_key = LagueModel::spatial_hash.spatial_keys[neighbor_index];
+            uint neighbor_key = SPHModel::spatial_hash.spatial_keys[neighbor_index];
 
             if (neighbor_key != key)
                 break;
@@ -259,7 +259,7 @@ void reorder(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    uint sorted_index = LagueModel::spatial_hash.sorted_indices[id];
+    uint sorted_index = SPHModel::spatial_hash.sorted_indices[id];
     LagueModel::buffers.sort_target_positions[id] = k.positions[sorted_index];
     LagueModel::buffers.sort_target_pred_positions[id] =
         LagueModel::buffers.predicted_positions[sorted_index];

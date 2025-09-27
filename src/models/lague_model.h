@@ -27,7 +27,6 @@ public:
     void Init(const gfx::CoreCtx& ctx) override;
     void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) override;
     void Clear(const gfx::CoreCtx& ctx) override;
-    DataBuffers CreateDataBuffers(const gfx::CoreCtx& ctx) const override;
     void DrawDebugUI() override;
 
 private:
@@ -35,7 +34,6 @@ private:
 
     bool update_uniforms{false};
     u32 parameter_id;
-    u32 spatial_hash_buf_id;
     u32 buf_id;
 
     gfx::Buffer predicted_positions;

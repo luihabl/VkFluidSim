@@ -56,6 +56,9 @@ void SPHModel::Init(const gfx::CoreCtx& ctx) {
 
     SetBoundingBoxSize(parameters.bounding_box.size);
     buffers = CreateDataBuffers(ctx);
+
+    AddBufferToBeReordered(buffers.position_buffer);
+    AddBufferToBeReordered(buffers.velocity_buffer);
 }
 
 void SPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {}
@@ -63,6 +66,7 @@ void SPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {}
 void SPHModel::Clear(const gfx::CoreCtx& ctx) {
     spatial_hash.Clear(ctx);
     desc_manager.Clear(ctx);
+    reorder.Clear(ctx);
 }
 
 void SPHModel::SetBoundingBoxSize(const glm::vec3& size) {
@@ -112,6 +116,18 @@ void SPHModel::InitDescriptorManager(const gfx::CoreCtx& ctx) {
     desc_manager.Init(ctx, descriptors);
 }
 
+void SPHModel::AddBufferToBeReordered(const gfx::Buffer& buffer) {
+    reorder_buffers.push_back(buffer);
+}
+
+void SPHModel::InitBufferReorder(const gfx::CoreCtx& ctx) {
+    reorder.Init(ctx, {
+                          .buffers = reorder_buffers,
+                          .sort_indices = spatial_hash.SpatialIndicesAddr(),
+                          .n = (u32)parameters.n_particles,
+                      });
+}
+
 void SPHModel::UpdateAllUniforms() {
     desc_manager.SetUniformData(global_parameter_id, &Simulation::Get().GetGlobalParameters());
     auto kernel_coeff =
@@ -126,6 +142,21 @@ void SPHModel::UpdateAllUniforms() {
     };
 
     GetDescManager().SetUniformData(spatial_hash_buf_id, &spatial_hash_bufs);
+}
+
+void SPHModel::RunSpatialHash(VkCommandBuffer cmd,
+                              const gfx::CoreCtx& ctx,
+                              const gfx::Buffer* mod_positions) {
+    if (mod_positions) {
+        spatial_hash.Run(ctx, cmd, mod_positions->device_addr);
+    } else {
+        spatial_hash.Run(ctx, cmd, buffers.position_buffer.device_addr);
+    }
+
+    ComputeToComputePipelineBarrier(cmd);
+    reorder.Reorder(cmd, ctx);
+    ComputeToComputePipelineBarrier(cmd);
+    reorder.Copyback(cmd);
 }
 
 SPHModel::KernelCoefficients SPHModel::CalcKernelCoefficients(float r) {

@@ -7,6 +7,7 @@ set(SLANG_SHADERS
     simulation/spatial_hash/sort.slang
     simulation/spatial_hash/update_spatial_hash.slang
     simulation/spatial_hash/spatial_offsets.slang
+    simulation/spatial_hash/reorder.slang
 
     draw/box.slang
     draw/particles_3d.slang

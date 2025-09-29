@@ -20,6 +20,7 @@ public:
     void Init(const gfx::CoreCtx& ctx) override;
     void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) override;
     void Clear(const gfx::CoreCtx& ctx) override;
+    void DrawDebugUI() override;
 
 private:
     Parameters parameters;

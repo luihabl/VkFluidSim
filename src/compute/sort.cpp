@@ -1,5 +1,7 @@
 #include "sort.h"
 
+#include <glm/fwd.hpp>
+
 #include "compute_pipeline.h"
 #include "gfx/common.h"
 
@@ -171,6 +173,56 @@ void SpatialOffset::Run(VkCommandBuffer cmd,
     }
 
     offset_pipeline.Compute(cmd, KernelCalculateOffsets, {n_groups, 1, 1}, &push_consts);
+}
+
+struct ReorderPushConstants {
+    VkDeviceAddress sorted_indices;
+    VkDeviceAddress buffer;
+    VkDeviceAddress sort_target;
+    u32 n;
+};
+
+void BufferReorder::Init(const gfx::CoreCtx& ctx, Config&& cfg) {
+    config = std::move(cfg);
+
+    for (u32 i = 0; i < config.buffers.size(); i++) {
+        sort_targets.push_back(gfx::CreateDataBuffer<glm::vec3>(ctx, config.n));
+    }
+
+    reorder_pipeline.Init(ctx, {
+                                   .shader_path = "shaders/compiled/reorder.slang.spv",
+                                   .kernels = {"reorder"},
+                                   .push_const_size = sizeof(ReorderPushConstants),
+                               });
+}
+
+void BufferReorder::Clear(const gfx::CoreCtx& ctx) {
+    for (auto& buf : sort_targets) {
+        buf.Destroy();
+    }
+
+    reorder_pipeline.Clear(ctx);
+}
+void BufferReorder::Reorder(VkCommandBuffer cmd, const gfx::CoreCtx& ctx) {
+    auto reorder_push_constants = ReorderPushConstants{
+        .sorted_indices = config.sort_indices,
+        .n = config.n,
+    };
+
+    glm::vec3 ngroups{config.n / 256 + 1, 1, 1};
+
+    for (u32 i = 0; i < config.buffers.size(); i++) {
+        reorder_push_constants.buffer = config.buffers[i].addr;
+        reorder_push_constants.sort_target = sort_targets[i].device_addr;
+        reorder_pipeline.Compute(cmd, 0, ngroups, &reorder_push_constants);
+    }
+}
+
+void BufferReorder::Copyback(VkCommandBuffer cmd) {
+    auto cpy_info = VkBufferCopy{.dstOffset = 0, .srcOffset = 0, .size = sort_targets.back().size};
+    for (u32 i = 0; i < config.buffers.size(); i++) {
+        vkCmdCopyBuffer(cmd, sort_targets[i].buffer, config.buffers[i].buf, 1, &cpy_info);
+    }
 }
 
 }  // namespace vfs

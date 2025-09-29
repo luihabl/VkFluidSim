@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 
 #include "compute_pipeline.h"
 #include "gfx/common.h"
@@ -76,6 +77,40 @@ private:
     };
 
     ComputePipeline offset_pipeline;
+};
+
+class BufferReorder {
+public:
+    struct Config {
+        struct BufferInfo {
+            VkDeviceAddress addr;
+            VkBuffer buf;
+            u32 size;
+
+            BufferInfo() = default;
+
+            BufferInfo(const gfx::Buffer& buffer) {
+                addr = buffer.device_addr;
+                buf = buffer.buffer;
+                size = buffer.size;
+            }
+        };
+
+        std::vector<BufferInfo> buffers;
+        VkDeviceAddress sort_indices;
+        u32 n;
+    };
+
+    void Init(const gfx::CoreCtx& ctx, Config&& cfg);
+    void Clear(const gfx::CoreCtx& ctx);
+    void Reorder(VkCommandBuffer cmd, const gfx::CoreCtx& ctx);
+    void Copyback(VkCommandBuffer cmd);
+
+private:
+    ComputePipeline reorder_pipeline;
+
+    Config config;
+    std::vector<gfx::Buffer> sort_targets;
 };
 
 }  // namespace vfs

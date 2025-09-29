@@ -2,6 +2,7 @@
 #include <optional>
 
 #include "compute/compute_pipeline.h"
+#include "compute/sort.h"
 #include "compute/spatial_hash.h"
 #include "gfx/common.h"
 #include "gfx/descriptor.h"
@@ -92,10 +93,21 @@ protected:
     void InitDescriptorManager(const gfx::CoreCtx& ctx);
     void UpdateAllUniforms();
     const gfx::DescriptorManager& GetDescManager() { return desc_manager; }
+
+    void AddBufferToBeReordered(const gfx::Buffer& buffer);
+    void InitBufferReorder(const gfx::CoreCtx& ctx);
+
+    void RunSpatialHash(VkCommandBuffer cmd,
+                        const gfx::CoreCtx& ctx,
+                        const gfx::Buffer* mod_positions = nullptr);
+
     KernelCoefficients CalcKernelCoefficients(float r);
 
 private:
     gfx::DescriptorManager desc_manager;
     std::vector<gfx::DescriptorManager::DescData> descriptors;
+
+    BufferReorder reorder;
+    std::vector<BufferReorder::Config::BufferInfo> reorder_buffers;
 };
 }  // namespace vfs

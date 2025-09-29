@@ -42,10 +42,8 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
     SPHModel::Init(ctx);
 
     predicted_positions = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
-
-    sort_target_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
-    sort_target_pred_position = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
-    sort_target_velocity = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
+    AddBufferToBeReordered(predicted_positions);
+    InitBufferReorder(ctx);
 
     parameter_id = AddDescriptor(sizeof(Parameters));
     buf_id = AddDescriptor(sizeof(LagueModelBuffers));
@@ -112,20 +110,14 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
     auto n_groups = glm::ivec3(SPHModel::parameters.n_particles / group_size + 1, 1, 1);
 
     for (int i = 0; i < SPHModel::parameters.iterations; i++) {
+        if (i > 0)
+            ComputeToComputePipelineBarrier(cmd);
+
         pipeline.Compute(cmd, KernelExternalForces, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
-        // RunSpatial
-        {
-            spatial_hash.Run(ctx, cmd, predicted_positions.device_addr);
-            ComputeToComputePipelineBarrier(cmd);
-
-            pipeline.Compute(cmd, KernelReorder, n_groups, &push);
-            ComputeToComputePipelineBarrier(cmd);
-
-            pipeline.Compute(cmd, KernelReorderCopyback, n_groups, &push);
-            ComputeToComputePipelineBarrier(cmd);
-        }
+        RunSpatialHash(cmd, ctx, &predicted_positions);
+        ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
@@ -137,8 +129,6 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         // ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &push);
-        if (i < SPHModel::parameters.iterations - 1)
-            ComputeToComputePipelineBarrier(cmd);
     }
 }
 

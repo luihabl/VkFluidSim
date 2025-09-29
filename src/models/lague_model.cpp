@@ -11,17 +11,12 @@ namespace vfs {
 enum SimKernel : u32 {
     KernelUpdatePositions = 0,
     KernelExternalForces,
-    KernelReorderCopyback,
-    KernelReorder,
     KernelCalculateDensities,
     KernelCalculatePressureForces,
 };
 
 struct LagueModelBuffers {
     VkDeviceAddress predicted_positions;
-    VkDeviceAddress sort_target_positions;
-    VkDeviceAddress sort_target_pred_positions;
-    VkDeviceAddress sort_target_velocities;
 };
 
 LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* par)
@@ -59,8 +54,6 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
                                {
                                    "update_positions",
                                    "external_forces",
-                                   "reorder_copyback",
-                                   "reorder",
                                    "calculate_densities",
                                    "calculate_pressure_forces",
                                },
@@ -76,9 +69,6 @@ void LagueModel::UpdateAllUniforms() {
 
     auto model_bufs = LagueModelBuffers{
         .predicted_positions = predicted_positions.device_addr,
-        .sort_target_positions = sort_target_position.device_addr,
-        .sort_target_pred_positions = sort_target_pred_position.device_addr,
-        .sort_target_velocities = sort_target_velocity.device_addr,
     };
 
     GetDescManager().SetUniformData(buf_id, &model_bufs);
@@ -134,18 +124,7 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
 
 void LagueModel::Clear(const gfx::CoreCtx& ctx) {
     SPHModel::Clear(ctx);
-
     predicted_positions.Destroy();
-
-    sort_target_position.Destroy();
-    sort_target_pred_position.Destroy();
-    sort_target_velocity.Destroy();
-
-    buffers.position_buffer.Destroy();
-    buffers.velocity_buffer.Destroy();
-    buffers.density_buffer.Destroy();
-
-    pipeline.Clear(ctx);
 }
 
 void LagueModel::DrawDebugUI() {

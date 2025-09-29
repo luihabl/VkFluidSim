@@ -76,9 +76,6 @@ namespace LagueModel {
 
     struct LagueModelBuffers {
         float3* predicted_positions;
-        float3* sort_target_positions;
-        float3* sort_target_pred_positions;
-        float3* sort_target_velocities;
     };
 
     [[vk::binding(5)]]
@@ -251,32 +248,6 @@ void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     let prediction_factor = 1.0f / 120.0f;
     LagueModel::buffers.predicted_positions[id] =
         k.positions[id] + k.velocities[id] * prediction_factor;
-}
-
-[shader("compute")]
-[numthreads(group_size, 1, 1)]
-void reorder(uint id: SV_DispatchThreadID, uniform PushConstants k) {
-    if (id >= k.n_particles)
-        return;
-
-    uint sorted_index = SPHModel::spatial_hash.sorted_indices[id];
-    LagueModel::buffers.sort_target_positions[id] = k.positions[sorted_index];
-    LagueModel::buffers.sort_target_pred_positions[id] =
-        LagueModel::buffers.predicted_positions[sorted_index];
-    LagueModel::buffers.sort_target_velocities[id] = k.velocities[sorted_index];
-}
-
-[shader("compute")]
-[numthreads(group_size, 1, 1)]
-void reorder_copyback(uint id: SV_DispatchThreadID, uniform PushConstants k) {
-    if (id >= k.n_particles)
-        return;
-
-    // This could be chanted to a set of VkCmdCopyBuffer calls
-    k.positions[id] = LagueModel::buffers.sort_target_positions[id];
-    LagueModel::buffers.predicted_positions[id] =
-        LagueModel::buffers.sort_target_pred_positions[id];
-    k.velocities[id] = LagueModel::buffers.sort_target_velocities[id];
 }
 
 [shader("compute")]

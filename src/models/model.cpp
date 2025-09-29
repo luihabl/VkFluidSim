@@ -67,6 +67,12 @@ void SPHModel::Clear(const gfx::CoreCtx& ctx) {
     spatial_hash.Clear(ctx);
     desc_manager.Clear(ctx);
     reorder.Clear(ctx);
+
+    buffers.position_buffer.Destroy();
+    buffers.velocity_buffer.Destroy();
+    buffers.density_buffer.Destroy();
+
+    pipeline.Clear(ctx);
 }
 
 void SPHModel::SetBoundingBoxSize(const glm::vec3& size) {

@@ -38,10 +38,6 @@ private:
 
     gfx::Buffer predicted_positions;
 
-    gfx::Buffer sort_target_position;
-    gfx::Buffer sort_target_pred_position;
-    gfx::Buffer sort_target_velocity;
-
     void UpdateAllUniforms();
     void ScheduleUpdateUniforms();
     void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);

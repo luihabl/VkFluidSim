@@ -104,8 +104,6 @@ void GUI::DrawUI(VkCommandBuffer cmd) {
             paused = true;
         }
 
-        // simulation->DrawDebugUI();
-
         if (ImGui::CollapsingHeader("Camera")) {
             auto pos = camera.GetPosition();
             TEXTV3("Position", camera.GetPosition());
@@ -128,6 +126,8 @@ void GUI::DrawUI(VkCommandBuffer cmd) {
                 camera.SetRadius(radius);
             }
         }
+
+        Simulation::Get().DrawDebugUI();
     }
 
     ImGui::End();
@@ -170,7 +170,7 @@ void GUI::Clear() {
     vkDeviceWaitIdle(gfx.GetCoreCtx().device);
     ui.Clear(gfx);
     renderer.Clear(gfx);
-    Simulation::Get().Clear();
+    Simulation::Get().Clear(gfx.GetCoreCtx());
     gfx.Clear();
 }
 

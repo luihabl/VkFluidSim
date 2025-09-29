@@ -58,7 +58,7 @@ public:
     virtual void Init(const gfx::CoreCtx& ctx);
     virtual void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd);
     virtual void Clear(const gfx::CoreCtx& ctx);
-    virtual void DrawDebugUI() = 0;
+    virtual void DrawDebugUI();
     virtual ~SPHModel() = default;
 
     auto GetBoundingBox() const { return bounding_box; }
@@ -82,17 +82,11 @@ protected:
     SpatialHash spatial_hash;
     u32 group_size{256};
 
-    u32 global_parameter_id;
     u32 kernel_coeff_id;
     u32 model_parameter_id;
     u32 spatial_hash_buf_id;
 
-    u32 AddDescriptor(
-        u32 size,
-        gfx::DescriptorManager::DescType type = gfx::DescriptorManager::DescType::Uniform);
-    void InitDescriptorManager(const gfx::CoreCtx& ctx);
     void UpdateAllUniforms();
-    const gfx::DescriptorManager& GetDescManager() { return desc_manager; }
 
     void AddBufferToBeReordered(const gfx::Buffer& buffer);
     void InitBufferReorder(const gfx::CoreCtx& ctx);
@@ -104,9 +98,6 @@ protected:
     KernelCoefficients CalcKernelCoefficients(float r);
 
 private:
-    gfx::DescriptorManager desc_manager;
-    std::vector<gfx::DescriptorManager::DescData> descriptors;
-
     BufferReorder reorder;
     std::vector<BufferReorder::Config::BufferInfo> reorder_buffers;
 };

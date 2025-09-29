@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "models/model.h"
 #include "platform.h"
+#include "simulation.h"
 
 namespace vfs {
 enum SimKernel : u32 {
@@ -40,15 +41,17 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
     AddBufferToBeReordered(predicted_positions);
     InitBufferReorder(ctx);
 
-    parameter_id = AddDescriptor(sizeof(Parameters));
-    buf_id = AddDescriptor(sizeof(LagueModelBuffers));
+    auto& sim = Simulation::Get();
 
-    InitDescriptorManager(ctx);
+    parameter_id = sim.AddDescriptor(sizeof(Parameters));
+    buf_id = sim.AddDescriptor(sizeof(LagueModelBuffers));
+
+    sim.InitDescriptorManager(ctx);
 
     pipeline.Init(ctx, {
                            .push_const_size = sizeof(SPHModel::PushConstants),
-                           .set = GetDescManager().Set(),
-                           .layout = GetDescManager().Layout(),
+                           .set = sim.GetDescManager().Set(),
+                           .layout = sim.GetDescManager().Layout(),
                            .shader_path = "shaders/compiled/lague_model.slang.spv",
                            .kernels =
                                {
@@ -65,13 +68,13 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
 void LagueModel::UpdateAllUniforms() {
     SPHModel::UpdateAllUniforms();
 
-    GetDescManager().SetUniformData(parameter_id, &parameters);
+    Simulation::Get().GetDescManager().SetUniformData(parameter_id, &parameters);
 
     auto model_bufs = LagueModelBuffers{
         .predicted_positions = predicted_positions.device_addr,
     };
 
-    GetDescManager().SetUniformData(buf_id, &model_bufs);
+    Simulation::Get().GetDescManager().SetUniformData(buf_id, &model_bufs);
 }
 
 void LagueModel::ScheduleUpdateUniforms() {
@@ -128,40 +131,30 @@ void LagueModel::Clear(const gfx::CoreCtx& ctx) {
 }
 
 void LagueModel::DrawDebugUI() {
-    // if (ImGui::CollapsingHeader("Simulation")) {
-    //     glm::vec3 size = uniform_data.box.size;
-    //     if (ImGui::DragFloat3("Bounding box", &uniform_data.box.size.x, 0.1f, 0.5f, 50.0f)) {
-    //         ScheduleUpdateUniforms();
-    //     }
+    SPHModel::DrawDebugUI();
 
-    //     if (ImGui::SliderFloat("Gravity", &uniform_data.gravity, -25.0f, 25.0f)) {
-    //         ScheduleUpdateUniforms();
-    //     }
+    auto& sim = Simulation::Get();
 
-    //     if (ImGui::SliderFloat("Wall damping factor", &uniform_data.damping_factor, 0.0f, 1.0f))
-    //     {
-    //         ScheduleUpdateUniforms();
-    //     }
+    if (ImGui::CollapsingHeader("Lague model")) {
+        if (ImGui::SliderFloat("Wall damping factor", &parameters.wall_damping_factor, 0.0f,
+                               1.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
 
-    //     if (ImGui::SliderFloat("Pressure multiplier", &uniform_data.pressure_multiplier, 0.0f,
-    //                            2000.0f)) {
-    //         ScheduleUpdateUniforms();
-    //     }
+        if (ImGui::SliderFloat("Pressure multiplier", &parameters.pressure_multiplier, 0.0f,
+                               2000.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
 
-    //     float radius = uniform_data.smoothing_radius;
-    //     if (ImGui::SliderFloat("Smoothing radius", &radius, 0.0f, 0.6f)) {
-    //         SetSmoothingRadius(radius);
-    //         ScheduleUpdateUniforms();
-    //     }
+        if (ImGui::SliderFloat("Near pressure multiplier", &parameters.near_pressure_multiplier,
+                               0.0f, 2000.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
 
-    //     if (ImGui::SliderFloat("Viscosity", &uniform_data.viscosity_strenght, 0.0f, 1.0f)) {
-    //         ScheduleUpdateUniforms();
-    //     }
-
-    //     if (ImGui::SliderFloat("Target density", &uniform_data.target_density, 0.0f, 2000.0f)) {
-    //         ScheduleUpdateUniforms();
-    //     }
-    // }
+        if (ImGui::SliderFloat("Viscosity", &parameters.viscosity_strenght, 0.0f, 1.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
+    }
 }
 
 }  // namespace vfs

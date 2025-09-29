@@ -4,6 +4,7 @@
 #include <random>
 
 #include "gfx/common.h"
+#include "imgui.h"
 #include "simulation.h"
 
 namespace vfs {
@@ -49,10 +50,9 @@ void SPHModel::Init(const gfx::CoreCtx& ctx) {
     spatial_hash.Init(ctx, parameters.n_particles,
                       Simulation::Get().GetGlobalParameters().smooth_radius);
 
-    global_parameter_id = AddDescriptor(sizeof(SimulationParameters));
-    kernel_coeff_id = AddDescriptor(sizeof(KernelCoefficients));
-    model_parameter_id = AddDescriptor(sizeof(Parameters));
-    spatial_hash_buf_id = AddDescriptor(sizeof(SpatialHashBuffers));
+    kernel_coeff_id = Simulation::Get().AddDescriptor(sizeof(KernelCoefficients));
+    model_parameter_id = Simulation::Get().AddDescriptor(sizeof(Parameters));
+    spatial_hash_buf_id = Simulation::Get().AddDescriptor(sizeof(SpatialHashBuffers));
 
     SetBoundingBoxSize(parameters.bounding_box.size);
     buffers = CreateDataBuffers(ctx);
@@ -65,7 +65,6 @@ void SPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {}
 
 void SPHModel::Clear(const gfx::CoreCtx& ctx) {
     spatial_hash.Clear(ctx);
-    desc_manager.Clear(ctx);
     reorder.Clear(ctx);
 
     buffers.position_buffer.Destroy();
@@ -113,15 +112,6 @@ void SPHModel::CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const {
     CPY_BUFFER(density_buffer);
 }
 
-u32 SPHModel::AddDescriptor(u32 size, gfx::DescriptorManager::DescType type) {
-    descriptors.push_back({.size = size, .type = type});
-    return descriptors.size() - 1;
-}
-
-void SPHModel::InitDescriptorManager(const gfx::CoreCtx& ctx) {
-    desc_manager.Init(ctx, descriptors);
-}
-
 void SPHModel::AddBufferToBeReordered(const gfx::Buffer& buffer) {
     reorder_buffers.push_back(buffer);
 }
@@ -135,11 +125,12 @@ void SPHModel::InitBufferReorder(const gfx::CoreCtx& ctx) {
 }
 
 void SPHModel::UpdateAllUniforms() {
-    desc_manager.SetUniformData(global_parameter_id, &Simulation::Get().GetGlobalParameters());
+    auto& sim = Simulation::Get();
+
     auto kernel_coeff =
         CalcKernelCoefficients(Simulation::Get().GetGlobalParameters().smooth_radius);
-    desc_manager.SetUniformData(kernel_coeff_id, &kernel_coeff);
-    desc_manager.SetUniformData(model_parameter_id, &parameters);
+    sim.GetDescManager().SetUniformData(kernel_coeff_id, &kernel_coeff);
+    sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
 
     auto spatial_hash_bufs = SpatialHashBuffers{
         .spatial_keys = spatial_hash.SpatialKeysAddr(),
@@ -147,7 +138,7 @@ void SPHModel::UpdateAllUniforms() {
         .sorted_indices = spatial_hash.SpatialIndicesAddr(),
     };
 
-    GetDescManager().SetUniformData(spatial_hash_buf_id, &spatial_hash_bufs);
+    sim.GetDescManager().SetUniformData(spatial_hash_buf_id, &spatial_hash_bufs);
 }
 
 void SPHModel::RunSpatialHash(VkCommandBuffer cmd,
@@ -172,6 +163,35 @@ SPHModel::KernelCoefficients SPHModel::CalcKernelCoefficients(float r) {
         .spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(r, 6)),
         .spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(r, 5)),
     };
+}
+
+void SPHModel::DrawDebugUI() {
+    auto& sim = Simulation::Get();
+
+    if (ImGui::CollapsingHeader("Base model")) {
+        if (ImGui::DragFloat("Time scale", &parameters.time_scale, 0.5f, 0.5f, 5.0f)) {
+            sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
+        }
+
+        if (ImGui::DragInt("Iterations", &parameters.iterations, 1, 1, 10)) {
+            sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
+        }
+
+        float dt = parameters.fixed_dt * 1e3;
+        if (ImGui::DragFloat("Fixed delta-t", &dt, 1.0f, 1.0f, 20.0f, "%.2f ms")) {
+            parameters.fixed_dt = dt * 1e-3;
+            sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
+        }
+
+        if (ImGui::SliderFloat("Target density", &parameters.target_density, 0.0f, 2000.0f)) {
+            sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
+        }
+
+        glm::vec3 size = parameters.bounding_box.size;
+        if (ImGui::DragFloat3("Bounding box", &parameters.bounding_box.size.x, 0.1f, 0.5f, 2.0f)) {
+            sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
+        }
+    }
 }
 
 }  // namespace vfs

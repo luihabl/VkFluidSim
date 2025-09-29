@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "gfx/descriptor.h"
 #include "scenes/scene.h"
 
 namespace vfs {
@@ -19,16 +20,23 @@ public:
 
     void Init();
     void Step(VkCommandBuffer cmd);
-    void Clear();
+    void Clear(const gfx::CoreCtx& ctx);
 
     static Simulation& Get();
 
     const SimulationParameters& GetGlobalParameters() { return parameters; }
     void SetGlobalParameters(const SimulationParameters& p);
-    void SetOnParametersChangedCallback(std::function<void()>&& callback);
 
     void SetScene(std::unique_ptr<SceneBase>&& scene);
     SceneBase* GetScene();
+    void DrawDebugUI();
+
+    u32 AddDescriptor(
+        u32 size,
+        gfx::DescriptorManager::DescType type = gfx::DescriptorManager::DescType::Uniform);
+    void InitDescriptorManager(const gfx::CoreCtx& ctx);
+    const gfx::DescriptorManager& GetDescManager() { return desc_manager; }
+    void ClearDescManager(const gfx::CoreCtx& ctx);
 
 private:
     Simulation() = default;
@@ -37,9 +45,12 @@ private:
     Simulation& operator=(const Simulation&) = delete;
     Simulation& operator=(Simulation&&) = delete;
 
-    std::function<void()> on_parameters_changed;
     SimulationParameters parameters;
     std::unique_ptr<SceneBase> scene;
+
+    u32 global_parameter_id;
+    gfx::DescriptorManager desc_manager;
+    std::vector<gfx::DescriptorManager::DescData> descriptors;
 
     float current_time{0.0f};
     u32 current_step{0};

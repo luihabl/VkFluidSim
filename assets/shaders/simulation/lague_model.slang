@@ -23,6 +23,22 @@ namespace LagueModel {
     ConstantBuffer<LagueModelBuffers> buffers;
 }
 
+float DensityKernel(float dst, float radius) {
+    return Kernel::spiky_pow2(dst, radius);
+}
+
+float NearDensityKernel(float dst, float radius) {
+    return Kernel::spiky_pow3(dst, radius);
+}
+
+float DensityDerivative(float dst, float radius) {
+    return Kernel::grad_spiky_pow2(dst, radius);
+}
+
+float NearDensityDerivative(float dst, float radius) {
+    return Kernel::grad_spiky_pow3(dst, radius);
+}
+
 float3 calc_external_forces(float3 pos, float3 vel) {
     let gravity_accel = Simulation::parameters.gravity;
     return gravity_accel;
@@ -135,7 +151,7 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
 
             let neighbor_velocity = SPHModel::buffers.velocities[neighbor_index];
             viscous_force += (neighbor_velocity - velocity) *
-                             SmoothingKernelPoly6(dst, Simulation::parameters.smooth_radius);
+                             Kernel::poly6(dst, Simulation::parameters.smooth_radius);
         }
     }
 

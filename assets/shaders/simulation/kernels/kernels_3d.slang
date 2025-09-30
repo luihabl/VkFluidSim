@@ -2,68 +2,55 @@ module kernels_3d;
 
 import "../common";
 
-public float LinearKernel(float dst, float radius) {
-    if (dst < radius) {
-        return 1 - dst / radius;
+namespace Kernel {
+
+    public float klinear(float dst, float radius) {
+        if (dst < radius) {
+            return 1 - dst / radius;
+        }
+
+        return 0;
     }
 
-    return 0;
-}
-
-public float SmoothingKernelPoly6(float dst, float radius) {
-    if (dst < radius) {
-        float scale = 315 / (64 * PI * pow(abs(radius), 9));
-        float v = radius * radius - dst * dst;
-        return v * v * v * scale;
+    public float poly6(float dst, float radius) {
+        if (dst < radius) {
+            float scale = 315 / (64 * PI * pow(abs(radius), 9));
+            float v = radius * radius - dst * dst;
+            return v * v * v * scale;
+        }
+        return 0;
     }
-    return 0;
-}
 
-public float SpikyKernelPow3(float dst, float radius) {
-    if (dst < radius) {
-        float v = radius - dst;
-        return v * v * v * SPHModel::kernel_coeff.spiky_pow3_scale;
+    public float spiky_pow3(float dst, float radius) {
+        if (dst < radius) {
+            float v = radius - dst;
+            return v * v * v * SPHModel::kernel_coeff.spiky_pow3_scale;
+        }
+        return 0;
     }
-    return 0;
-}
 
-public float SpikyKernelPow2(float dst, float radius) {
-    if (dst < radius) {
-        float v = radius - dst;
-        return v * v * SPHModel::kernel_coeff.spiky_pow2_scale;
+    public float spiky_pow2(float dst, float radius) {
+        if (dst < radius) {
+            float v = radius - dst;
+            return v * v * SPHModel::kernel_coeff.spiky_pow2_scale;
+        }
+        return 0;
     }
-    return 0;
-}
 
-public float DerivativeSpikyPow3(float dst, float radius) {
-    if (dst <= radius) {
-        float v = radius - dst;
-        return -v * v * SPHModel::kernel_coeff.spiky_pow3_diff_scale;
+    public float grad_spiky_pow3(float dst, float radius) {
+        if (dst <= radius) {
+            float v = radius - dst;
+            return -v * v * SPHModel::kernel_coeff.spiky_pow3_diff_scale;
+        }
+        return 0;
     }
-    return 0;
-}
 
-public float DerivativeSpikyPow2(float dst, float radius) {
-    if (dst <= radius) {
-        float v = radius - dst;
-        return -v * SPHModel::kernel_coeff.spiky_pow2_diff_scale;
+    public float grad_spiky_pow2(float dst, float radius) {
+        if (dst <= radius) {
+            float v = radius - dst;
+            return -v * SPHModel::kernel_coeff.spiky_pow2_diff_scale;
+        }
+        return 0;
     }
-    return 0;
-}
 
-public float DensityKernel(float dst, float radius) {
-    // return SmoothingKernelPoly6(dst, radius);
-    return SpikyKernelPow2(dst, radius);
-}
-
-public float NearDensityKernel(float dst, float radius) {
-    return SpikyKernelPow3(dst, radius);
-}
-
-public float DensityDerivative(float dst, float radius) {
-    return DerivativeSpikyPow2(dst, radius);
-}
-
-public float NearDensityDerivative(float dst, float radius) {
-    return DerivativeSpikyPow3(dst, radius);
 }

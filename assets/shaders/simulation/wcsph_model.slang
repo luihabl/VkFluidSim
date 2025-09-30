@@ -17,26 +17,26 @@ namespace WCSPHModel {
 }
 
 float Kernel(float dst, float radius) {
-    return Kernel::spiky_pow2(dst, radius);
+    return kernel::SpikyPow2(dst, radius);
 }
 
 public float GradKernel(float dst, float radius) {
-    return Kernel::spiky_pow3(dst, radius);
+    return kernel::SpikyPow3(dst, radius);
 }
 
-float3 calc_external_forces(float3 pos, float3 vel) {
+float3 CalculateExternalForces(float3 pos, float3 vel) {
     let gravity_accel = Simulation::parameters.gravity;
     return gravity_accel;
 }
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void ExternalForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
     SPHModel::buffers.velocities[id] +=
-        calc_external_forces(SPHModel::buffers.positions[id], SPHModel::buffers.velocities[id]) *
+        CalculateExternalForces(SPHModel::buffers.positions[id], SPHModel::buffers.velocities[id]) *
         k.dt;
 
     // let prediction_factor = 1.0f / 120.0f;
@@ -46,7 +46,7 @@ void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_densities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
@@ -90,7 +90,7 @@ float pressure_from_density_eos(float rho) {
            (pow(rho / SPHModel::parameters.target_density, WCSPHModel::parameters.expoent) - 1);
 }
 
-float3 calculate_pressure_force(uint id, PushConstants k) {
+float3 CalculatePressureForce(uint id, PushConstants k) {
     float density = SPHModel::buffers.densities[id];
     float pressure = pressure_from_density_eos(density);
     var pressure_force = float3(0.0f);
@@ -143,11 +143,11 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    let acc = calculate_pressure_force(id, k);
+    let acc = CalculatePressureForce(id, k);
     SPHModel::buffers.velocities[id] += acc * k.dt;
 }
 
@@ -213,7 +213,7 @@ void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstan
 //     let acc = calculate_viscous_force(id, k);
 // }
 
-void resolve_collisions(inout float3 pos, inout float3 vel) {
+void ResolveCollisions(inout float3 pos, inout float3 vel) {
     let ll = SPHModel::parameters.bounding_box.pos;
     let ur = ll + SPHModel::parameters.bounding_box.size;
 
@@ -250,7 +250,7 @@ void resolve_collisions(inout float3 pos, inout float3 vel) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
@@ -262,7 +262,7 @@ void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     // TODO: Remove this method, use a particle-based representation (read Green thesis to
     // understand the different types of boundaries). Try to find an example of implementation of
     // particle-based boundary.
-    resolve_collisions(pos, vel);
+    ResolveCollisions(pos, vel);
 
     SPHModel::buffers.positions[id] = pos;
     SPHModel::buffers.velocities[id] = vel;

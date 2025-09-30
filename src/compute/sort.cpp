@@ -44,7 +44,7 @@ bool CreateBufferIfNeeded(const gfx::CoreCtx& ctx, gfx::Buffer& buf, u32 size) {
 void GPUScan::Init(const gfx::CoreCtx& ctx) {
     scan_pipeline.Init(ctx, {.shader_path = "shaders/compiled/scan.slang.spv",
                              .push_const_size = sizeof(PushConstants),
-                             .kernels = {"scan_block", "scan_combine"}});
+                             .kernels = {"ScanBlock", "ScanCombine"}});
 }
 
 void GPUScan::Clear(const gfx::CoreCtx& ctx) {
@@ -89,7 +89,7 @@ void GPUCountSort::Init(const gfx::CoreCtx& ctx) {
     sort_pipeline.Init(
         ctx, {.shader_path = "shaders/compiled/sort.slang.spv",
               .push_const_size = sizeof(PushConstants),
-              .kernels = {"clear_counts", "calculate_counts", "scatter_output", "copy_back"}});
+              .kernels = {"ClearCounts", "CalculateCounts", "ScatterOutputs", "CopyBack"}});
 
     gpu_scan.Init(ctx);
 }
@@ -145,7 +145,7 @@ void GPUCountSort::Run(VkCommandBuffer cmd,
 void SpatialOffset::Init(const gfx::CoreCtx& ctx) {
     offset_pipeline.Init(ctx, {.shader_path = "shaders/compiled/spatial_offsets.slang.spv",
                                .push_const_size = sizeof(PushConstants),
-                               .kernels = {"init_offsets", "calculate_offsets"}});
+                               .kernels = {"InitOffsets", "CalculateOffsets"}});
 }
 
 void SpatialOffset::Clear(const gfx::CoreCtx& ctx) {
@@ -191,7 +191,7 @@ void BufferReorder::Init(const gfx::CoreCtx& ctx, Config&& cfg) {
 
     reorder_pipeline.Init(ctx, {
                                    .shader_path = "shaders/compiled/reorder.slang.spv",
-                                   .kernels = {"reorder"},
+                                   .kernels = {"Reorder"},
                                    .push_const_size = sizeof(ReorderPushConstants),
                                });
 }

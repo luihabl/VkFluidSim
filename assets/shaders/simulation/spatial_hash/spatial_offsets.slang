@@ -9,7 +9,7 @@ static const uint group_size = 256;
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void init_offsets(uint id: SV_DispatchThreadID, uniform Constants k) {
+void InitOffsets(uint id: SV_DispatchThreadID, uniform Constants k) {
     if (id >= k.num_inputs)
         return;
 
@@ -18,7 +18,7 @@ void init_offsets(uint id: SV_DispatchThreadID, uniform Constants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_offsets(uint id: SV_DispatchThreadID, uniform Constants k) {
+void CalculateOffsets(uint id: SV_DispatchThreadID, uniform Constants k) {
     if (id >= k.num_inputs)
         return;
 

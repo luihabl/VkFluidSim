@@ -12,7 +12,7 @@ static const uint group_size = 256;
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void clear_counts(uint id: SV_DispatchThreadID, uniform Constants k) {
+void ClearCounts(uint id: SV_DispatchThreadID, uniform Constants k) {
     if (id >= k.item_count)
         return;
 
@@ -22,7 +22,7 @@ void clear_counts(uint id: SV_DispatchThreadID, uniform Constants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_counts(uint id: SV_DispatchThreadID, uniform Constants k) {
+void CalculateCounts(uint id: SV_DispatchThreadID, uniform Constants k) {
     if (id >= k.item_count)
         return;
 
@@ -32,7 +32,7 @@ void calculate_counts(uint id: SV_DispatchThreadID, uniform Constants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void scatter_output(uint id: SV_DispatchThreadID, uniform Constants k) {
+void ScatterOutputs(uint id: SV_DispatchThreadID, uniform Constants k) {
     if (id >= k.item_count)
         return;
 
@@ -46,7 +46,7 @@ void scatter_output(uint id: SV_DispatchThreadID, uniform Constants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void copy_back(uint id: SV_DispatchThreadID, uniform Constants k) {
+void CopyBack(uint id: SV_DispatchThreadID, uniform Constants k) {
     if (id >= k.item_count)
         return;
 

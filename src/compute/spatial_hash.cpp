@@ -34,7 +34,7 @@ void SpatialHash::Init(const gfx::CoreCtx& ctx, u32 n, float cell_size) {
 
     spatial_hash_pipeline.Init(ctx,
                                {.shader_path = "shaders/compiled/update_spatial_hash.slang.spv",
-                                .kernels = {"update_spatial_hash"},
+                                .kernels = {"UpdateSpatialHash"},
                                 .push_const_size = sizeof(PushConstants),
                                 .set = spatial_hash_desc.Set(),
                                 .layout = spatial_hash_desc.Layout()});

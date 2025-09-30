@@ -10,7 +10,7 @@ struct ReorderPushConstants {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void reorder(uint id: SV_DispatchThreadID, uniform ReorderPushConstants k) {
+void Reorder(uint id: SV_DispatchThreadID, uniform ReorderPushConstants k) {
     if (id >= k.n)
         return;
 

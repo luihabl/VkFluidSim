@@ -43,10 +43,10 @@ void WCSPHModel::Init(const gfx::CoreCtx& ctx) {
                            .shader_path = "shaders/compiled/wcsph_model.slang.spv",
                            .kernels =
                                {
-                                   "update_positions",
-                                   "external_forces",
-                                   "calculate_densities",
-                                   "calculate_pressure_forces",
+                                   "UpdatePositions",
+                                   "ExternalForces",
+                                   "CalculateDensities",
+                                   "CalculatePressureForces",
                                },
                        });
 

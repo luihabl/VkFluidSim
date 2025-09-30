@@ -12,9 +12,9 @@ groupshared uint tmp[items_per_group];
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void scan_combine(uint thread_global: SV_DispatchThreadID,
-                  uint group: SV_GroupID,
-                  uniform Constants k) {
+void ScanCombine(uint thread_global: SV_DispatchThreadID,
+                 uint group: SV_GroupID,
+                 uniform Constants k) {
     uint global_a = thread_global * 2 + 0;
     uint global_b = thread_global * 2 + 1;
 
@@ -26,10 +26,10 @@ void scan_combine(uint thread_global: SV_DispatchThreadID,
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void scan_block(uint thread_global: SV_DispatchThreadID,
-                uint thread_local: SV_GroupThreadID,
-                uint group: SV_GroupID,
-                uniform Constants k) {
+void ScanBlock(uint thread_global: SV_DispatchThreadID,
+               uint thread_local: SV_GroupThreadID,
+               uint group: SV_GroupID,
+               uniform Constants k) {
     uint local_a = thread_local * 2 + 0;
     uint local_b = thread_local * 2 + 1;
     uint global_a = thread_global * 2 + 0;

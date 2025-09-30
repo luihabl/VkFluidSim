@@ -17,7 +17,7 @@ static const uint group_size = 256;
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void update_spatial_hash(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void UpdateSpatialHash(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 

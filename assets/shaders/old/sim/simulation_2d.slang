@@ -51,7 +51,7 @@ struct UniformConstants {
 [[vk::binding(0, 0)]]
 ConstantBuffer<UniformConstants> ubo;
 
-float2 calc_external_forces(float2 pos, float2 vel) {
+float2 CalculateExternalForces(float2 pos, float2 vel) {
     let gravity_accel = float2(0, ubo.gravity);
     return gravity_accel;
 }
@@ -64,7 +64,7 @@ float NearPressureFromDensity(float near_density) {
     return ubo.near_pressure_multiplier * near_density;
 }
 
-float2 calculate_density(float2 pos, uint n_particles) {
+float2 CalculateDensity(float2 pos, uint n_particles) {
     let origin_cell = GetCell2D(pos, ubo.smoothing_radius);
     float sqr_radius = ubo.smoothing_radius * ubo.smoothing_radius;
     float density = 0.0f;
@@ -100,7 +100,7 @@ float2 calculate_density(float2 pos, uint n_particles) {
     return float2(density, near_density);
 }
 
-float2 calculate_pressure_force(uint id, PushConstants k) {
+float2 CalculatePressureForce(uint id, PushConstants k) {
     float density = k.densities[id].x;
     float density_near = k.densities[id].y;
     let velocity = k.velocities[id];
@@ -235,11 +235,11 @@ float2 MoveParticle(float2 pos, float2 vel, float dt) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void ExternalForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    k.velocities[id] += calc_external_forces(k.positions[id], k.velocities[id]) * k.dt;
+    k.velocities[id] += CalculateExternalForces(k.positions[id], k.velocities[id]) * k.dt;
 
     let prediction_factor = 1.0f / 120.0f;
     ubo.predicted_positions[id] = k.positions[id] + k.velocities[id] * prediction_factor;
@@ -283,21 +283,21 @@ void reorder_copyback(uint id: SV_DispatchThreadID, uniform PushConstants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_densities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
     let pos = ubo.predicted_positions[id];
-    k.densities[id] = calculate_density(pos, k.n_particles);
+    k.densities[id] = CalculateDensity(pos, k.n_particles);
 }
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    let acc = calculate_pressure_force(id, k);
+    let acc = CalculatePressureForce(id, k);
     k.velocities[id] += acc * k.dt;
 }
 
@@ -313,7 +313,7 @@ void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstan
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 

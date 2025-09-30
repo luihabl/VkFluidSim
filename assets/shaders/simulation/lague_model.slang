@@ -24,22 +24,22 @@ namespace LagueModel {
 }
 
 float DensityKernel(float dst, float radius) {
-    return Kernel::spiky_pow2(dst, radius);
+    return kernel::SpikyPow2(dst, radius);
 }
 
 float NearDensityKernel(float dst, float radius) {
-    return Kernel::spiky_pow3(dst, radius);
+    return kernel::SpikyPow3(dst, radius);
 }
 
 float DensityDerivative(float dst, float radius) {
-    return Kernel::grad_spiky_pow2(dst, radius);
+    return kernel::GradSpikyPow2(dst, radius);
 }
 
 float NearDensityDerivative(float dst, float radius) {
-    return Kernel::grad_spiky_pow3(dst, radius);
+    return kernel::GradSpikyPow3(dst, radius);
 }
 
-float3 calc_external_forces(float3 pos, float3 vel) {
+float3 CalculateExternalForces(float3 pos, float3 vel) {
     let gravity_accel = Simulation::parameters.gravity;
     return gravity_accel;
 }
@@ -53,7 +53,7 @@ float NearPressureFromDensity(float near_density) {
     return LagueModel::parameters.near_pressure_multiplier * near_density;
 }
 
-float2 calculate_density(float3 pos, uint n_particles) {
+float2 CalculateDensity(float3 pos, uint n_particles) {
     let origin_cell = GetCell3D(pos, Simulation::parameters.smooth_radius);
     float sqr_radius = Simulation::parameters.smooth_radius * Simulation::parameters.smooth_radius;
     float density = 0.0f;
@@ -89,7 +89,7 @@ float2 calculate_density(float3 pos, uint n_particles) {
     return float2(density, near_density);
 }
 
-float3 calculate_pressure_force(uint id, PushConstants k) {
+float3 CalculatePressureForce(uint id, PushConstants k) {
     float density = SPHModel::buffers.densities[id];
     float density_near = LagueModel::buffers.near_density[id];
     float pressure = PressureFromDensity(density);
@@ -151,14 +151,14 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
 
             let neighbor_velocity = SPHModel::buffers.velocities[neighbor_index];
             viscous_force += (neighbor_velocity - velocity) *
-                             Kernel::poly6(dst, Simulation::parameters.smooth_radius);
+                             kernel::Poly6(dst, Simulation::parameters.smooth_radius);
         }
     }
 
     return pressure_force / density + viscous_force * LagueModel::parameters.viscosity_strenght;
 }
 
-void resolve_collisions(inout float3 pos, inout float3 vel) {
+void ResolveCollisions(inout float3 pos, inout float3 vel) {
     let ll = SPHModel::parameters.bounding_box.pos;
     let ur = ll + SPHModel::parameters.bounding_box.size;
 
@@ -195,12 +195,12 @@ void resolve_collisions(inout float3 pos, inout float3 vel) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void ExternalForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
     SPHModel::buffers.velocities[id] +=
-        calc_external_forces(SPHModel::buffers.positions[id], SPHModel::buffers.velocities[id]) *
+        CalculateExternalForces(SPHModel::buffers.positions[id], SPHModel::buffers.velocities[id]) *
         k.dt;
 
     let prediction_factor = 1.0f / 120.0f;
@@ -210,29 +210,29 @@ void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_densities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
     let pos = LagueModel::buffers.predicted_positions[id];
-    let d = calculate_density(pos, k.n_particles);
+    let d = CalculateDensity(pos, k.n_particles);
     SPHModel::buffers.densities[id] = d.x;
     LagueModel::buffers.near_density[id] = d.y;
 }
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    let acc = calculate_pressure_force(id, k);
+    let acc = CalculatePressureForce(id, k);
     SPHModel::buffers.velocities[id] += acc * k.dt;
 }
 
 [shader("compute")]
 [numthreads(group_size, 1, 1)]
-void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
@@ -244,7 +244,7 @@ void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     // TODO: Remove this method, use a particle-based representation (read Green thesis to
     // understand the different types of boundaries). Try to find an example of implementation of
     // particle-based boundary.
-    resolve_collisions(pos, vel);
+    ResolveCollisions(pos, vel);
 
     SPHModel::buffers.positions[id] = pos;
     SPHModel::buffers.velocities[id] = vel;

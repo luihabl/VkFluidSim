@@ -24,7 +24,7 @@ namespace kernel {
     public float SpikyPow3(float dst, float radius) {
         if (dst < radius) {
             float v = radius - dst;
-            return v * v * v * SPHModel::kernel_coeff.spiky_pow3_scale;
+            return v * v * v * sph_model::kernel_coeff.spiky_pow3_scale;
         }
         return 0;
     }
@@ -32,7 +32,7 @@ namespace kernel {
     public float SpikyPow2(float dst, float radius) {
         if (dst < radius) {
             float v = radius - dst;
-            return v * v * SPHModel::kernel_coeff.spiky_pow2_scale;
+            return v * v * sph_model::kernel_coeff.spiky_pow2_scale;
         }
         return 0;
     }
@@ -40,7 +40,7 @@ namespace kernel {
     public float GradSpikyPow3(float dst, float radius) {
         if (dst <= radius) {
             float v = radius - dst;
-            return -v * v * SPHModel::kernel_coeff.spiky_pow3_diff_scale;
+            return -v * v * sph_model::kernel_coeff.spiky_pow3_diff_scale;
         }
         return 0;
     }
@@ -48,7 +48,7 @@ namespace kernel {
     public float GradSpikyPow2(float dst, float radius) {
         if (dst <= radius) {
             float v = radius - dst;
-            return -v * SPHModel::kernel_coeff.spiky_pow2_diff_scale;
+            return -v * sph_model::kernel_coeff.spiky_pow2_diff_scale;
         }
         return 0;
     }

@@ -3,7 +3,7 @@ import common;
 import spatial_hash.spatial_hash_3d;
 import kernels.kernels_3d;
 
-namespace WCSPHModel {
+namespace wcsph_model {
 
     struct Parameters {
         float wall_damping_factor;
@@ -25,7 +25,7 @@ public float GradKernel(float dst, float radius) {
 }
 
 float3 CalculateExternalForces(float3 pos, float3 vel) {
-    let gravity_accel = Simulation::parameters.gravity;
+    let gravity_accel = simulation::parameters.gravity;
     return gravity_accel;
 }
 
@@ -35,8 +35,9 @@ void ExternalForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    SPHModel::buffers.velocities[id] +=
-        CalculateExternalForces(SPHModel::buffers.positions[id], SPHModel::buffers.velocities[id]) *
+    sph_model::buffers.velocities[id] +=
+        CalculateExternalForces(sph_model::buffers.positions[id],
+                                sph_model::buffers.velocities[id]) *
         k.dt;
 
     // let prediction_factor = 1.0f / 120.0f;
@@ -50,27 +51,27 @@ void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    let pos = SPHModel::buffers.positions[id];
+    let pos = sph_model::buffers.positions[id];
 
-    let origin_cell = GetCell3D(pos, Simulation::parameters.smooth_radius);
-    float sqr_radius = Simulation::parameters.smooth_radius * Simulation::parameters.smooth_radius;
+    let origin_cell = GetCell3D(pos, simulation::parameters.smooth_radius);
+    float sqr_radius = simulation::parameters.smooth_radius * simulation::parameters.smooth_radius;
     float density = 0.0f;
 
     for (int i = 0; i < 27; i++) {
         uint hash = HashCell3D(origin_cell + offsets_3d[i]);
         uint key = KeyFromHash(hash, k.n_particles);
-        uint curr_index = SPHModel::spatial_hash.spatial_offsets[key];
+        uint curr_index = sph_model::spatial_hash.spatial_offsets[key];
 
         while (curr_index < k.n_particles) {
             uint neighbor_index = curr_index;
             curr_index++;
 
-            uint neighbor_key = SPHModel::spatial_hash.spatial_keys[neighbor_index];
+            uint neighbor_key = sph_model::spatial_hash.spatial_keys[neighbor_index];
 
             if (neighbor_key != key)
                 break;
 
-            let neighbor_pos = SPHModel::buffers.positions[neighbor_index];
+            let neighbor_pos = sph_model::buffers.positions[neighbor_index];
             let offset_to_neighbor = neighbor_pos - pos;
             float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
 
@@ -78,31 +79,31 @@ void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
                 continue;
 
             float dst = sqrt(sqr_dst_to_neighbor);
-            density += Kernel(dst, Simulation::parameters.smooth_radius);
+            density += Kernel(dst, simulation::parameters.smooth_radius);
         }
     }
 
-    SPHModel::buffers.densities[id] = density;
+    sph_model::buffers.densities[id] = density;
 }
 
 float pressure_from_density_eos(float rho) {
-    return WCSPHModel::parameters.stiffness *
-           (pow(rho / SPHModel::parameters.target_density, WCSPHModel::parameters.expoent) - 1);
+    return wcsph_model::parameters.stiffness *
+           (pow(rho / sph_model::parameters.target_density, wcsph_model::parameters.expoent) - 1);
 }
 
 float3 CalculatePressureForce(uint id, PushConstants k) {
-    float density = SPHModel::buffers.densities[id];
+    float density = sph_model::buffers.densities[id];
     float pressure = pressure_from_density_eos(density);
     var pressure_force = float3(0.0f);
 
-    let pos = SPHModel::buffers.positions[id];
-    let origin_cell = GetCell3D(pos, Simulation::parameters.smooth_radius);
-    float sqr_radius = Simulation::parameters.smooth_radius * Simulation::parameters.smooth_radius;
+    let pos = sph_model::buffers.positions[id];
+    let origin_cell = GetCell3D(pos, simulation::parameters.smooth_radius);
+    float sqr_radius = simulation::parameters.smooth_radius * simulation::parameters.smooth_radius;
 
     for (int i = 0; i < 27; i++) {
         uint hash = HashCell3D(origin_cell + offsets_3d[i]);
         uint key = KeyFromHash(hash, k.n_particles);
-        uint curr_index = SPHModel::spatial_hash.spatial_offsets[key];
+        uint curr_index = sph_model::spatial_hash.spatial_offsets[key];
 
         while (curr_index < k.n_particles) {
             uint neighbor_index = curr_index;
@@ -111,19 +112,19 @@ float3 CalculatePressureForce(uint id, PushConstants k) {
             if (neighbor_index == id)
                 continue;
 
-            uint neighbor_key = SPHModel::spatial_hash.spatial_keys[neighbor_index];
+            uint neighbor_key = sph_model::spatial_hash.spatial_keys[neighbor_index];
 
             if (neighbor_key != key)
                 break;
 
-            let neighbor_pos = SPHModel::buffers.positions[neighbor_index];
+            let neighbor_pos = sph_model::buffers.positions[neighbor_index];
             let offset_to_neighbor = neighbor_pos - pos;
             float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
 
             if (sqr_dst_to_neighbor > sqr_radius)
                 continue;
 
-            float neighbor_density = SPHModel::buffers.densities[neighbor_index].x;
+            float neighbor_density = sph_model::buffers.densities[neighbor_index].x;
             float neighbor_pressure = pressure_from_density_eos(neighbor_density);
 
             // TODO: Check if this is necessary
@@ -133,7 +134,7 @@ float3 CalculatePressureForce(uint id, PushConstants k) {
             let dir_to_neighbor = dst > 0 ? offset_to_neighbor / dst : float3(0, 1, 0);
 
             pressure_force += dir_to_neighbor *
-                              GradKernel(dst, Simulation::parameters.smooth_radius) *
+                              GradKernel(dst, simulation::parameters.smooth_radius) *
                               shared_pressure / neighbor_density;
         }
     }
@@ -148,23 +149,23 @@ void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants
         return;
 
     let acc = CalculatePressureForce(id, k);
-    SPHModel::buffers.velocities[id] += acc * k.dt;
+    sph_model::buffers.velocities[id] += acc * k.dt;
 }
 
 // float3 calculate_viscous_force(uint id, PushConstants k) {
-//     float density = SPHModel::buffers.densities[id];
+//     float density = sph_model::buffers.densities[id];
 //     float pressure = pressure_from_density_eos(density);
 //     // var pressure_force = float3(0.0f);
 
-//     let pos = SPHModel::buffers.positions[id];
-//     let origin_cell = GetCell3D(pos, Simulation::parameters.smooth_radius);
-//     float sqr_radius = Simulation::parameters.smooth_radius *
-//     Simulation::parameters.smooth_radius;
+//     let pos = sph_model::buffers.positions[id];
+//     let origin_cell = GetCell3D(pos, simulation::parameters.smooth_radius);
+//     float sqr_radius = simulation::parameters.smooth_radius *
+//     simulation::parameters.smooth_radius;
 
 //     for (int i = 0; i < 27; i++) {
 //         uint hash = HashCell3D(origin_cell + offsets_3d[i]);
 //         uint key = KeyFromHash(hash, k.n_particles);
-//         uint curr_index = SPHModel::spatial_hash.spatial_offsets[key];
+//         uint curr_index = sph_model::spatial_hash.spatial_offsets[key];
 
 //         while (curr_index < k.n_particles) {
 //             uint neighbor_index = curr_index;
@@ -173,19 +174,19 @@ void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants
 //             if (neighbor_index == id)
 //                 continue;
 
-//             uint neighbor_key = SPHModel::spatial_hash.spatial_keys[neighbor_index];
+//             uint neighbor_key = sph_model::spatial_hash.spatial_keys[neighbor_index];
 
 //             if (neighbor_key != key)
 //                 break;
 
-//             let neighbor_pos = SPHModel::buffers.positions[neighbor_index];
+//             let neighbor_pos = sph_model::buffers.positions[neighbor_index];
 //             let offset_to_neighbor = neighbor_pos - pos;
 //             float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
 
 //             if (sqr_dst_to_neighbor > sqr_radius)
 //                 continue;
 
-//             float neighbor_density = SPHModel::buffers.densities[neighbor_index].x;
+//             float neighbor_density = sph_model::buffers.densities[neighbor_index].x;
 //             float neighbor_pressure = pressure_from_density_eos(neighbor_density);
 
 //             // TODO: Check if this is necessary
@@ -195,13 +196,13 @@ void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants
 //             let dir_to_neighbor = dst > 0 ? offset_to_neighbor / dst : float3(0, 1, 0);
 
 //             pressure_force += dir_to_neighbor *
-//                               DensityDerivative(dst, Simulation::parameters.smooth_radius) *
+//                               DensityDerivative(dst, simulation::parameters.smooth_radius) *
 //                               shared_pressure / neighbor_density;
 //         }
 //     }
 
 //     return pressure_force / density;
-//     SPHModel::buffers.velocities[id] += acc * k.dt;
+//     sph_model::buffers.velocities[id] += acc * k.dt;
 // }
 
 // [shader("compute")]
@@ -214,37 +215,37 @@ void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants
 // }
 
 void ResolveCollisions(inout float3 pos, inout float3 vel) {
-    let ll = SPHModel::parameters.bounding_box.pos;
-    let ur = ll + SPHModel::parameters.bounding_box.size;
+    let ll = sph_model::parameters.bounding_box.pos;
+    let ur = ll + sph_model::parameters.bounding_box.size;
 
     if (pos.x < ll.x) {
         pos.x = ll.x;
-        vel.x = -vel.x * WCSPHModel::parameters.wall_damping_factor;
+        vel.x = -vel.x * wcsph_model::parameters.wall_damping_factor;
     }
 
     if (pos.y < ll.y) {
         pos.y = ll.y;
-        vel.y = -vel.y * WCSPHModel::parameters.wall_damping_factor;
+        vel.y = -vel.y * wcsph_model::parameters.wall_damping_factor;
     }
 
     if (pos.z < ll.z) {
         pos.z = ll.z;
-        vel.z = -vel.z * WCSPHModel::parameters.wall_damping_factor;
+        vel.z = -vel.z * wcsph_model::parameters.wall_damping_factor;
     }
 
     if (pos.x > ur.x) {
         pos.x = ur.x;
-        vel.x = -vel.x * WCSPHModel::parameters.wall_damping_factor;
+        vel.x = -vel.x * wcsph_model::parameters.wall_damping_factor;
     }
 
     if (pos.y > ur.y) {
         pos.y = ur.y;
-        vel.y = -vel.y * WCSPHModel::parameters.wall_damping_factor;
+        vel.y = -vel.y * wcsph_model::parameters.wall_damping_factor;
     }
 
     if (pos.z > ur.z) {
         pos.z = ur.z;
-        vel.z = -vel.z * WCSPHModel::parameters.wall_damping_factor;
+        vel.z = -vel.z * wcsph_model::parameters.wall_damping_factor;
     }
 }
 
@@ -254,8 +255,8 @@ void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    var pos = SPHModel::buffers.positions[id];
-    var vel = SPHModel::buffers.velocities[id];
+    var pos = sph_model::buffers.positions[id];
+    var vel = sph_model::buffers.velocities[id];
 
     pos += vel * k.dt;
 
@@ -264,6 +265,6 @@ void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     // particle-based boundary.
     ResolveCollisions(pos, vel);
 
-    SPHModel::buffers.positions[id] = pos;
-    SPHModel::buffers.velocities[id] = vel;
+    sph_model::buffers.positions[id] = pos;
+    sph_model::buffers.velocities[id] = vel;
 }

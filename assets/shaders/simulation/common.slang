@@ -14,7 +14,7 @@ public struct BoundingBox {
     public float3 pos;
 }
 
-public namespace Simulation {
+public namespace simulation {
     public struct SimulationParameters {
         public float3 gravity;
         public float smooth_radius;
@@ -24,7 +24,7 @@ public namespace Simulation {
     public ConstantBuffer<SimulationParameters> parameters;
 }
 
-public namespace SPHModel {
+public namespace sph_model {
     public struct KernelCoefficients {
         public float spiky_pow3_scale;
         public float spiky_pow2_scale;
@@ -45,7 +45,7 @@ public namespace SPHModel {
     };
 
     [[vk::binding(2)]]
-    public ConstantBuffer<SPHModel::Parameters> parameters;
+    public ConstantBuffer<sph_model::Parameters> parameters;
 
     public struct SpatialHashBuffers {
         public uint* spatial_keys;

@@ -80,6 +80,7 @@ src/gui/imgui_setup.cpp
 # src/models/2d/lague_model_2d.cpp
 src/models/model.cpp
 src/models/lague_model.cpp
+src/models/wcsph_model.cpp
 
 src/compute/sort.cpp
 src/compute/spatial_hash.cpp

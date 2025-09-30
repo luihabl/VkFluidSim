@@ -17,11 +17,11 @@ public:
         float viscosity_strenght;
     };
 
-    WCSPHModel(const SPHModel::Parameters* sph_parameters, const Parameters* parameters);
+    WCSPHModel(const SPHModel::Parameters* sph_parameters = nullptr,
+               const Parameters* parameters = nullptr);
 
     void Init(const gfx::CoreCtx& ctx) override;
     void Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) override;
-    void Clear(const gfx::CoreCtx& ctx) override;
     void DrawDebugUI() override;
 
 private:

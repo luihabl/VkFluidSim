@@ -2,6 +2,7 @@ find_program(SLANGC slangc)
 
 set(SLANG_SHADERS
     simulation/lague_model.slang
+    simulation/wcsph_model.slang
 
     simulation/spatial_hash/scan.slang
     simulation/spatial_hash/sort.slang
@@ -18,6 +19,7 @@ set(SLANG_DEPENDENT_FILES
     draw/colormap.slang
     simulation/kernels/kernels_3d.slang
     simulation/spatial_hash/spatial_hash_3d.slang
+    simulation/common.slang
 )
 
 set(SLANG_COMPILER_FLAGS

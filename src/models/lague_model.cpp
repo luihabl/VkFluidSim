@@ -18,6 +18,7 @@ enum SimKernel : u32 {
 
 struct LagueModelBuffers {
     VkDeviceAddress predicted_positions;
+    VkDeviceAddress near_density;
 };
 
 LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* par)
@@ -37,6 +38,7 @@ LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* p
 void LagueModel::Init(const gfx::CoreCtx& ctx) {
     SPHModel::Init(ctx);
 
+    near_density = CreateDataBuffer<float>(ctx, SPHModel::parameters.n_particles);
     predicted_positions = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
     AddBufferToBeReordered(predicted_positions);
     InitBufferReorder(ctx);
@@ -70,11 +72,12 @@ void LagueModel::UpdateAllUniforms() {
 
     Simulation::Get().GetDescManager().SetUniformData(parameter_id, &parameters);
 
-    auto model_bufs = LagueModelBuffers{
+    auto lague_model_bufs = LagueModelBuffers{
         .predicted_positions = predicted_positions.device_addr,
+        .near_density = near_density.device_addr,
     };
 
-    Simulation::Get().GetDescManager().SetUniformData(buf_id, &model_bufs);
+    Simulation::Get().GetDescManager().SetUniformData(buf_id, &lague_model_bufs);
 }
 
 void LagueModel::ScheduleUpdateUniforms() {
@@ -94,10 +97,6 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         .dt = SPHModel::parameters.time_scale * SPHModel::parameters.fixed_dt /
               (float)SPHModel::parameters.iterations,
         .n_particles = (uint32_t)SPHModel::parameters.n_particles,
-
-        .positions = buffers.position_buffer.device_addr,
-        .velocities = buffers.velocity_buffer.device_addr,
-        .densities = buffers.density_buffer.device_addr,
     };
 
     auto n_groups = glm::ivec3(SPHModel::parameters.n_particles / group_size + 1, 1, 1);
@@ -128,6 +127,7 @@ void LagueModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
 void LagueModel::Clear(const gfx::CoreCtx& ctx) {
     SPHModel::Clear(ctx);
     predicted_positions.Destroy();
+    near_density.Destroy();
 }
 
 void LagueModel::DrawDebugUI() {

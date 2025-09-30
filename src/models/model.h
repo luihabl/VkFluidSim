@@ -5,7 +5,6 @@
 #include "compute/sort.h"
 #include "compute/spatial_hash.h"
 #include "gfx/common.h"
-#include "gfx/descriptor.h"
 #include "gfx/gfx.h"
 
 namespace vfs {
@@ -44,13 +43,16 @@ public:
         gfx::Buffer density_buffer;
     };
 
+    struct ModelBuffers {
+        VkDeviceAddress positions;
+        VkDeviceAddress velocities;
+        VkDeviceAddress densities;
+    };
+
     struct PushConstants {
         float time;
         float dt;
         unsigned n_particles;
-        VkDeviceAddress positions;
-        VkDeviceAddress velocities;
-        VkDeviceAddress densities;
     };
 
     SPHModel(const Parameters* parameters = nullptr);
@@ -85,6 +87,7 @@ protected:
     u32 kernel_coeff_id;
     u32 model_parameter_id;
     u32 spatial_hash_buf_id;
+    u32 model_buffers_id;
 
     void UpdateAllUniforms();
 

@@ -37,6 +37,7 @@ private:
     u32 buf_id;
 
     gfx::Buffer predicted_positions;
+    gfx::Buffer near_density;
 
     void UpdateAllUniforms();
     void ScheduleUpdateUniforms();

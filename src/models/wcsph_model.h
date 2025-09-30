@@ -8,11 +8,13 @@ namespace vfs {
  * surface flows,” in Proceedings of the 2007 ACM SIGGRAPH/eurographics symposium on computer
  * animation, in Sca ’07. San Diego, California: Eurographics Association, 2007, pp. 209–217.
  */
-class WCSPHModel : public SPHModel {
+class WCSPHModel final : public SPHModel {
 public:
     struct Parameters {
+        float wall_damping_factor;
         float stiffness;
         float expoent;
+        float viscosity_strenght;
     };
 
     WCSPHModel(const SPHModel::Parameters* sph_parameters, const Parameters* parameters);
@@ -23,6 +25,7 @@ public:
     void DrawDebugUI() override;
 
 private:
+    u32 parameter_id{0};
     Parameters parameters;
 };
 

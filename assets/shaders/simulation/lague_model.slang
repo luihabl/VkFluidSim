@@ -1,67 +1,7 @@
 module lague_model;
 import spatial_hash.spatial_hash_3d;
 import kernels.kernels_3d;
-
-static const uint group_size = 256;
-
-struct PushConstants {
-    float time;
-    float dt;
-    uint n_particles;
-
-    float3* positions;
-    float3* velocities;
-    float2* densities;
-}
-
-struct BoundingBox {
-    float3 size;
-    float3 pos;
-}
-
-namespace Simulation {
-    struct SimulationParameters {
-        float3 gravity;
-        float smooth_radius;
-    };
-
-    [[vk::binding(0)]]
-    ConstantBuffer<SimulationParameters> parameters;
-}
-
-namespace SPHModel {
-
-    // struct KernelCoefficients {
-    //     float spiky_pow3_scale;
-    //     float spiky_pow2_scale;
-    //     float spiky_pow3_diff_scale;
-    //     float spiky_pow2_diff_scale;
-    // };
-
-    // [[vk::binding(1)]]
-    // internal ConstantBuffer<KernelCoefficients> kernel_coeff;
-
-    struct Parameters {
-        float time_scale;
-        int iterations;
-        int n_particles;
-        float fixed_dt;
-        float target_density;
-        BoundingBox bounding_box;
-    };
-
-    [[vk::binding(2)]]
-    ConstantBuffer<SPHModel::Parameters> parameters;
-
-    struct SpatialHashBuffers {
-        uint* spatial_keys;
-        uint* spatial_offsets;
-        uint* sorted_indices;
-    };
-
-    [[vk::binding(3)]]
-    ConstantBuffer<SpatialHashBuffers> spatial_hash;
-}
+import common;
 
 namespace LagueModel {
     struct Parameters {
@@ -71,14 +11,15 @@ namespace LagueModel {
         float viscosity_strenght;
     };
 
-    [[vk::binding(4)]]
+    [[vk::binding(n_global_bindings)]]
     ConstantBuffer<LagueModel::Parameters> parameters;
 
     struct LagueModelBuffers {
         float3* predicted_positions;
+        float* near_density;
     };
 
-    [[vk::binding(5)]]
+    [[vk::binding(n_global_bindings + 1)]]
     ConstantBuffer<LagueModelBuffers> buffers;
 }
 
@@ -133,13 +74,13 @@ float2 calculate_density(float3 pos, uint n_particles) {
 }
 
 float3 calculate_pressure_force(uint id, PushConstants k) {
-    float density = k.densities[id].x;
-    float density_near = k.densities[id].y;
+    float density = SPHModel::buffers.densities[id];
+    float density_near = LagueModel::buffers.near_density[id];
     float pressure = PressureFromDensity(density);
     float near_pressure = NearPressureFromDensity(density_near);
     var pressure_force = float3(0.0f);
 
-    let velocity = k.velocities[id];
+    let velocity = SPHModel::buffers.velocities[id];
     var viscous_force = float3(0.0f);
 
     let pos = LagueModel::buffers.predicted_positions[id];
@@ -167,23 +108,22 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
 
             let neighbor_pos = LagueModel::buffers.predicted_positions[neighbor_index];
             let offset_to_neighbor = neighbor_pos - pos;
-            float sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
+            let sqr_dst_to_neighbor = dot(offset_to_neighbor, offset_to_neighbor);
 
             if (sqr_dst_to_neighbor > sqr_radius)
                 continue;
 
             neighbor_count++;
 
-            let dens = k.densities[neighbor_index];
-            float neighbor_density = dens.x;
-            float neighbor_near_density = dens.y;
-            float neighbor_pressure = PressureFromDensity(neighbor_density);
-            float neighbor_near_pressure = NearPressureFromDensity(neighbor_near_density);
+            let neighbor_density = SPHModel::buffers.densities[neighbor_index];
+            let neighbor_near_density = LagueModel::buffers.near_density[neighbor_index];
+            let neighbor_pressure = PressureFromDensity(neighbor_density);
+            let neighbor_near_pressure = NearPressureFromDensity(neighbor_near_density);
 
-            float shared_pressure = (pressure + neighbor_pressure) * 0.5f;
-            float shared_near_pressure = (near_pressure + neighbor_near_pressure) * 0.5f;
+            let shared_pressure = (pressure + neighbor_pressure) * 0.5f;
+            let shared_near_pressure = (near_pressure + neighbor_near_pressure) * 0.5f;
 
-            float dst = sqrt(sqr_dst_to_neighbor);
+            let dst = sqrt(sqr_dst_to_neighbor);
             let dir_to_neighbor = dst > 0 ? offset_to_neighbor / dst : float3(0, 1, 0);
 
             pressure_force += dir_to_neighbor *
@@ -193,7 +133,7 @@ float3 calculate_pressure_force(uint id, PushConstants k) {
                               NearDensityDerivative(dst, Simulation::parameters.smooth_radius) *
                               shared_near_pressure / neighbor_near_density;
 
-            let neighbor_velocity = k.velocities[neighbor_index];
+            let neighbor_velocity = SPHModel::buffers.velocities[neighbor_index];
             viscous_force += (neighbor_velocity - velocity) *
                              SmoothingKernelPoly6(dst, Simulation::parameters.smooth_radius);
         }
@@ -243,11 +183,13 @@ void external_forces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    k.velocities[id] += calc_external_forces(k.positions[id], k.velocities[id]) * k.dt;
+    SPHModel::buffers.velocities[id] +=
+        calc_external_forces(SPHModel::buffers.positions[id], SPHModel::buffers.velocities[id]) *
+        k.dt;
 
     let prediction_factor = 1.0f / 120.0f;
     LagueModel::buffers.predicted_positions[id] =
-        k.positions[id] + k.velocities[id] * prediction_factor;
+        SPHModel::buffers.positions[id] + SPHModel::buffers.velocities[id] * prediction_factor;
 }
 
 [shader("compute")]
@@ -257,7 +199,9 @@ void calculate_densities(uint id: SV_DispatchThreadID, uniform PushConstants k) 
         return;
 
     let pos = LagueModel::buffers.predicted_positions[id];
-    k.densities[id] = calculate_density(pos, k.n_particles);
+    let d = calculate_density(pos, k.n_particles);
+    SPHModel::buffers.densities[id] = d.x;
+    LagueModel::buffers.near_density[id] = d.y;
 }
 
 [shader("compute")]
@@ -267,7 +211,7 @@ void calculate_pressure_forces(uint id: SV_DispatchThreadID, uniform PushConstan
         return;
 
     let acc = calculate_pressure_force(id, k);
-    k.velocities[id] += acc * k.dt;
+    SPHModel::buffers.velocities[id] += acc * k.dt;
 }
 
 [shader("compute")]
@@ -276,8 +220,8 @@ void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    var pos = k.positions[id];
-    var vel = k.velocities[id];
+    var pos = SPHModel::buffers.positions[id];
+    var vel = SPHModel::buffers.velocities[id];
 
     pos += vel * k.dt;
 
@@ -286,6 +230,6 @@ void update_positions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     // particle-based boundary.
     resolve_collisions(pos, vel);
 
-    k.positions[id] = pos;
-    k.velocities[id] = vel;
+    SPHModel::buffers.positions[id] = pos;
+    SPHModel::buffers.velocities[id] = vel;
 }

@@ -27,7 +27,7 @@ LagueModel::LagueModel(const SPHModel::Parameters* base_par, const Parameters* p
         parameters = *par;
     } else {
         parameters = {
-            .wall_damping_factor = 0.05f,
+            .wall_damping_factor = 0.95f,
             .pressure_multiplier = 288.0f,
             .near_pressure_multiplier = 2.16f,
             .viscosity_strenght = 0.03f,

@@ -29,6 +29,8 @@ public:
         float spiky_pow2_scale;
         float spiky_pow3_diff_scale;
         float spiky_pow2_diff_scale;
+        float cubic_spline_scale;
+        float grad_cubic_spline_scale;
     };
 
     struct SpatialHashBuffers {

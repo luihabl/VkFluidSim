@@ -11,6 +11,7 @@ enum SimKernel : u32 {
     KernelExternalForces,
     KernelCalculateDensities,
     KernelCalculatePressureForces,
+    KernelCalculateViscousForces,
 };
 
 WCSPHModel::WCSPHModel(const SPHModel::Parameters* base_par, const Parameters* par)
@@ -20,7 +21,7 @@ WCSPHModel::WCSPHModel(const SPHModel::Parameters* base_par, const Parameters* p
     } else {
         parameters = {
             .wall_damping_factor = 0.05,
-            .stiffness = 1000,
+            .stiffness = 50,
             .expoent = 7,
             .viscosity_strenght = 0.03,
         };
@@ -47,6 +48,7 @@ void WCSPHModel::Init(const gfx::CoreCtx& ctx) {
                                    "ExternalForces",
                                    "CalculateDensities",
                                    "CalculatePressureForces",
+                                   "CalculateViscousForces",
                                },
                        });
 
@@ -76,8 +78,11 @@ void WCSPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
-        pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &push);
-        ComputeToComputePipelineBarrier(cmd);
+        // pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &push);
+        // ComputeToComputePipelineBarrier(cmd);
+
+        // pipeline.Compute(cmd, KernelCalculateViscousForces, n_groups, &push);
+        // ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &push);
     }

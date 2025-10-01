@@ -171,6 +171,8 @@ SPHModel::KernelCoefficients SPHModel::CalcKernelCoefficients(float r) {
         .spiky_pow2_scale = 15.0f / (2.0f * glm::pi<float>() * (float)std::pow(r, 5)),
         .spiky_pow3_diff_scale = 45.0f / (glm::pi<float>() * (float)std::pow(r, 6)),
         .spiky_pow2_diff_scale = 15.0f / (glm::pi<float>() * (float)std::pow(r, 5)),
+        .cubic_spline_scale = 8.0f / (glm::pi<float>() * (float)std::pow(r, 3)),
+        .grad_cubic_spline_scale = 48.0f / (glm::pi<float>() * (float)std::pow(r, 4)),
     };
 }
 

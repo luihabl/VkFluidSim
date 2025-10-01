@@ -23,20 +23,20 @@ namespace lague_model {
     ConstantBuffer<LagueModelBuffers> buffers;
 }
 
-float DensityKernel(float dst, float radius) {
-    return kernel::SpikyPow2(dst, radius);
+float DensityKernel(float dst) {
+    return kernel::SpikyPow2(dst);
 }
 
-float NearDensityKernel(float dst, float radius) {
-    return kernel::SpikyPow3(dst, radius);
+float NearDensityKernel(float dst) {
+    return kernel::SpikyPow3(dst);
 }
 
-float DensityDerivative(float dst, float radius) {
-    return kernel::GradSpikyPow2(dst, radius);
+float DensityDerivative(float dst) {
+    return kernel::GradSpikyPow2(dst);
 }
 
-float NearDensityDerivative(float dst, float radius) {
-    return kernel::GradSpikyPow3(dst, radius);
+float NearDensityDerivative(float dst) {
+    return kernel::GradSpikyPow3(dst);
 }
 
 float3 CalculateExternalForces(float3 pos, float3 vel) {
@@ -81,8 +81,8 @@ float2 CalculateDensity(float3 pos, uint n_particles) {
                 continue;
 
             float dst = sqrt(sqr_dst_to_neighbor);
-            density += DensityKernel(dst, simulation::parameters.smooth_radius);
-            near_density += NearDensityKernel(dst, simulation::parameters.smooth_radius);
+            density += DensityKernel(dst);
+            near_density += NearDensityKernel(dst);
         }
     }
 
@@ -142,16 +142,13 @@ float3 CalculatePressureForce(uint id, PushConstants k) {
             let dst = sqrt(sqr_dst_to_neighbor);
             let dir_to_neighbor = dst > 0 ? offset_to_neighbor / dst : float3(0, 1, 0);
 
-            pressure_force += dir_to_neighbor *
-                              DensityDerivative(dst, simulation::parameters.smooth_radius) *
-                              shared_pressure / neighbor_density;
-            pressure_force += dir_to_neighbor *
-                              NearDensityDerivative(dst, simulation::parameters.smooth_radius) *
-                              shared_near_pressure / neighbor_near_density;
+            pressure_force +=
+                dir_to_neighbor * DensityDerivative(dst) * shared_pressure / neighbor_density;
+            pressure_force += dir_to_neighbor * NearDensityDerivative(dst) * shared_near_pressure /
+                              neighbor_near_density;
 
             let neighbor_velocity = sph_model::buffers.velocities[neighbor_index];
-            viscous_force += (neighbor_velocity - velocity) *
-                             kernel::Poly6(dst, simulation::parameters.smooth_radius);
+            viscous_force += (neighbor_velocity - velocity) * kernel::Poly6(dst);
         }
     }
 

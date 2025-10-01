@@ -30,6 +30,8 @@ public namespace sph_model {
         public float spiky_pow2_scale;
         public float spiky_pow3_diff_scale;
         public float spiky_pow2_diff_scale;
+        public float cubic_spline_scale;
+        public float grad_cubic_spline_scale;
     };
 
     [[vk::binding(1)]]

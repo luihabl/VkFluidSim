@@ -87,6 +87,7 @@ src/compute/spatial_hash.cpp
 src/compute/compute_pipeline.cpp
 
 src/scenes/dam_break_scene.cpp
+src/scenes/dam_break_wcsph_scene.cpp
 
 src/simulation.cpp
 )

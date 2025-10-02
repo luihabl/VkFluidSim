@@ -41,7 +41,8 @@ void Simulation::Clear(const gfx::CoreCtx& ctx) {
 
 void Simulation::SetGlobalParameters(const SimulationParameters& p) {
     parameters = p;
-    GetDescManager().SetUniformData(global_parameter_id, &parameters);
+    if (desc_manager.desc_set != VK_NULL_HANDLE)
+        GetDescManager().SetUniformData(global_parameter_id, &parameters);
 }
 void Simulation::SetScene(std::unique_ptr<SceneBase>&& s) {
     if (scene)

@@ -2,7 +2,6 @@
 
 #include "models/lague_model.h"
 #include "models/model.h"
-#include "simulation.h"
 
 namespace vfs {
 

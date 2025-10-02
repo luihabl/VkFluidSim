@@ -45,6 +45,7 @@ float3 CalculateExternalForces(float3 pos, float3 vel) {
 }
 
 float PressureFromDensity(float density) {
+    // density = max(density, sph_model::parameters.target_density);
     return (density - sph_model::parameters.target_density) *
            lague_model::parameters.pressure_multiplier;
 }

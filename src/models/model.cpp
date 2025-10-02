@@ -10,7 +10,7 @@
 namespace vfs {
 namespace {
 
-std::vector<glm::vec3> SpawnParticlesInBox(const SPHModel::BoundingBox& box, u32 count) {
+std::vector<glm::vec3> SpawnRandomParticlesInBox(const SPHModel::BoundingBox& box, u32 count) {
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_real_distribution dist;
@@ -30,6 +30,39 @@ std::vector<glm::vec3> SpawnParticlesInBox(const SPHModel::BoundingBox& box, u32
     }
 
     return p;
+}
+
+std::vector<glm::vec3> SpawnCompactParticlesInBox(const SPHModel::BoundingBox& box,
+                                                  u32 count,
+                                                  float density) {
+    // Considering m = 1
+    float volume = 1 / density;
+    float diameter = std::cbrt(volume);  // add *1.25 to decrease the initial pressure a bit
+    float step_x = diameter;
+    float step_y = diameter;
+    float step_z = diameter;
+
+    float nx = round(box.size.x / step_x) - 1;
+    float ny = round(box.size.y / step_y) - 1;
+    float nz = round(box.size.z / step_z) - 1;
+
+    std::vector<glm::vec3> pos(count);
+
+    u32 p = 0;
+    for (u32 i = 0; i < nx; i++) {
+        for (u32 j = 0; j < ny; j++) {
+            for (u32 k = 0; k < nz; k++) {
+                pos[p] = glm::vec3(step_x * i, step_y * j, step_z * k);
+
+                p++;
+
+                if (p >= count)
+                    return pos;
+            }
+        }
+    }
+
+    return pos;
 }
 }  // namespace
 
@@ -79,8 +112,17 @@ void SPHModel::SetBoundingBoxSize(const glm::vec3& size) {
     bounding_box = BoundingBox{.size = size, .pos = {0.0f, 0.0f, 0.0f}};
 }
 
-void SPHModel::SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box) {
-    auto pos = SpawnParticlesInBox(box, parameters.n_particles);
+void SPHModel::SetParticlesInBox(const gfx::Device& gfx,
+                                 const BoundingBox& box,
+                                 ParticleInBoxMode mode) {
+    std::vector<glm::vec3> pos;
+
+    if (mode == ParticleInBoxMode::Random) {
+        pos = SpawnRandomParticlesInBox(box, parameters.n_particles);
+    } else if (mode == ParticleInBoxMode::Compact) {
+        pos = SpawnCompactParticlesInBox(box, parameters.n_particles, parameters.target_density);
+    }
+
     auto vel = std::vector<glm::vec3>(parameters.n_particles, glm::vec3(0.0f));
     SetParticleState(gfx, pos, vel);
 }

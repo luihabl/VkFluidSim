@@ -69,7 +69,11 @@ public:
     const Parameters& GetParameters() const { return parameters; }
     const DataBuffers& GetDataBuffers() const { return buffers; }
 
-    void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
+    enum class ParticleInBoxMode { Random, Compact };
+
+    void SetParticlesInBox(const gfx::Device& gfx,
+                           const BoundingBox& box,
+                           ParticleInBoxMode mode = ParticleInBoxMode::Compact);
     void SetParticleState(const gfx::Device& gfx,
                           const std::vector<glm::vec3>& pos,
                           const std::vector<glm::vec3>& vel);

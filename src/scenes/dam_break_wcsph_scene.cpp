@@ -6,12 +6,14 @@
 namespace vfs {
 
 void DamBreakWCSPHScene::Init() {
+    fluid_block_size = {70, 70, 70};
+
     auto base_parameters = SPHModel::Parameters{
         .time_scale = 1.0f,
-        .fixed_dt = 0.001f,
+        .fixed_dt = 1 / 120.0f,
         .iterations = 3,
-        .n_particles = 40000,
-        .target_density = 200.0f,
+        .n_particles = fluid_block_size.x * fluid_block_size.y * fluid_block_size.z,
+        .target_density = 1000.0f,
         .bounding_box = {.size{23.0f, 10.0f, 10.0f}},
     };
 
@@ -30,10 +32,16 @@ void DamBreakWCSPHScene::Clear() {
 
 void DamBreakWCSPHScene::Reset() {
     const auto box = time_step_model->GetBoundingBox().value();
-    auto size = box.size;
-    size.x /= 5.0f;
+    const auto n_particles = time_step_model->GetParameters().n_particles;
+    const auto density = time_step_model->GetParameters().target_density;
 
-    auto pos = box.pos;  // + (box.size - size) / 2.0f;
+    auto particle_volume = 1 / density;
+    auto particle_diam = std::cbrt(particle_volume);
+
+    glm::vec3 size = particle_diam * static_cast<glm::vec3>(fluid_block_size + 1);
+
+    auto pos = box.pos;
+    pos.z += (box.size.z - size.z) / 2.0f;
     time_step_model->SetParticlesInBox(gfx, {.size = size, .pos = pos});
 }
 

@@ -13,7 +13,7 @@
 #include "gfx/common.h"
 #include "imgui.h"
 #include "platform.h"
-#include "scenes/dam_break_scene.h"
+#include "scenes/dam_break_wcsph_scene.h"
 #include "simulation.h"
 
 namespace vfs {
@@ -33,7 +33,7 @@ void GUI::Init(Platform& platform) {
 
     auto& sim = Simulation::Get();
     sim.Init();
-    sim.SetScene(std::make_unique<DamBreakScene>(gfx));
+    sim.SetScene(std::make_unique<DamBreakWCSPHScene>(gfx));
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, sim.GetScene()->GetModel(), ext.width, ext.height);

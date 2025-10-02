@@ -20,10 +20,10 @@ WCSPHModel::WCSPHModel(const SPHModel::Parameters* base_par, const Parameters* p
         parameters = *par;
     } else {
         parameters = {
-            .wall_damping_factor = 0.05,
-            .stiffness = 50,
+            .wall_damping_factor = 0.95,
+            .stiffness = 1000,
             .expoent = 7,
-            .viscosity_strenght = 0.03,
+            .viscosity_strenght = 0.01,
         };
     }
 }
@@ -78,11 +78,11 @@ void WCSPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
         pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
-        // pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &push);
-        // ComputeToComputePipelineBarrier(cmd);
+        pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &push);
+        ComputeToComputePipelineBarrier(cmd);
 
-        // pipeline.Compute(cmd, KernelCalculateViscousForces, n_groups, &push);
-        // ComputeToComputePipelineBarrier(cmd);
+        pipeline.Compute(cmd, KernelCalculateViscousForces, n_groups, &push);
+        ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &push);
     }

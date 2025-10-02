@@ -205,38 +205,14 @@ void CalculateViscousForces(uint id: SV_DispatchThreadID, uniform PushConstants 
     sph_model::buffers.velocities[id] += acc * k.dt;
 }
 
-void ResolveCollisions(inout float3 pos, inout float3 vel) {
+void ResolveCollisions(inout float3 pos, inout float3 vel, float dt) {
     let ll = sph_model::parameters.bounding_box.pos;
     let ur = ll + sph_model::parameters.bounding_box.size;
 
-    if (pos.x < ll.x) {
-        pos.x = ll.x;
-        vel.x = -vel.x * wcsph_model::parameters.wall_damping_factor;
-    }
+    let diff = min(pos - ll, float3(0.0)) - min(ur - pos, float3(0.0));
 
-    if (pos.y < ll.y) {
-        pos.y = ll.y;
-        vel.y = -vel.y * wcsph_model::parameters.wall_damping_factor;
-    }
-
-    if (pos.z < ll.z) {
-        pos.z = ll.z;
-        vel.z = -vel.z * wcsph_model::parameters.wall_damping_factor;
-    }
-
-    if (pos.x > ur.x) {
-        pos.x = ur.x;
-        vel.x = -vel.x * wcsph_model::parameters.wall_damping_factor;
-    }
-
-    if (pos.y > ur.y) {
-        pos.y = ur.y;
-        vel.y = -vel.y * wcsph_model::parameters.wall_damping_factor;
-    }
-
-    if (pos.z > ur.z) {
-        pos.z = ur.z;
-        vel.z = -vel.z * wcsph_model::parameters.wall_damping_factor;
+    if (abs(diff.x) > 1e-9 || abs(diff.y) > 1e-9 || abs(diff.z) > 1e-9) {
+        vel = vel - 10000.0f * diff * dt;
     }
 }
 
@@ -254,7 +230,7 @@ void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     // TODO: Remove this method, use a particle-based representation (read Green thesis to
     // understand the different types of boundaries). Try to find an example of implementation of
     // particle-based boundary.
-    ResolveCollisions(pos, vel);
+    ResolveCollisions(pos, vel, k.dt);
 
     sph_model::buffers.positions[id] = pos;
     sph_model::buffers.velocities[id] = vel;

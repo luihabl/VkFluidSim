@@ -64,11 +64,11 @@ namespace kernel {
         let sigma = sph_model::kernel_coeff.cubic_spline_scale;
         if (q <= 1.0f) {
             if (q > 0.5f) {
-                return 2.0f * sigma * pow(1.0f - q, 3);
+                return sigma * 2.0f * pow(1.0f - q, 3);
             } else {
                 let q2 = q * q;
                 let q3 = q2 * q;
-                return 6.0f * (q3 - q2) + 1.0f;
+                return sigma * (6.0f * q3 - 6.0f * q2 + 1.0f);
             }
         }
 
@@ -79,12 +79,11 @@ namespace kernel {
         let q = dst / simulation::parameters.smooth_radius;
         let sigma =
             sph_model::kernel_coeff.grad_cubic_spline_scale / simulation::parameters.smooth_radius;
-        if (q <= 1.0f) {
+        if ((dst > 1e-9) && (q <= 1.0f)) {
             if (q > 0.5f) {
                 return -sigma * pow(1.0f - q, 2);
             } else {
-                let q2 = q * q;
-                return sigma * (3 * q2 - 2 * q);
+                return sigma * q * (3.0f * q - 2.0f);
             }
         }
 

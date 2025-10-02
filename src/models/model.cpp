@@ -52,7 +52,7 @@ std::vector<glm::vec3> SpawnCompactParticlesInBox(const SPHModel::BoundingBox& b
     for (u32 i = 0; i < nx; i++) {
         for (u32 j = 0; j < ny; j++) {
             for (u32 k = 0; k < nz; k++) {
-                pos[p] = glm::vec3(step_x * i, step_y * j, step_z * k);
+                pos[p] = glm::vec3(step_x * i, step_y * j, step_z * k) + box.pos;
 
                 p++;
 
@@ -80,6 +80,8 @@ SPHModel::SPHModel(const Parameters* par) {
 }
 
 void SPHModel::Init(const gfx::CoreCtx& ctx) {
+    fmt::println("Number of particles: {} ", parameters.n_particles);
+
     spatial_hash.Init(ctx, parameters.n_particles,
                       Simulation::Get().GetGlobalParameters().smooth_radius);
 

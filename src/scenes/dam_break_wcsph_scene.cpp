@@ -6,7 +6,7 @@
 namespace vfs {
 
 void DamBreakWCSPHScene::Init() {
-    fluid_block_size = {70, 70, 70};
+    fluid_block_size = {50, 30, 98};
 
     auto base_parameters = SPHModel::Parameters{
         .time_scale = 1.0f,
@@ -14,7 +14,7 @@ void DamBreakWCSPHScene::Init() {
         .iterations = 3,
         .n_particles = fluid_block_size.x * fluid_block_size.y * fluid_block_size.z,
         .target_density = 1000.0f,
-        .bounding_box = {.size{23.0f, 10.0f, 10.0f}},
+        .bounding_box = {.size{15.0f, 10.0f, 10.0f}},
     };
 
     time_step_model = std::make_unique<WCSPHModel>(&base_parameters);

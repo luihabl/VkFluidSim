@@ -89,7 +89,7 @@ float3 CalculatePressureForce(uint id, PushConstants k) {
 
     let di = sph_model::buffers.densities[id];
     let pi = pressure_from_density_eos(di);
-    let pdi = pi / (di * di);
+    let pdi = di > 0 ? pi / (di * di) : 0.0f;
 
     let xi = sph_model::buffers.positions[id];
     let origin_cell = GetCell3D(xi, simulation::parameters.smooth_radius);
@@ -123,9 +123,9 @@ float3 CalculatePressureForce(uint id, PushConstants k) {
             let pj = pressure_from_density_eos(dj);
 
             let xij_mod = sqrt(sqr_xij_mod);
-            let xij_norm = xij / xij_mod;
+            let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 1, 0);
 
-            let pdj = pj / (dj * dj);
+            let pdj = dj > 0 ? pj / (dj * dj) : 0.0f;
 
             pressure_force += (pdi + pdj) * kernel::GradCubicSpline(xij_mod) * xij_norm;
         }
@@ -178,12 +178,12 @@ float3 CalculateViscousForce(uint id, PushConstants k) {
                 continue;
 
             let xij_mod = sqrt(sqr_xij_mod);
-            let xij_norm = xij / xij_mod;
+            let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 1, 0);
 
             let vj = sph_model::buffers.velocities[neighbor_index];
             let vij = vi - vj;
 
-            let rhoj = sph_model::buffers.densities[neighbor_index];
+            let rhoj = max(sph_model::buffers.densities[neighbor_index], 1e-6);
 
             let grad_w = xij_norm * kernel::GradCubicSpline(xij_mod);
 
@@ -211,8 +211,9 @@ void ResolveCollisions(inout float3 pos, inout float3 vel, float dt) {
 
     let diff = min(pos - ll, float3(0.0)) - min(ur - pos, float3(0.0));
 
+    static const float boundary_stiffness = 1e4;
     if (abs(diff.x) > 1e-9 || abs(diff.y) > 1e-9 || abs(diff.z) > 1e-9) {
-        vel = vel - 10000.0f * diff * dt;
+        vel = vel - boundary_stiffness * diff * dt;
     }
 }
 

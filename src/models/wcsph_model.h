@@ -11,7 +11,7 @@ namespace vfs {
 class WCSPHModel final : public SPHModel {
 public:
     struct Parameters {
-        float wall_damping_factor;
+        float wall_stiffness;
         float stiffness;
         float expoent;
         float viscosity_strenght;

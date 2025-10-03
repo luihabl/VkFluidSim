@@ -1,5 +1,6 @@
 #include "wcsph_model.h"
 
+#include "imgui.h"
 #include "models/model.h"
 #include "platform.h"
 #include "simulation.h"
@@ -20,7 +21,7 @@ WCSPHModel::WCSPHModel(const SPHModel::Parameters* base_par, const Parameters* p
         parameters = *par;
     } else {
         parameters = {
-            .wall_damping_factor = 0.95,
+            .wall_stiffness = 1e4,
             .stiffness = 1000,
             .expoent = 7,
             .viscosity_strenght = 0.01,
@@ -56,6 +57,8 @@ void WCSPHModel::Init(const gfx::CoreCtx& ctx) {
 }
 
 void WCSPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
+    SPHModel::Step(ctx, cmd);
+
     auto push = PushConstants{
         .time = Platform::Info::GetTime(),
         .dt = SPHModel::parameters.time_scale * SPHModel::parameters.fixed_dt /
@@ -90,5 +93,25 @@ void WCSPHModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) {
 
 void WCSPHModel::DrawDebugUI() {
     SPHModel::DrawDebugUI();
+
+    auto& sim = Simulation::Get();
+
+    if (ImGui::CollapsingHeader("WCSPH model")) {
+        if (ImGui::DragFloat("Wall stiffness", &parameters.wall_stiffness, 1e2, 0.0f, 1e6)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
+
+        if (ImGui::SliderFloat("Stiffness", &parameters.stiffness, 0.0f, 5000.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
+
+        if (ImGui::DragFloat("Expoent", &parameters.expoent, 1.0f, 0.0f, 10.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
+
+        if (ImGui::DragFloat("Viscosity", &parameters.viscosity_strenght, 0.001f, 0.0f, 1.0f)) {
+            sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+        }
+    }
 }
 }  // namespace vfs

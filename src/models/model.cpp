@@ -243,7 +243,8 @@ void SPHModel::DrawDebugUI() {
         }
 
         glm::vec3 size = parameters.bounding_box.size;
-        if (ImGui::DragFloat3("Bounding box", &parameters.bounding_box.size.x, 0.1f, 0.5f, 2.0f)) {
+        if (ImGui::DragFloat3("Bounding box", &parameters.bounding_box.size.x, 0.1f, 0.5f, 50.0f)) {
+            SetBoundingBoxSize(size);
             sim.GetDescManager().SetUniformData(model_parameter_id, &parameters);
         }
     }

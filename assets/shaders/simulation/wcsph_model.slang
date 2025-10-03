@@ -6,7 +6,7 @@ import kernels.kernels_3d;
 namespace wcsph_model {
 
     struct Parameters {
-        float wall_damping_factor;
+        float wall_stiffness;
         float stiffness;
         float expoent;
         float viscosity_strenght;
@@ -211,9 +211,8 @@ void ResolveCollisions(inout float3 pos, inout float3 vel, float dt) {
 
     let diff = min(pos - ll, float3(0.0)) - min(ur - pos, float3(0.0));
 
-    static const float boundary_stiffness = 1e4;
     if (abs(diff.x) > 1e-9 || abs(diff.y) > 1e-9 || abs(diff.z) > 1e-9) {
-        vel = vel - boundary_stiffness * diff * dt;
+        vel = vel - wcsph_model::parameters.wall_stiffness * diff * dt;
     }
 }
 

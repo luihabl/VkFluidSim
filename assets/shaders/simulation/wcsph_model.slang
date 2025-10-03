@@ -31,10 +31,6 @@ void ExternalForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
         CalculateExternalForces(sph_model::buffers.positions[id],
                                 sph_model::buffers.velocities[id]) *
         k.dt;
-
-    // let prediction_factor = 1.0f / 120.0f;
-    // buffers.predicted_positions[id] =
-    //     k.positions[id] + k.velocities[id] * prediction_factor;
 }
 
 [shader("compute")]

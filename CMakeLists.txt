@@ -55,6 +55,7 @@ target_link_libraries(imgui PUBLIC vfs_gfx_platform)
 CPMAddPackage("gh:charles-lunarg/vk-bootstrap@1.4.323")
 CPMAddPackage("gh:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator@3.3.0")
 CPMAddPackage("gh:fmtlib/fmt#11.2.0")
+CPMAddPackage("gh:tinyobjloader/tinyobjloader#release")
 
 # executable
 add_executable(vfs
@@ -88,6 +89,9 @@ src/compute/compute_pipeline.cpp
 
 src/scenes/dam_break_scene.cpp
 src/scenes/dam_break_wcsph_scene.cpp
+src/scenes/model_render_scene.cpp
+
+src/util/mesh_loader.cpp
 
 src/simulation.cpp
 )
@@ -105,6 +109,7 @@ PUBLIC
     vk-bootstrap::vk-bootstrap
     GPUOpen::VulkanMemoryAllocator
     fmt::fmt
+    tinyobjloader
 )
 
 target_compile_definitions(vfs PUBLIC

@@ -1,15 +1,14 @@
 #pragma once
 
 #include <glm/ext/scalar_constants.hpp>
-#include <memory>
 
 #include "gfx/gfx.h"
 #include "gui/common.h"
 #include "gui/imgui_setup.h"
+#include "gui/scene_renderer.h"
 #include "imgui_setup.h"
 #include "platform.h"
-#include "scenes/scene.h"
-#include "simulation_renderer.h"
+#include "scene_renderer.h"
 
 namespace vfs {
 class GUI {
@@ -29,7 +28,7 @@ private:
     glm::vec2 initial_mouse_pos{0.0f};
     glm::vec3 last_camera_angles{0.0f};
 
-    SimulationRenderer3D renderer;
+    SceneRenderer renderer;
 
     ImGui_Setup ui;
 

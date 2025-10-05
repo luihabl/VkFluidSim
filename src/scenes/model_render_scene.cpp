@@ -1,7 +1,7 @@
 #include "model_render_scene.h"
 
 #include "gfx/mesh.h"
-#include "models/model.h"
+#include "gui/common.h"
 #include "platform.h"
 #include "util/mesh_loader.h"
 
@@ -14,6 +14,11 @@ void ModelRenderScene::Init() {
     fmt::println("First shape number of indices: {}", obj.front().indices.size());
 
     model_mesh = gfx::UploadMesh(gfx, obj.front());
+
+    rigid_body_meshes.push_back({
+        .mesh = model_mesh,
+        .transform = Transform{},
+    });
 }
 
 void ModelRenderScene::Step(VkCommandBuffer) {}

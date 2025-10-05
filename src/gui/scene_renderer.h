@@ -4,21 +4,21 @@
 #include "draw_pipelines.h"
 #include "gfx/gfx.h"
 #include "models/model.h"
+#include "scenes/scene.h"
 
 namespace vfs {
 
-class SimulationRenderer3D {
+class SceneRenderer {
 public:
-    void Init(const gfx::Device& gfx, const SPHModel* simulation, int w, int h);
-    void Draw(gfx::Device& gfx,
-              VkCommandBuffer cmd,
-              const SPHModel* simulation,
-              const Camera& camera);
+    void Init(const gfx::Device& gfx, SceneBase* scene, int w, int h);
+    void Draw(gfx::Device& gfx, VkCommandBuffer cmd, const Camera& camera);
     void Clear(const gfx::Device& gfx);
     Transform& GetTransform() { return transform; }
     const gfx::Image& GetDrawImage() const { return draw_img; }
 
 private:
+    SceneBase* scene{nullptr};
+
     SPHModel::DataBuffers render_buffers;
 
     Transform box_transform;

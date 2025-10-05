@@ -82,7 +82,8 @@ void Simulation::DrawDebugUI() {
             }
         }
 
-        scene->GetModel()->DrawDebugUI();
+        if (scene->GetModel())
+            scene->GetModel()->DrawDebugUI();
     }
 }
 

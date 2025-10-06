@@ -31,5 +31,6 @@ private:
     glm::vec4 clear_color;
     Particle3DDrawPipeline particles_pipeline;
     BoxDrawPipeline box_pipeline;
+    MeshDrawPipeline mesh_pipeline;
 };
 }  // namespace vfs

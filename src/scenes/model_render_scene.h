@@ -1,6 +1,5 @@
 #pragma once
 
-#include "gfx/mesh.h"
 #include "scene.h"
 
 namespace vfs {

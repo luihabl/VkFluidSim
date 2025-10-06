@@ -6,7 +6,6 @@
 
 #include "gfx/gfx.h"
 #include "gfx/mesh.h"
-#include "gfx/transform.h"
 #include "models/model.h"
 
 namespace vfs {

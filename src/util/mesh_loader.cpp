@@ -41,13 +41,11 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
         gfx::CPUMesh mesh;
         mesh.name = shape.name;
 
-        u32 n_vertices = shape.mesh.num_face_vertices.size();
-
         // TODO: Here we assume that we have only triangles. Later change this to consider quads
         // or polygons.
         std::unordered_map<int, int> used_indices;
-        for (u32 i = 0; i < n_vertices; i++) {
-            auto idx = shape.mesh.indices[i * 3 + 0];
+        for (u32 i = 0; i < shape.mesh.indices.size(); i++) {
+            auto idx = shape.mesh.indices[i];
 
             if (used_indices.contains(idx.vertex_index)) {
                 mesh.indices.push_back(used_indices[idx.vertex_index]);

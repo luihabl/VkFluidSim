@@ -1,6 +1,8 @@
 #include "model_render_scene.h"
 
 #include "gfx/mesh.h"
+#include "gfx/transform.h"
+#include "gui/common.h"
 #include "platform.h"
 #include "util/mesh_loader.h"
 
@@ -13,6 +15,8 @@ void ModelRenderScene::Init() {
     fmt::println("First shape number of indices: {}", obj.front().indices.size());
 
     auto model_mesh = gfx::UploadMesh(gfx, obj.front());
+
+    auto tr = gfx::Transform();
 
     mesh_draw_objs.push_back({
         .mesh = model_mesh,

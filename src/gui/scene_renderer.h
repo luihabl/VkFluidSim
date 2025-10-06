@@ -1,8 +1,9 @@
 #pragma once
 
-#include "common.h"
 #include "draw_pipelines.h"
+#include "gfx/camera.h"
 #include "gfx/gfx.h"
+#include "gfx/transform.h"
 #include "models/model.h"
 #include "scenes/scene.h"
 
@@ -11,9 +12,9 @@ namespace vfs {
 class SceneRenderer {
 public:
     void Init(const gfx::Device& gfx, SceneBase* scene, int w, int h);
-    void Draw(gfx::Device& gfx, VkCommandBuffer cmd, const Camera& camera);
+    void Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camera& camera);
     void Clear(const gfx::Device& gfx);
-    Transform& GetTransform() { return transform; }
+    gfx::Transform& GetTransform() { return transform; }
     const gfx::Image& GetDrawImage() const { return draw_img; }
 
 private:
@@ -21,9 +22,9 @@ private:
 
     SPHModel::DataBuffers render_buffers;
 
-    Transform box_transform;
-    Transform sim_transform;
-    Transform transform;
+    gfx::Transform box_transform;
+    gfx::Transform sim_transform;
+    gfx::Transform transform;
     gfx::GPUMesh particle_mesh;
     gfx::Image draw_img;
     gfx::Image depth_img;

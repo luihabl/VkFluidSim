@@ -215,4 +215,15 @@ void Particle3DDrawPipeline::Draw(VkCommandBuffer cmd,
     vkCmdDrawIndexed(cmd, mesh.index_count, instances, 0, 0, 0);
 }
 
+void MeshDrawPipeline::Init(const gfx::CoreCtx& ctx,
+                            VkFormat draw_img_format,
+                            VkFormat depth_img_format) {}
+void MeshDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
+    vkDestroyPipeline(ctx.device, pipeline, nullptr);
+}
+void MeshDrawPipeline::Draw(VkCommandBuffer cmd,
+                            gfx::Device& gfx,
+                            const gfx::Image& draw_img,
+                            const gfx::GPUMesh& mesh) {}
+
 }  // namespace vfs

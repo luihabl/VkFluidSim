@@ -6,15 +6,10 @@
 
 #include "gfx/gfx.h"
 #include "gfx/mesh.h"
-#include "gui/common.h"
+#include "gfx/transform.h"
 #include "models/model.h"
 
 namespace vfs {
-
-struct RigidBodyModel {
-    Transform transform;
-    gfx::GPUMesh mesh;
-};
 
 class SceneBase {
 public:
@@ -26,12 +21,12 @@ public:
     virtual void Reset() = 0;
 
     SPHModel* GetModel() const { return time_step_model.get(); }
-    const std::vector<RigidBodyModel>& GetRigidBodyMeshes() { return rigid_body_meshes; }
+    const std::vector<gfx::MeshDrawObj>& GetMeshDrawObjs() { return mesh_draw_objs; }
 
 protected:
     gfx::Device& gfx;
     std::unique_ptr<SPHModel> time_step_model;
-    std::vector<RigidBodyModel> rigid_body_meshes;
+    std::vector<gfx::MeshDrawObj> mesh_draw_objs;
     // TODO: add other models here such as the boundary or surface tension
 };
 }  // namespace vfs

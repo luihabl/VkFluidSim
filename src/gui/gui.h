@@ -3,7 +3,7 @@
 #include <glm/ext/scalar_constants.hpp>
 
 #include "gfx/gfx.h"
-#include "gui/common.h"
+#include "gfx/transform.h"
 #include "gui/imgui_setup.h"
 #include "gui/scene_renderer.h"
 #include "imgui_setup.h"
@@ -23,7 +23,7 @@ public:
 private:
     gfx::Device gfx;
 
-    OrbitCamera camera;
+    gfx::OrbitCamera camera;
     bool orbit_move{false};
     glm::vec2 initial_mouse_pos{0.0f};
     glm::vec3 last_camera_angles{0.0f};

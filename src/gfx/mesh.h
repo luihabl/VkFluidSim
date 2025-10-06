@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "gfx/gfx.h"
+#include "gfx/transform.h"
 
 namespace gfx {
 
@@ -29,6 +30,11 @@ struct GPUMesh {
     u32 vertex_count{0};
 
     VkDeviceAddress vertex_addr;
+};
+
+struct MeshDrawObj {
+    gfx::Transform transform;
+    gfx::GPUMesh mesh;
 };
 
 GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh);

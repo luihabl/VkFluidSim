@@ -1,7 +1,6 @@
 #include "model_render_scene.h"
 
 #include "gfx/mesh.h"
-#include "gui/common.h"
 #include "platform.h"
 #include "util/mesh_loader.h"
 
@@ -13,19 +12,21 @@ void ModelRenderScene::Init() {
     fmt::println("First shape number of vertices: {}", obj.front().vertices.size());
     fmt::println("First shape number of indices: {}", obj.front().indices.size());
 
-    model_mesh = gfx::UploadMesh(gfx, obj.front());
+    auto model_mesh = gfx::UploadMesh(gfx, obj.front());
 
-    rigid_body_meshes.push_back({
+    mesh_draw_objs.push_back({
         .mesh = model_mesh,
-        .transform = Transform{},
+        .transform = gfx::Transform{},
     });
 }
 
 void ModelRenderScene::Step(VkCommandBuffer) {}
 
 void ModelRenderScene::Clear() {
-    model_mesh.vertices.Destroy();
-    model_mesh.indices.Destroy();
+    for (auto& mesh : mesh_draw_objs) {
+        mesh.mesh.indices.Destroy();
+        mesh.mesh.vertices.Destroy();
+    }
 }
 
 void ModelRenderScene::Reset() {}

@@ -69,12 +69,14 @@ src/gfx/mesh.cpp
 src/gfx/immediate.cpp
 src/gfx/descriptor.cpp
 src/gfx/common.cpp
+src/gfx/transform.cpp
+src/gfx/camera.cpp
 
 src/gui/scene_renderer.cpp
-src/gui/common.cpp
 src/gui/draw_pipelines.cpp
 src/gui/gui.cpp
 src/gui/imgui_setup.cpp
+src/gui/common.cpp
 
 src/models/model.cpp
 src/models/lague_model.cpp

@@ -1,5 +1,6 @@
 #include "scene_renderer.h"
 
+#include "common.h"
 #include "gfx/vk_util.h"
 #include "scenes/scene.h"
 
@@ -25,7 +26,7 @@ void SceneRenderer::Init(const gfx::Device& gfx, SceneBase* scene, int w, int h)
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 }
 
-void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const Camera& camera) {
+void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camera& camera) {
     auto color_attachment = vk::util::RenderingAttachmentInfo(
         draw_img.view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;

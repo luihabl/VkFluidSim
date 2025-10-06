@@ -1,7 +1,7 @@
 import colormap;
 
 static const float v_max = 6.5f;
-static const float radius = 0.5;
+static const float radius = 0.15;
 static const float smooth_delta = 0.001f;
 
 struct Vertex {
@@ -67,7 +67,7 @@ FragmentOutput frag_main(uint id: SV_VulkanInstanceID,
     out.color = float4(input.color.r, input.color.g, input.color.b, 1.0f);
     out.color.xyz *= diffuse;
 
-    let pixel_pos = float4(input.particle_pos.xyz + n, 1.0f);
+    let pixel_pos = float4(input.particle_pos.xyz + radius * n, 1.0f);
     let clip_space_pos = mul(pc.proj, pixel_pos);
 
     out.depth = clip_space_pos.z / clip_space_pos.w;

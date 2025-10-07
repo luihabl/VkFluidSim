@@ -25,7 +25,7 @@ struct FragmentOutput {
 VertexOutput vertex_main(Vertex vertex, uniform PushConstants pc) {
     VertexOutput out;
 
-    out.position = mul(mul(pc.transform, pc.view_proj), float4(vertex.position, 1.0f));
+    out.position = mul(mul(pc.view_proj, pc.transform), float4(vertex.position, 1.0f));
     out.uv = vertex.uv;
     out.normal = vertex.normal;
 

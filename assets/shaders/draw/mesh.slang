@@ -8,11 +8,13 @@ struct PushConstants {
 struct Vertex {
     float3 position : POSITION;
     float2 uv : UV;
+    float3 normal;
 }
 
 struct VertexOutput {
     float4 position : SV_Position;
     float2 uv : UV;
+    float3 normal;
 };
 
 struct FragmentOutput {
@@ -25,6 +27,7 @@ VertexOutput vertex_main(Vertex vertex, uniform PushConstants pc) {
 
     out.position = mul(mul(pc.transform, pc.view_proj), float4(vertex.position, 1.0f));
     out.uv = vertex.uv;
+    out.normal = vertex.normal;
 
     return out;
 }
@@ -32,6 +35,9 @@ VertexOutput vertex_main(Vertex vertex, uniform PushConstants pc) {
 [shader("fragment")]
 FragmentOutput frag_main(VertexOutput input, uniform PushConstants pc) {
     FragmentOutput out;
-    out.color = float4(1.0f);
+
+    let base_color = float3(1.0f);
+    var light = dot(normalize(input.normal), normalize(float3(1.0f, 1.0f, 0.0f)));
+    out.color = float4(0.8 * base_color + 0.8 * light, 1.0f);
     return out;
 }

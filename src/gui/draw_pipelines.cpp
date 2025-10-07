@@ -84,20 +84,22 @@ void ParticleDrawPipeline::Init(const gfx::CoreCtx& ctx, VkFormat draw_img_forma
 
     layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
 
-    pipeline = vk::util::GraphicsPipelineBuilder(layout)
-                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
-                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
-                   .AddVertexBinding(0, sizeof(gfx::Vertex))
-                   .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
-                   .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
-                   .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                   .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                   .SetCullDisabled()
-                   .SetMultisamplingDisabled()
-                   .SetDepthTestDisabled()
-                   .SetBlendingAlphaBlend()  // Check if this is OK
-                   .SetColorAttachmentFormat(draw_img_format)
-                   .Build(ctx.device);
+    pipeline =
+        vk::util::GraphicsPipelineBuilder(layout)
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
+            .AddVertexBinding(0, sizeof(gfx::Vertex))
+            .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
+            .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
+            .AddVertexAttribute(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, normal))
+            .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetPolygonMode(VK_POLYGON_MODE_FILL)
+            .SetCullDisabled()
+            .SetMultisamplingDisabled()
+            .SetDepthTestDisabled()
+            .SetBlendingAlphaBlend()  // Check if this is OK
+            .SetColorAttachmentFormat(draw_img_format)
+            .Build(ctx.device);
 
     vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
 }
@@ -156,21 +158,23 @@ void Particle3DDrawPipeline::Init(const gfx::CoreCtx& ctx,
 
     layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
 
-    pipeline = vk::util::GraphicsPipelineBuilder(layout)
-                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
-                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
-                   .AddVertexBinding(0, sizeof(gfx::Vertex))
-                   .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
-                   .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
-                   .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                   .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                   .SetCullDisabled()
-                   .SetMultisamplingDisabled()
-                   .SetDepthFormat(depth_img_format)
-                   .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
-                   .SetBlendingAlphaBlend()  // Check if this is OK
-                   .SetColorAttachmentFormat(draw_img_format)
-                   .Build(ctx.device);
+    pipeline =
+        vk::util::GraphicsPipelineBuilder(layout)
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
+            .AddVertexBinding(0, sizeof(gfx::Vertex))
+            .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
+            .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
+            // .AddVertexAttribute(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, normal))
+            .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetPolygonMode(VK_POLYGON_MODE_FILL)
+            .SetCullDisabled()
+            .SetMultisamplingDisabled()
+            .SetDepthFormat(depth_img_format)
+            .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
+            .SetBlendingAlphaBlend()  // Check if this is OK
+            .SetColorAttachmentFormat(draw_img_format)
+            .Build(ctx.device);
 
     vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
 }
@@ -229,21 +233,23 @@ void MeshDrawPipeline::Init(const gfx::CoreCtx& ctx,
 
     layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
 
-    pipeline = vk::util::GraphicsPipelineBuilder(layout)
-                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
-                   .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
-                   .AddVertexBinding(0, sizeof(gfx::Vertex))
-                   .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
-                   .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
-                   .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                   .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                   .SetCullDisabled()
-                   .SetMultisamplingDisabled()
-                   .SetDepthFormat(depth_img_format)
-                   .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
-                   .SetBlendingAlphaBlend()  // Check if this is OK
-                   .SetColorAttachmentFormat(draw_img_format)
-                   .Build(ctx.device);
+    pipeline =
+        vk::util::GraphicsPipelineBuilder(layout)
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_VERTEX_BIT, "vertex_main")
+            .AddShaderStage(gfx_shader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag_main")
+            .AddVertexBinding(0, sizeof(gfx::Vertex))
+            .AddVertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, pos))
+            .AddVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(gfx::Vertex, uv))
+            .AddVertexAttribute(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(gfx::Vertex, normal))
+            .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetPolygonMode(VK_POLYGON_MODE_FILL)
+            .SetCullDisabled()
+            .SetMultisamplingDisabled()
+            .SetDepthFormat(depth_img_format)
+            .SetDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL)
+            .SetBlendingAlphaBlend()  // Check if this is OK
+            .SetColorAttachmentFormat(draw_img_format)
+            .Build(ctx.device);
 
     vkDestroyShaderModule(ctx.device, gfx_shader, nullptr);
 }

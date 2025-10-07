@@ -22,7 +22,7 @@ void SceneRenderer::Init(const gfx::Device& gfx, SceneBase* scene, int w, int h)
     mesh_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 
     gfx::CPUMesh mesh;
-    DrawQuad(mesh, glm::vec3(0.0f), 0.2f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    DrawQuad(mesh, glm::vec3(0.0f), 0.15f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     // DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 3);
     particle_mesh = gfx::UploadMesh(gfx, mesh);
 }

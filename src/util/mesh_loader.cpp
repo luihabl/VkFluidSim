@@ -37,23 +37,33 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
     // TODO: Ignoring materials for now, consider them later
     // const auto& materials = obj_reader.GetMaterials();
 
+    using h = std::hash<int>;
+    auto hash = [](const tinyobj::index_t& n) {
+        return ((17 * 31 + h()(n.vertex_index)) * 31 + h()(n.normal_index)) * 31 +
+               h()(n.texcoord_index);
+    };
+    auto equal = [](const tinyobj::index_t& l, const tinyobj::index_t& r) {
+        return l.vertex_index == r.vertex_index && l.normal_index == r.normal_index &&
+               l.texcoord_index == r.texcoord_index;
+    };
+
     for (const auto& shape : obj_reader.GetShapes()) {
         gfx::CPUMesh mesh;
         mesh.name = shape.name;
 
         // TODO: Here we assume that we have only triangles. Later change this to consider quads
         // or polygons.
-        std::unordered_map<int, int> used_indices;
+        std::unordered_map<tinyobj::index_t, int, decltype(hash), decltype(equal)> used_indices;
         for (u32 i = 0; i < shape.mesh.indices.size(); i++) {
             auto idx = shape.mesh.indices[i];
 
-            if (used_indices.contains(idx.vertex_index)) {
-                mesh.indices.push_back(used_indices[idx.vertex_index]);
+            if (used_indices.contains(idx)) {
+                mesh.indices.push_back(used_indices[idx]);
                 continue;
             }
 
             mesh.indices.push_back(mesh.vertices.size());
-            used_indices[idx.vertex_index] = mesh.indices.back();
+            used_indices[idx] = mesh.indices.back();
 
             auto vert = gfx::Vertex{};
 
@@ -66,6 +76,12 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
                         attrib.vertices[3 * size_t(idx.vertex_index) + 1],
                         attrib.vertices[3 * size_t(idx.vertex_index) + 2]};
 
+            if (idx.normal_index >= 0) {
+                vert.normal = {attrib.normals[3 * size_t(idx.normal_index) + 0],
+                               attrib.normals[3 * size_t(idx.normal_index) + 1],
+                               attrib.normals[3 * size_t(idx.normal_index) + 2]};
+            }
+
             mesh.vertices.push_back(vert);
         }
 
@@ -74,4 +90,7 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
 
     return meshes;
 }
+
+std::vector<gfx::CPUMesh> LoadGltfMesh(const std::string& path) {}
+
 }  // namespace vfs

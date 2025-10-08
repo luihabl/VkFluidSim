@@ -41,7 +41,7 @@ private:
 
     void UpdateAllUniforms();
     void ScheduleUpdateUniforms();
-    void SetParticlesInBox(const gfx::Device& gfx, const BoundingBox& box);
+    void SetParticlesInBox(const gfx::Device& gfx, const gfx::BoundingBox& box);
 };
 
 }  // namespace vfs

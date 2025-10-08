@@ -6,22 +6,18 @@
 #include "compute/spatial_hash.h"
 #include "gfx/common.h"
 #include "gfx/gfx.h"
+#include "gfx/mesh.h"
 
 namespace vfs {
 class SPHModel {
 public:
-    struct BoundingBox {
-        glm::vec3 size;
-        glm::vec3 pos;
-    };
-
     struct Parameters {
         float time_scale;
         int iterations;
         int n_particles;
         float fixed_dt;
         float target_density;
-        BoundingBox bounding_box;
+        gfx::BoundingBox bounding_box;
     };
 
     struct KernelCoefficients {
@@ -72,7 +68,7 @@ public:
     enum class ParticleInBoxMode { Random, Compact };
 
     void SetParticlesInBox(const gfx::Device& gfx,
-                           const BoundingBox& box,
+                           const gfx::BoundingBox& box,
                            ParticleInBoxMode mode = ParticleInBoxMode::Compact);
     void SetParticleState(const gfx::Device& gfx,
                           const std::vector<glm::vec3>& pos,
@@ -86,7 +82,7 @@ protected:
     ComputePipeline pipeline;
     DataBuffers buffers;
     Parameters parameters;
-    std::optional<BoundingBox> bounding_box;
+    std::optional<gfx::BoundingBox> bounding_box;
     SpatialHash spatial_hash;
     u32 group_size{256};
 

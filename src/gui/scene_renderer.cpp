@@ -59,13 +59,22 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
         mesh_pipeline.Draw(cmd, gfx, draw_img, mesh, camera);
     }
 
+    auto view_proj = camera.GetViewProj();
+    for (const auto& box : scene->GetBoxObjs()) {
+        auto pc = BoxDrawPipeline::PushConstants{
+            .color = box.color,
+            .matrix = view_proj * transform.Matrix() * box.transform.Matrix(),
+        };
+
+        box_pipeline.Draw(cmd, gfx, draw_img, pc);
+    }
+
     if (scene && scene->GetModel()) {
         auto view_proj = camera.GetViewProj();
 
         if (scene->GetModel()->GetBoundingBox().has_value()) {
             glm::vec3 box_size = scene->GetModel()->GetBoundingBox().value().size;
             box_transform.SetScale(box_size);
-            box_transform.SetPosition(-box_size / 2.0f);
             sim_transform.SetPosition(-box_size / 2.0f);
 
             auto pc = BoxDrawPipeline::PushConstants{

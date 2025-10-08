@@ -10,7 +10,7 @@
 namespace vfs {
 namespace {
 
-std::vector<glm::vec3> SpawnRandomParticlesInBox(const SPHModel::BoundingBox& box, u32 count) {
+std::vector<glm::vec3> SpawnRandomParticlesInBox(const gfx::BoundingBox& box, u32 count) {
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_real_distribution dist;
@@ -32,7 +32,7 @@ std::vector<glm::vec3> SpawnRandomParticlesInBox(const SPHModel::BoundingBox& bo
     return p;
 }
 
-std::vector<glm::vec3> SpawnCompactParticlesInBox(const SPHModel::BoundingBox& box,
+std::vector<glm::vec3> SpawnCompactParticlesInBox(const gfx::BoundingBox& box,
                                                   u32 count,
                                                   float density) {
     // Considering m = 1
@@ -111,11 +111,11 @@ void SPHModel::Clear(const gfx::CoreCtx& ctx) {
 }
 
 void SPHModel::SetBoundingBoxSize(const glm::vec3& size) {
-    bounding_box = BoundingBox{.size = size, .pos = {0.0f, 0.0f, 0.0f}};
+    bounding_box = gfx::BoundingBox{.size = size, .pos = {0.0f, 0.0f, 0.0f}};
 }
 
 void SPHModel::SetParticlesInBox(const gfx::Device& gfx,
-                                 const BoundingBox& box,
+                                 const gfx::BoundingBox& box,
                                  ParticleInBoxMode mode) {
     std::vector<glm::vec3> pos;
 

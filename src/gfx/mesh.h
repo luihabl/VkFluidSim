@@ -10,6 +10,11 @@
 
 namespace gfx {
 
+struct BoundingBox {
+    glm::vec3 size;
+    glm::vec3 pos;
+};
+
 // TODO: change this later
 struct Vertex {
     glm::vec3 pos;

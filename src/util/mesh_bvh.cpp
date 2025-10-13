@@ -26,13 +26,12 @@ void MeshBVH::Build() {
         return;
     }
 
-    triangle_start_idx.resize(n_triangles);
-    triangle_centroids.resize(n_triangles);
+    triangles.resize(n_triangles);
     for (u32 i = 0; i < n_triangles; i++) {
-        triangle_start_idx[i] = i * 3;
+        triangles[i].vertex_start_idx = i * 3;
 
         const auto& [v0, v1, v2] = GetTriangleAtIdx(i);
-        triangle_centroids[i] = (v0 + v1 + v2) / 3.0f;
+        triangles[i].centroid = (v0 + v1 + v2) / 3.0f;
     }
 
     nodes.reserve(2 * n_triangles - 1);
@@ -64,12 +63,10 @@ void MeshBVH::Split(u32 node_idx) {
     u32 j = i + node.triangle_count - 1;
 
     while (i <= j) {
-        if (triangle_centroids[i][split_pos.axis] < split_pos.pos) {
+        if (triangles[i].centroid[split_pos.axis] < split_pos.pos) {
             i++;
         } else {
-            std::swap(triangle_centroids[i], triangle_centroids[j]);
-            std::swap(triangle_start_idx[i], triangle_start_idx[j]);
-            j--;
+            std::swap(triangles[i], triangles[j--]);
         }
     }
 
@@ -78,6 +75,10 @@ void MeshBVH::Split(u32 node_idx) {
     if (left_count == 0 || left_count == node.triangle_count) {
         fmt::println("Early stop, triangle count: {} [parent count: {}]", left_count,
                      node.triangle_count);
+
+        fmt::println("AABB min: ({},{},{}) AABB max: ({},{},{})", node.aabb_min.x, node.aabb_min.y,
+                     node.aabb_min.z, node.aabb_max.x, node.aabb_max.y, node.aabb_max.z);
+
         return;
     }
 
@@ -124,7 +125,7 @@ void MeshBVH::UpdateBounds(u32 node_idx) {
 
 std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> MeshBVH::GetTriangleAtIdx(
     u32 idx) {
-    const u32 t_idx = triangle_start_idx[idx];
+    const u32 t_idx = triangles[idx].vertex_start_idx;
 
     return {
         mesh->vertices[mesh->indices[t_idx + 0]].pos,
@@ -134,7 +135,7 @@ std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> MeshBVH::GetTri
 }
 
 const glm::vec3& MeshBVH::GetCentroidAtIdx(u32 idx) {
-    return triangle_centroids[idx];
+    return triangles[idx].centroid;
 }
 
 }  // namespace vfs

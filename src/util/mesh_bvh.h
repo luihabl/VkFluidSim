@@ -21,8 +21,13 @@ public:
 private:
     gfx::CPUMesh* mesh{nullptr};
     std::vector<Node> nodes;
-    std::vector<u32> triangle_start_idx;
-    std::vector<glm::vec3> triangle_centroids;
+
+    struct TriangleInfo {
+        u32 vertex_start_idx;
+        glm::vec3 centroid;
+    };
+
+    std::vector<TriangleInfo> triangles;
 
     void UpdateBounds(u32 node_idx);
 

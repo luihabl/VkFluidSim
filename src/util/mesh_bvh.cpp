@@ -10,8 +10,9 @@
 
 namespace vfs {
 
-void MeshBVH::Init(gfx::CPUMesh* mesh) {
+void MeshBVH::Init(gfx::CPUMesh* mesh, SplitType split) {
     this->mesh = mesh;
+    split_type = split;
 }
 
 void MeshBVH::Build() {
@@ -45,10 +46,18 @@ void MeshBVH::Build() {
 }
 
 MeshBVH::Axis MeshBVH::ChooseSplitPosition(const Node& node) {
-    glm::vec3 extent = node.aabb_max - node.aabb_min;
-    auto* e = glm::value_ptr(extent);
-    u32 axis = std::distance(e, std::max_element(e, e + 3));
-    return {.axis = axis, .pos = node.aabb_min[axis] + extent[axis] / 2.0f};
+    switch (split_type) {
+        case SplitType::Midplane: {
+            glm::vec3 extent = node.aabb_max - node.aabb_min;
+            auto* e = glm::value_ptr(extent);
+            u32 axis = std::distance(e, std::max_element(e, e + 3));
+            return {.axis = axis, .pos = node.aabb_min[axis] + extent[axis] / 2.0f};
+        }
+
+        case SplitType::SurfaceAreaHeuristics: {
+            return {};
+        }
+    }
 }
 
 void MeshBVH::Split(u32 node_idx) {
@@ -73,12 +82,6 @@ void MeshBVH::Split(u32 node_idx) {
     u32 left_count = i - node.triangle_start;
 
     if (left_count == 0 || left_count == node.triangle_count) {
-        fmt::println("Early stop, triangle count: {} [parent count: {}]", left_count,
-                     node.triangle_count);
-
-        fmt::println("AABB min: ({},{},{}) AABB max: ({},{},{})", node.aabb_min.x, node.aabb_min.y,
-                     node.aabb_min.z, node.aabb_max.x, node.aabb_max.y, node.aabb_max.z);
-
         return;
     }
 

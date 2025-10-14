@@ -14,34 +14,38 @@ public:
         u32 child_b{0};
     };
 
-    void Init(gfx::CPUMesh* mesh);
-    void Build();
-    const std::vector<Node>& GetNodes() { return nodes; }
-
-private:
-    gfx::CPUMesh* mesh{nullptr};
-    std::vector<Node> nodes;
-
     struct TriangleInfo {
         u32 vertex_start_idx;
         glm::vec3 centroid;
     };
 
-    std::vector<TriangleInfo> triangles;
+    enum class SplitType {
+        Midplane,
+        SurfaceAreaHeuristics,
+    };
 
-    void UpdateBounds(u32 node_idx);
+    void Init(gfx::CPUMesh* mesh, SplitType split = SplitType::Midplane);
 
-    std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> GetTriangleAtIdx(u32 idx);
-    const glm::vec3& GetCentroidAtIdx(u32 idx);
+    void Build();
+    const std::vector<Node>& GetNodes() { return nodes; }
+    const std::vector<TriangleInfo>& GetTriangleInfo() { return triangles; }
 
-    void Split(u32 node_idx);
-
+private:
     struct Axis {
         u32 axis{0};  // 0: x, 1: y, 2: z
         float pos;
     };
-    Axis ChooseSplitPosition(const Node& node);
 
+    SplitType split_type{SplitType::Midplane};
+    gfx::CPUMesh* mesh{nullptr};
+    std::vector<Node> nodes;
+    std::vector<TriangleInfo> triangles;
     static constexpr u32 max_depth = 10;
+
+    void UpdateBounds(u32 node_idx);
+    std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> GetTriangleAtIdx(u32 idx);
+    const glm::vec3& GetCentroidAtIdx(u32 idx);
+    void Split(u32 node_idx);
+    Axis ChooseSplitPosition(const Node& node);
 };
 }  // namespace vfs

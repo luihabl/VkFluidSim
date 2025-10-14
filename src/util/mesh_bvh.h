@@ -5,9 +5,16 @@
 namespace vfs {
 class MeshBVH {
 public:
+    struct AABB {
+        glm::vec3 pos_min{std::numeric_limits<float>::max()};
+        glm::vec3 pos_max{std::numeric_limits<float>::lowest()};
+
+        void Grow(const glm::vec3& p);
+        float Area() const;
+    };
+
     struct Node {
-        glm::vec3 aabb_min;
-        glm::vec3 aabb_max;
+        AABB box;
         u32 triangle_start{0};
         u32 triangle_count{0};
         u32 child_a{0};
@@ -47,5 +54,6 @@ private:
     const glm::vec3& GetCentroidAtIdx(u32 idx);
     void Split(u32 node_idx);
     Axis ChooseSplitPosition(const Node& node);
+    float SurfaceAreaCost(const Node& node, int axis, float pos);
 };
 }  // namespace vfs

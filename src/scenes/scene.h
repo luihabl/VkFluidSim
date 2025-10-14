@@ -19,6 +19,10 @@ public:
     virtual void Step(VkCommandBuffer) = 0;
     virtual void Clear() = 0;
     virtual void Reset() = 0;
+    virtual void DrawDebugUI() {
+        if (time_step_model)
+            time_step_model->DrawDebugUI();
+    }
 
     SPHModel* GetModel() const { return time_step_model.get(); }
     const std::vector<gfx::MeshDrawObj>& GetMeshDrawObjs() { return mesh_draw_objs; }
@@ -26,6 +30,7 @@ public:
     struct BoxData {
         gfx::Transform transform;
         glm::vec4 color;
+        bool hidden{false};
     };
 
     const std::vector<BoxData>& GetBoxObjs() { return box_draw_objs; }

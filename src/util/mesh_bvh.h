@@ -41,6 +41,14 @@ public:
     const std::vector<Node>& GetNodes() { return nodes; }
     const std::vector<TriangleInfo>& GetTriangleInfo() { return triangles; }
 
+    struct ClosestPointQueryResult {
+        f64 min_distance_sq{std::numeric_limits<f32>::max()};
+        TriangleInfo closest_triangle;
+        glm::vec3 closest_point;
+    };
+
+    ClosestPointQueryResult QueryClosestPoint(const glm::vec3& query_point);
+
 private:
     struct Axis {
         u32 axis{0};  // 0: x, 1: y, 2: z
@@ -64,5 +72,9 @@ private:
     void Split(u32 node_idx);
     Axis ChooseSplitPosition(const Node& node, float* cost = nullptr);
     float SurfaceAreaCost(const Node& node, int axis, float pos);
+
+    void ClosestNode(const Node& node,
+                     const glm::vec3& query_point,
+                     ClosestPointQueryResult& result);
 };
 }  // namespace vfs

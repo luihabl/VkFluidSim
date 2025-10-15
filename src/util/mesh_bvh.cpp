@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <limits>
 
+#include "geometry.h"
 #include "gfx/mesh.h"
 
 namespace vfs {
@@ -275,4 +276,57 @@ float MeshBVH::AABB::Area() const {
 float MeshBVH::Node::Cost() const {
     return box.Area() * (f32)triangle_count;
 }
+
+MeshBVH::ClosestPointQueryResult MeshBVH::QueryClosestPoint(const glm::vec3& query_point) {
+    auto result = ClosestPointQueryResult{};
+    ClosestNode(nodes[0], query_point, result);
+    return result;
+}
+
+void MeshBVH::ClosestNode(const Node& node,
+                          const glm::vec3& query_point,
+                          ClosestPointQueryResult& result) {
+    // leaf node
+    if (node.child_a == 0) {
+        for (u32 i = node.triangle_start; i < node.triangle_start + node.triangle_count; i++) {
+            const auto& [v0, v1, v2] = GetTriangleAtIdx(i);
+            auto triangle_distance = DistancePointToTriangle(query_point, v0, v1, v2);
+
+            if (triangle_distance.sq_distance < result.min_distance_sq) {
+                result.min_distance_sq = triangle_distance.sq_distance;
+                result.closest_triangle = triangles[i];
+                result.closest_point = triangle_distance.point;
+                return;
+            }
+        }
+    }
+
+    // recurse
+    else {
+        const auto& child_a = nodes[node.child_a];
+        const auto& child_b = nodes[node.child_b];
+
+        auto d_a = DistancePointToAABB(query_point, child_a.box.pos_min, child_a.box.pos_max);
+        auto d_b = DistancePointToAABB(query_point, child_b.box.pos_min, child_b.box.pos_max);
+
+        if (d_a.sq_distance < d_b.sq_distance) {
+            if (d_a.sq_distance < result.min_distance_sq) {
+                ClosestNode(child_a, query_point, result);
+            }
+
+            if (d_b.sq_distance < result.min_distance_sq) {
+                ClosestNode(child_b, query_point, result);
+            }
+        } else {
+            if (d_b.sq_distance < result.min_distance_sq) {
+                ClosestNode(child_b, query_point, result);
+            }
+
+            if (d_a.sq_distance < result.min_distance_sq) {
+                ClosestNode(child_a, query_point, result);
+            }
+        }
+    }
+}
+
 }  // namespace vfs

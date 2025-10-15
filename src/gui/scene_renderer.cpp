@@ -61,6 +61,9 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
 
     auto view_proj = camera.GetViewProj();
     for (const auto& box : scene->GetBoxObjs()) {
+        if (box.hidden)
+            continue;
+
         auto pc = BoxDrawPipeline::PushConstants{
             .color = box.color,
             .matrix = view_proj * transform.Matrix() * box.transform.Matrix(),

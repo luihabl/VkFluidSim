@@ -19,12 +19,13 @@ void SceneRenderer::Init(const gfx::Device& gfx, SceneBase* scene, int w, int h)
 
     box_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format, true);
     particles_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
-    mesh_pipeline.Init(gfx.GetCoreCtx(), draw_img.format, depth_img.format);
 
     gfx::CPUMesh mesh;
     DrawQuad(mesh, glm::vec3(0.0f), 0.15f, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     // DrawCircleFill(mesh, glm::vec3(0.0f), 0.1f, 3);
     particle_mesh = gfx::UploadMesh(gfx, mesh);
+
+    scene->InitCustomDraw(draw_img.format, depth_img.format);
 }
 
 void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camera& camera) {
@@ -55,10 +56,6 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
 
     vkCmdBeginRendering(cmd, &render_info);
 
-    for (auto& mesh : scene->GetMeshDrawObjs()) {
-        mesh_pipeline.Draw(cmd, gfx, draw_img, mesh, camera);
-    }
-
     auto view_proj = camera.GetViewProj();
     for (const auto& box : scene->GetBoxObjs()) {
         if (box.hidden)
@@ -71,6 +68,8 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
 
         box_pipeline.Draw(cmd, gfx, draw_img, pc);
     }
+
+    scene->CustomDraw(cmd, draw_img, camera);
 
     if (scene && scene->GetModel()) {
         auto view_proj = camera.GetViewProj();
@@ -110,7 +109,6 @@ void SceneRenderer::Clear(const gfx::Device& gfx) {
     gfx.DestroyImage(depth_img);
     particles_pipeline.Clear(gfx.GetCoreCtx());
     box_pipeline.Clear(gfx.GetCoreCtx());
-    mesh_pipeline.Clear(gfx.GetCoreCtx());
     render_buffers.position_buffer.Destroy();
     render_buffers.velocity_buffer.Destroy();
     render_buffers.density_buffer.Destroy();

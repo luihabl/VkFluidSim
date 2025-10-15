@@ -45,7 +45,7 @@ void MeshBVH::Build() {
     Split(0);
 }
 
-MeshBVH::Axis MeshBVH::ChooseSplitPosition(const Node& node) {
+MeshBVH::Axis MeshBVH::ChooseSplitPosition(const Node& node, float* cost) {
     switch (split_type) {
         case SplitType::Midplane: {
             glm::vec3 extent = node.box.pos_max - node.box.pos_min;
@@ -70,6 +70,81 @@ MeshBVH::Axis MeshBVH::ChooseSplitPosition(const Node& node) {
                         best_cost = cost;
                     }
                 }
+            }
+
+            return {.axis = (u32)best_axis, .pos = best_pos};
+        }
+
+        case SplitType::BinSplit: {
+            constexpr u32 n_bins = 8;
+
+            float best_cost = 1e30f;
+            int best_axis = -1;
+            float best_pos = 0.0f;
+
+            for (int axis = 0; axis < 3; axis++) {
+                float bounds_min = 1e30f;
+                float bounds_max = -1e30f;
+
+                for (u32 i = node.triangle_start; i < node.triangle_start + node.triangle_count;
+                     i++) {
+                    float centroid = triangles[i].centroid[axis];
+                    bounds_min = std::min(bounds_min, centroid);
+                    bounds_max = std::max(bounds_max, centroid);
+                }
+
+                if (bounds_min == bounds_max)
+                    continue;
+
+                std::array<Bin, n_bins> bins;
+
+                f32 scale = (f32)n_bins / (bounds_max - bounds_min);
+
+                for (u32 i = node.triangle_start; i < node.triangle_start + node.triangle_count;
+                     i++) {
+                    const auto& centroid = triangles[i].centroid;
+                    const auto& [v0, v1, v2] = GetTriangleAtIdx(i);
+
+                    i32 bin_idx =
+                        std::min((i32)n_bins - 1, (i32)((centroid[axis] - bounds_min) * scale));
+
+                    bins[bin_idx].triangle_count++;
+                    bins[bin_idx].aabb.Grow(v0);
+                    bins[bin_idx].aabb.Grow(v1);
+                    bins[bin_idx].aabb.Grow(v2);
+                }
+
+                std::array<f32, n_bins - 1> left_area, right_area;
+                std::array<i32, n_bins - 1> left_count, right_count;
+
+                AABB left_box, right_box;
+                i32 left_sum{0}, right_sum{0};
+
+                for (u32 i = 0; i < n_bins - 1; i++) {
+                    left_sum += bins[i].triangle_count;
+                    left_count[i] = left_sum;
+                    left_box.Grow(bins[i].aabb);
+                    left_area[i] = left_box.Area();
+
+                    right_sum += bins[n_bins - 1 - i].triangle_count;
+                    right_count[n_bins - 2 - i] = right_sum;
+                    right_box.Grow(bins[n_bins - 1 - i].aabb);
+                    right_area[n_bins - 2 - i] = right_box.Area();
+                }
+
+                scale = (bounds_max - bounds_min) / (f32)n_bins;
+                for (u32 i = 0; i < n_bins - 1; i++) {
+                    f32 planeCost = left_count[i] * left_area[i] + right_count[i] * right_area[i];
+                    if (planeCost < best_cost) {
+                        best_axis = axis;
+                        best_pos = bounds_min + scale * (i + 1);
+                        best_cost = planeCost;
+                    }
+                }
+            }
+
+            if (cost) {
+                *cost = best_cost;
             }
 
             return {.axis = (u32)best_axis, .pos = best_pos};
@@ -101,12 +176,17 @@ float MeshBVH::SurfaceAreaCost(const Node& node, int axis, float pos) {
 }
 
 void MeshBVH::Split(u32 node_idx) {
+    constexpr u32 leaf_max_triangles = 2;
+
     auto& node = nodes[node_idx];
 
-    if (node.triangle_count <= 2)
+    if (node.triangle_count <= leaf_max_triangles)
         return;
 
-    auto split_pos = ChooseSplitPosition(node);
+    float split_cost;
+    auto split_pos = ChooseSplitPosition(node, &split_cost);
+    if (split_cost >= node.Cost())
+        return;
 
     u32 i = node.triangle_start;
     u32 j = i + node.triangle_count - 1;
@@ -180,9 +260,19 @@ void MeshBVH::AABB::Grow(const glm::vec3& p) {
     pos_max = glm::max(pos_max, p);
 }
 
+void MeshBVH::AABB::Grow(const AABB& aabb) {
+    if (aabb.pos_min.x != std::numeric_limits<float>::max()) {
+        Grow(aabb.pos_min);
+        Grow(aabb.pos_max);
+    }
+}
+
 float MeshBVH::AABB::Area() const {
     const auto e = pos_max - pos_min;
     return e.x * e.y + e.y * e.z + e.z * e.x;
 }
 
+float MeshBVH::Node::Cost() const {
+    return box.Area() * (f32)triangle_count;
+}
 }  // namespace vfs

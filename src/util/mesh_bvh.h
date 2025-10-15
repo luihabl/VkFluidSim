@@ -10,6 +10,7 @@ public:
         glm::vec3 pos_max{std::numeric_limits<float>::lowest()};
 
         void Grow(const glm::vec3& p);
+        void Grow(const AABB& aabb);
         float Area() const;
     };
 
@@ -19,6 +20,8 @@ public:
         u32 triangle_count{0};
         u32 child_a{0};
         u32 child_b{0};
+
+        float Cost() const;
     };
 
     struct TriangleInfo {
@@ -29,6 +32,7 @@ public:
     enum class SplitType {
         Midplane,
         SurfaceAreaHeuristics,
+        BinSplit,
     };
 
     void Init(gfx::CPUMesh* mesh, SplitType split = SplitType::Midplane);
@@ -43,6 +47,11 @@ private:
         float pos;
     };
 
+    struct Bin {
+        AABB aabb;
+        u32 triangle_count{0};
+    };
+
     SplitType split_type{SplitType::Midplane};
     gfx::CPUMesh* mesh{nullptr};
     std::vector<Node> nodes;
@@ -53,7 +62,7 @@ private:
     std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> GetTriangleAtIdx(u32 idx);
     const glm::vec3& GetCentroidAtIdx(u32 idx);
     void Split(u32 node_idx);
-    Axis ChooseSplitPosition(const Node& node);
+    Axis ChooseSplitPosition(const Node& node, float* cost = nullptr);
     float SurfaceAreaCost(const Node& node, int axis, float pos);
 };
 }  // namespace vfs

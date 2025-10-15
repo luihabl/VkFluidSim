@@ -35,7 +35,7 @@ public:
         BinSplit,
     };
 
-    void Init(gfx::CPUMesh* mesh, SplitType split = SplitType::Midplane);
+    void Init(gfx::CPUMesh* mesh, SplitType split = SplitType::BinSplit);
 
     void Build();
     const std::vector<Node>& GetNodes() { return nodes; }

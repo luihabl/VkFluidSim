@@ -93,7 +93,7 @@ u32 GetIndex3D(const glm::uvec3& size, const glm::uvec3& idx) {
 }  // namespace
 
 void ModelRenderScene::GenerateSDF() {
-    sdf_n_cells = {10, 10, 10};
+    sdf_n_cells = {20, 20, 20};
     sdf_grid.resize(sdf_n_cells.x * sdf_n_cells.y * sdf_n_cells.z, 0.0f);
     sdf_max_pos = {2, 2, 2};
     sdf_min_pos = {-2, -2, -2};
@@ -106,7 +106,7 @@ void ModelRenderScene::GenerateSDF() {
                 auto pos = step * glm::vec3(i, j, k) + sdf_min_pos;
 
                 auto res = bvh.QueryClosestPoint(pos);
-                sdf_grid[GetIndex3D(sdf_n_cells, {i, j, k})] = std::sqrt(res.min_distance_sq);
+                sdf_grid[GetIndex3D(sdf_n_cells, {i, j, k})] = res.min_distance_sq;
             }
         }
     }

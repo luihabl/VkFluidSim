@@ -73,10 +73,14 @@ src/gfx/transform.cpp
 src/gfx/camera.cpp
 
 src/gui/scene_renderer.cpp
-src/gui/draw_pipelines.cpp
 src/gui/gui.cpp
 src/gui/imgui_setup.cpp
 src/gui/common.cpp
+
+src/pipelines/box_pipeline.cpp
+src/pipelines/mesh_pipeline.cpp
+src/pipelines/particle_pipeline.cpp
+src/pipelines/raymarch_pipeline.cpp
 
 src/models/model.cpp
 src/models/lague_model.cpp

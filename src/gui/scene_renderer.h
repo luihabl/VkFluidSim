@@ -1,10 +1,11 @@
 #pragma once
 
-#include "draw_pipelines.h"
 #include "gfx/camera.h"
 #include "gfx/gfx.h"
 #include "gfx/transform.h"
 #include "models/model.h"
+#include "pipelines/box_pipeline.h"
+#include "pipelines/particle_pipeline.h"
 #include "scenes/scene.h"
 
 namespace vfs {

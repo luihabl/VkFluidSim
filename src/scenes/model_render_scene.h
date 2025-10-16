@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gfx/mesh.h"
-#include "gui/draw_pipelines.h"
+#include "pipelines/mesh_pipeline.h"
 #include "scene.h"
 #include "util/mesh_bvh.h"
 

@@ -301,8 +301,6 @@ void MeshBVH::ClosestNode(u32 node_idx,
                 result.node_idx = node_idx;
             }
         }
-
-        return;
     }
 
     // recurse

@@ -45,6 +45,7 @@ public:
         f64 min_distance_sq{std::numeric_limits<f32>::max()};
         TriangleInfo closest_triangle;
         glm::vec3 closest_point;
+        u32 node_idx;
     };
 
     ClosestPointQueryResult QueryClosestPoint(const glm::vec3& query_point);
@@ -73,8 +74,6 @@ private:
     Axis ChooseSplitPosition(const Node& node, float* cost = nullptr);
     float SurfaceAreaCost(const Node& node, int axis, float pos);
 
-    void ClosestNode(const Node& node,
-                     const glm::vec3& query_point,
-                     ClosestPointQueryResult& result);
+    void ClosestNode(u32 node_idx, const glm::vec3& query_point, ClosestPointQueryResult& result);
 };
 }  // namespace vfs

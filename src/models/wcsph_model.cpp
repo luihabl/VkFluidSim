@@ -34,7 +34,7 @@ void WCSPHModel::Init(const gfx::CoreCtx& ctx) {
     InitBufferReorder(ctx);
 
     auto& sim = Simulation::Get();
-    parameter_id = sim.AddDescriptor(sizeof(Parameters));
+    parameter_id = sim.AddUniformDescriptor(ctx, sizeof(Parameters));
     sim.InitDescriptorManager(ctx);
     sim.GetDescManager().SetUniformData(parameter_id, &parameters);
 

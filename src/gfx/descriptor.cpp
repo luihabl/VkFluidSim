@@ -96,64 +96,91 @@ VkDescriptorType GetDescType(DescriptorManager::DescType type) {
     switch (type) {
         case DescriptorManager::DescType::Uniform:
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            break;
         case DescriptorManager::DescType::Storage:
             return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            break;
+        case DescriptorManager::DescType::CombinedImageSampler:
+            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        case DescriptorManager::DescType::Sampler:
+            return VK_DESCRIPTOR_TYPE_SAMPLER;
+        case DescriptorManager::DescType::SampledImage:
+            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     }
 }
 
-VkBufferUsageFlags GetBufferUsage(DescriptorManager::DescType type) {
-    switch (type) {
-        case DescriptorManager::DescType::Uniform:
-            return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            break;
-        case DescriptorManager::DescType::Storage:
-            return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            break;
-    }
-}
+// VkBufferUsageFlags GetBufferUsage(DescriptorManager::DescType type) {
+//     switch (type) {
+//         case DescriptorManager::DescType::Uniform:
+//             return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+//             break;
+//         case DescriptorManager::DescType::Storage:
+//             return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+//             break;
+//         default:
+//             // Invalid
+//             return 0;
+//     }
+// }
 
-void DescriptorManager::Init(const gfx::CoreCtx& ctx, const std::vector<DescData>& desc) {
-    desc_data = desc;
+void DescriptorManager::Init(const gfx::CoreCtx& ctx, std::span<DescriptorInfo> desc) {
+    desc_info_ref = desc;
 
     desc_pool.Init(ctx,
                    {{
                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                       VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                       VK_DESCRIPTOR_TYPE_SAMPLER,
+                       VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                    }},
-                   256, 256);
+                   32, 32);
 
     auto layout_builder = gfx::DescriptorLayoutBuilder{};
 
-    for (u32 i = 0; i < desc_data.size(); i++) {
-        layout_builder.Add(i, GetDescType(desc_data[i].type));
-        desc_buffers.push_back(
-            gfx::Buffer::Create(ctx, desc_data[i].size, GetBufferUsage(desc_data[i].type)));
+    for (u32 i = 0; i < desc_info_ref.size(); i++) {
+        layout_builder.Add(i, GetDescType(desc_info_ref[i].type));
     }
 
     desc_layout = layout_builder.Build(ctx, VK_SHADER_STAGE_ALL);
 
     desc_set = desc_pool.Alloc(ctx, desc_layout);
     std::vector<VkWriteDescriptorSet> write_desc_sets;
-    for (u32 i = 0; i < desc_data.size(); i++) {
-        write_desc_sets.push_back(vk::util::WriteDescriptorSet(
-            desc_set, GetDescType(desc_data[i].type), i, &desc_buffers[i].desc_info));
+    for (u32 i = 0; i < desc_info_ref.size(); i++) {
+        switch (desc_info_ref[i].type) {
+            case DescType::Uniform:
+            case DescType::Storage: {
+                write_desc_sets.push_back(
+                    vk::util::WriteDescriptorSet(desc_set, GetDescType(desc_info_ref[i].type), i,
+                                                 &desc_info_ref[i].buffer.data_buffer.desc_info));
+                break;
+            }
+            case DescType::CombinedImageSampler:
+            case DescType::Sampler:
+            case DescType::SampledImage: {
+                auto info = VkDescriptorImageInfo{
+                    .sampler = desc_info_ref[i].image.sampler,
+                    .imageView = desc_info_ref[i].image.image.view,
+                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                };
+
+                write_desc_sets.push_back(vk::util::WriteDescriptorSet(
+                    desc_set, GetDescType(desc_info_ref[i].type), i, &info));
+
+                break;
+            }
+        }
     }
 
     vkUpdateDescriptorSets(ctx.device, write_desc_sets.size(), write_desc_sets.data(), 0, nullptr);
 }
 
 void DescriptorManager::Clear(const gfx::CoreCtx& ctx) {
-    for (auto& buf : desc_buffers) {
-        buf.Destroy();
-    }
     vkDestroyDescriptorSetLayout(ctx.device, desc_layout, nullptr);
     desc_pool.Clear(ctx);
 }
 
 void DescriptorManager::SetUniformData(u32 id, const void* data) const {
-    memcpy(desc_buffers[id].Map(), data, desc_data[id].size);
+    memcpy(desc_info_ref[id].buffer.data_buffer.Map(), data,
+           desc_info_ref[id].buffer.data_buffer.size);
 }
 
 }  // namespace gfx

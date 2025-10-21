@@ -21,6 +21,7 @@ public:
 private:
     u32 n{0};
 
+    std::vector<gfx::DescriptorManager::DescriptorInfo> desc_info;
     gfx::DescriptorManager spatial_hash_desc;
     ComputePipeline spatial_hash_pipeline;
 

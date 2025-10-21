@@ -37,13 +37,31 @@ private:
 
 class DescriptorManager {
 public:
-    enum class DescType { Uniform, Storage };
-    struct DescData {
-        u32 size{0};
-        DescType type{DescType::Uniform};
+    enum class DescType {
+        Uniform,
+        Storage,
+        CombinedImageSampler,
+        Sampler,
+        SampledImage,
     };
 
-    void Init(const gfx::CoreCtx& ctx, const std::vector<DescData>& desc);
+    struct BufferData {
+        gfx::Buffer data_buffer;
+    };
+
+    struct ImageData {
+        gfx::Image image;
+        VkSampler sampler;
+        VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
+    };
+
+    struct DescriptorInfo {
+        DescType type{DescType::Uniform};
+        BufferData buffer;
+        ImageData image;
+    };
+
+    void Init(const gfx::CoreCtx& ctx, std::span<DescriptorInfo> desc);
     void Clear(const gfx::CoreCtx& ctx);
 
     void SetUniformData(u32 id, const void* data) const;
@@ -55,8 +73,23 @@ public:
     VkDescriptorSet desc_set;
     VkDescriptorSetLayout desc_layout;
 
-    std::vector<DescData> desc_data;
-    std::vector<gfx::Buffer> desc_buffers;
+    std::span<DescriptorInfo> desc_info_ref;
+
+    static DescriptorInfo CreateUniformInfo(const gfx::CoreCtx& ctx, u32 size) {
+        return {
+            .type = DescType::Uniform,
+            .buffer = {.data_buffer =
+                           gfx::Buffer::Create(ctx, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)},
+        };
+    }
+
+    static DescriptorInfo CreateStorageBuffer(const gfx::CoreCtx& ctx, u32 size) {
+        return {
+            .type = DescType::Storage,
+            .buffer = {.data_buffer =
+                           gfx::Buffer::Create(ctx, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)},
+        };
+    }
 };
 
 }  // namespace gfx

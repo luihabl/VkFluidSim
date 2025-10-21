@@ -33,7 +33,7 @@ void GUI::Init(Platform& platform) {
     });
 
     auto& sim = Simulation::Get();
-    sim.Init();
+    sim.Init(gfx.GetCoreCtx());
     sim.SetScene(std::make_unique<ModelRenderScene>(gfx));
 
     auto ext = gfx.GetSwapchainExtent();

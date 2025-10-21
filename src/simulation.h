@@ -18,7 +18,7 @@ class Simulation {
 public:
     friend SimulationBuilder;
 
-    void Init();
+    void Init(const gfx::CoreCtx& ctx);
     void Step(VkCommandBuffer cmd);
     void Clear(const gfx::CoreCtx& ctx);
 
@@ -31,9 +31,7 @@ public:
     SceneBase* GetScene();
     void DrawDebugUI();
 
-    u32 AddDescriptor(
-        u32 size,
-        gfx::DescriptorManager::DescType type = gfx::DescriptorManager::DescType::Uniform);
+    u32 AddUniformDescriptor(const gfx::CoreCtx& ctx, u32 size);
     void InitDescriptorManager(const gfx::CoreCtx& ctx);
     const gfx::DescriptorManager& GetDescManager() { return desc_manager; }
     void ClearDescManager(const gfx::CoreCtx& ctx);
@@ -50,7 +48,8 @@ private:
 
     u32 global_parameter_id;
     gfx::DescriptorManager desc_manager;
-    std::vector<gfx::DescriptorManager::DescData> descriptors;
+    gfx::DescriptorManager::DescriptorInfo global_parameter_info;
+    std::vector<gfx::DescriptorManager::DescriptorInfo> descriptors;
 
     float current_time{0.0f};
     u32 current_step{0};

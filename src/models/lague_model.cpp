@@ -45,8 +45,8 @@ void LagueModel::Init(const gfx::CoreCtx& ctx) {
 
     auto& sim = Simulation::Get();
 
-    parameter_id = sim.AddDescriptor(sizeof(Parameters));
-    buf_id = sim.AddDescriptor(sizeof(LagueModelBuffers));
+    parameter_id = sim.AddUniformDescriptor(ctx, sizeof(Parameters));
+    buf_id = sim.AddUniformDescriptor(ctx, sizeof(LagueModelBuffers));
 
     sim.InitDescriptorManager(ctx);
 

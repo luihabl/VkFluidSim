@@ -85,10 +85,10 @@ void SPHModel::Init(const gfx::CoreCtx& ctx) {
     spatial_hash.Init(ctx, parameters.n_particles,
                       Simulation::Get().GetGlobalParameters().smooth_radius);
 
-    kernel_coeff_id = Simulation::Get().AddDescriptor(sizeof(KernelCoefficients));
-    model_parameter_id = Simulation::Get().AddDescriptor(sizeof(Parameters));
-    spatial_hash_buf_id = Simulation::Get().AddDescriptor(sizeof(SpatialHashBuffers));
-    model_buffers_id = Simulation::Get().AddDescriptor(sizeof(ModelBuffers));
+    kernel_coeff_id = Simulation::Get().AddUniformDescriptor(ctx, sizeof(KernelCoefficients));
+    model_parameter_id = Simulation::Get().AddUniformDescriptor(ctx, sizeof(Parameters));
+    spatial_hash_buf_id = Simulation::Get().AddUniformDescriptor(ctx, sizeof(SpatialHashBuffers));
+    model_buffers_id = Simulation::Get().AddUniformDescriptor(ctx, sizeof(ModelBuffers));
 
     SetBoundingBoxSize(parameters.bounding_box.size);
     buffers = CreateDataBuffers(ctx);

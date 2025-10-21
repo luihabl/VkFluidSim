@@ -1,5 +1,6 @@
 #include "simulation.h"
 
+#include "gfx/descriptor.h"
 #include "imgui.h"
 
 namespace vfs {
@@ -16,13 +17,13 @@ Simulation g_simulation{SimulationBuilder::Build()};
 Simulation& Simulation::Get() {
     return g_simulation;
 }
-void Simulation::Init() {
+void Simulation::Init(const gfx::CoreCtx& ctx) {
     parameters = SimulationParameters{
         .gravity = {0.0f, -9.81f, 0.0f},
         .smooth_radius = 0.2f,
     };
 
-    global_parameter_id = AddDescriptor(sizeof(SimulationParameters));
+    ClearDescManager(ctx);
 }
 
 void Simulation::Step(VkCommandBuffer cmd) {
@@ -35,6 +36,10 @@ void Simulation::Step(VkCommandBuffer cmd) {
 void Simulation::Clear(const gfx::CoreCtx& ctx) {
     if (scene)
         scene->Clear();
+
+    for (auto& d : descriptors) {
+        d.buffer.data_buffer.Destroy();
+    }
 
     desc_manager.Clear(ctx);
 }
@@ -54,8 +59,8 @@ SceneBase* Simulation::GetScene() {
     return scene.get();
 };
 
-u32 Simulation::AddDescriptor(u32 size, gfx::DescriptorManager::DescType type) {
-    descriptors.push_back({.size = size, .type = type});
+u32 Simulation::AddUniformDescriptor(const gfx::CoreCtx& ctx, u32 size) {
+    descriptors.push_back(gfx::DescriptorManager::CreateUniformInfo(ctx, size));
     return descriptors.size() - 1;
 }
 
@@ -65,9 +70,16 @@ void Simulation::InitDescriptorManager(const gfx::CoreCtx& ctx) {
 }
 
 void Simulation::ClearDescManager(const gfx::CoreCtx& ctx) {
-    desc_manager.Clear(ctx);
+    if (desc_manager.desc_set != VK_NULL_HANDLE)
+        desc_manager.Clear(ctx);
+
+    for (auto& d : descriptors) {
+        d.buffer.data_buffer.Destroy();
+    }
+
     descriptors = {};
-    global_parameter_id = AddDescriptor(sizeof(SimulationParameters));
+
+    global_parameter_id = AddUniformDescriptor(ctx, sizeof(SimulationParameters));
 }
 
 void Simulation::DrawDebugUI() {

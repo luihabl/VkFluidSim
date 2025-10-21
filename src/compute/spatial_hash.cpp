@@ -1,5 +1,8 @@
 #include "spatial_hash.h"
 
+#include "gfx/common.h"
+#include "gfx/descriptor.h"
+
 namespace vfs {
 
 namespace {
@@ -25,7 +28,13 @@ void SpatialHash::Init(const gfx::CoreCtx& ctx, u32 n, float cell_size) {
     sort.Init(ctx);
     offset.Init(ctx);
 
-    spatial_hash_desc.Init(ctx, {{.size = sizeof(UniformData)}});
+    desc_info.push_back({
+        .type = gfx::DescriptorManager::DescType::Uniform,
+        .buffer = {.data_buffer = gfx::Buffer::Create(ctx, sizeof(UniformData),
+                                                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)},
+    });
+
+    spatial_hash_desc.Init(ctx, desc_info);
     auto uniforms = UniformData{
         .cell_size = cell_size,
         .spatial_keys = spatial_keys.device_addr,
@@ -54,6 +63,8 @@ void SpatialHash::Run(const gfx::CoreCtx& ctx, VkCommandBuffer cmd, VkDeviceAddr
 }
 
 void SpatialHash::Clear(const gfx::CoreCtx& ctx) {
+    desc_info.back().buffer.data_buffer.Destroy();
+
     spatial_keys.Destroy();
     spatial_indices.Destroy();
     spatial_offsets.Destroy();

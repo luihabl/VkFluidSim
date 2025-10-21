@@ -13,6 +13,7 @@ set(SLANG_SHADERS
     draw/box.slang
     draw/particles_3d.slang
     draw/mesh.slang
+    draw/raymarch.slang
 
 )
 

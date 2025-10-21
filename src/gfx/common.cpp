@@ -73,4 +73,50 @@ void Buffer::Destroy() {
     }
 }
 
+Image Image::Create(const CoreCtx& ctx,
+                    VkExtent3D size,
+                    VkFormat format,
+                    VkImageUsageFlags usage,
+                    bool mip) {
+    auto img = Image{
+        .format = format,
+        .extent = size,
+        .device = ctx.device,
+        .allocator = ctx.allocator,
+    };
+
+    auto img_info = vk::util::ImageCreateInfo(format, usage, size);
+
+    if (mip) {
+        // TODO: check this
+        img_info.mipLevels = (uint32_t)std::floor(std::log2(std::max(size.width, size.height))) + 1;
+    }
+
+    auto alloc_info = VmaAllocationCreateInfo{
+        .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+        .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    };
+
+    VK_CHECK(
+        vmaCreateImage(ctx.allocator, &img_info, &alloc_info, &img.image, &img.allocation, NULL));
+
+    auto aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (format == VK_FORMAT_D32_SFLOAT) {
+        aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+
+    auto view_info = vk::util::ImageViewCreateInfo(format, img.image, aspect_flag);
+    view_info.subresourceRange.levelCount = img_info.mipLevels;
+    VK_CHECK(vkCreateImageView(ctx.device, &view_info, NULL, &img.view));
+
+    return img;
+}
+
+void Image::Destroy() {
+    if (image != VK_NULL_HANDLE) {
+        vkDestroyImageView(device, view, NULL);
+        vmaDestroyImage(allocator, image, allocation);
+        image = VK_NULL_HANDLE;
+    }
+}
 }  // namespace gfx

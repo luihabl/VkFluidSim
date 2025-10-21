@@ -15,50 +15,6 @@
 
 namespace gfx {
 
-Image Device::CreateImage(VkExtent3D size,
-                          VkFormat format,
-                          VkImageUsageFlags usage,
-                          bool mip) const {
-    auto img = Image{
-        .format = format,
-        .extent = size,
-    };
-
-    auto img_info = vk::util::ImageCreateInfo(format, usage, size);
-
-    if (mip) {
-        // TODO: check this
-        img_info.mipLevels = (uint32_t)std::floor(std::log2(std::max(size.width, size.height))) + 1;
-    }
-
-    auto alloc_info = VmaAllocationCreateInfo{
-        .usage = VMA_MEMORY_USAGE_GPU_ONLY,
-        .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    };
-
-    VK_CHECK(
-        vmaCreateImage(core.allocator, &img_info, &alloc_info, &img.image, &img.allocation, NULL));
-
-    auto aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
-    if (format == VK_FORMAT_D32_SFLOAT) {
-        aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
-    }
-
-    auto view_info = vk::util::ImageViewCreateInfo(format, img.image, aspect_flag);
-    view_info.subresourceRange.levelCount = img_info.mipLevels;
-    VK_CHECK(vkCreateImageView(core.device, &view_info, NULL, &img.view));
-
-    return img;
-}
-
-void Device::DestroyImage(Image& img) const {
-    if (img.image != VK_NULL_HANDLE) {
-        vkDestroyImageView(core.device, img.view, NULL);
-        vmaDestroyImage(core.allocator, img.image, img.allocation);
-        img.image = VK_NULL_HANDLE;
-    }
-}
-
 u32 Device::CurrentFrameIndex() {
     return frame_number % gfx::FRAME_COUNT;
 }

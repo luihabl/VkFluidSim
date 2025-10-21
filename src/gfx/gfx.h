@@ -32,8 +32,8 @@ struct Device {
     VkCommandBuffer BeginFrame();
     void EndFrame(VkCommandBuffer cmd, const Image& draw_img);
 
-    Image CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip) const;
-    void DestroyImage(Image& img) const;
+    // Image CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mip) const;
+    // void DestroyImage(Image& img) const;
 
     const CoreCtx& GetCoreCtx() const { return core; }
     VkQueue GetQueue() const { return graphics_queue; }

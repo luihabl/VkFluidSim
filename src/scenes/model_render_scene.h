@@ -46,6 +46,7 @@ private:
     MeshDrawPipeline mesh_pipeline;
     DensityRaymarchDrawPipeline raymarch_pipeline;
 
-    // VkSampler linear_sampler;
+    VkSampler sdf_sampler;
+    gfx::Image sdf_image;
 };
 }  // namespace vfs

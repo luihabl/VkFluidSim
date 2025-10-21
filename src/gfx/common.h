@@ -57,6 +57,16 @@ struct Image {
     VkExtent3D extent;
     VkFormat format;
     VmaAllocation allocation;
+
+    VkDevice device{nullptr};
+    VmaAllocator allocator{nullptr};
+
+    static Image Create(const CoreCtx& ctx,
+                        VkExtent3D size,
+                        VkFormat format,
+                        VkImageUsageFlags usage,
+                        bool mip = false);
+    void Destroy();
 };
 
 struct Buffer {

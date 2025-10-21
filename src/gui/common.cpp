@@ -38,7 +38,7 @@ void DrawQuad(gfx::CPUMesh& mesh, const glm::vec3& center, float side, const glm
     mesh.vertices.push_back({.pos = ul, .uv = {0.0f, 1.0f}});
 }
 
-gfx::Image CreateDrawImage(const gfx::Device& gfx, u32 w, u32 h) {
+gfx::Image CreateDrawImage(const gfx::CoreCtx& ctx, u32 w, u32 h) {
     VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
     VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 
@@ -50,16 +50,16 @@ gfx::Image CreateDrawImage(const gfx::Device& gfx, u32 w, u32 h) {
 
     bool use_mipmaps = false;
 
-    return gfx.CreateImage(extent, format, usage, use_mipmaps);
+    return gfx::Image::Create(ctx, extent, format, usage, use_mipmaps);
 }
 
-gfx::Image CreateDepthImage(const gfx::Device& gfx, u32 w, u32 h) {
+gfx::Image CreateDepthImage(const gfx::CoreCtx& ctx, u32 w, u32 h) {
     VkExtent3D extent = {.width = (uint32_t)w, .height = (uint32_t)h, .depth = 1};
     VkFormat format = VK_FORMAT_D32_SFLOAT;
 
     VkImageUsageFlags usage{0};
     usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-    return gfx.CreateImage(extent, format, usage, false);
+    return gfx::Image::Create(ctx, extent, format, usage, false);
 }
 }  // namespace vfs

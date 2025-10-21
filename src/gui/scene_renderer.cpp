@@ -9,8 +9,8 @@ namespace vfs {
 void SceneRenderer::Init(const gfx::Device& gfx, SceneBase* scene, int w, int h) {
     this->scene = scene;
 
-    draw_img = CreateDrawImage(gfx, w, h);
-    depth_img = CreateDepthImage(gfx, w, h);
+    draw_img = CreateDrawImage(gfx.GetCoreCtx(), w, h);
+    depth_img = CreateDepthImage(gfx.GetCoreCtx(), w, h);
 
     clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -105,8 +105,8 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
 
 void SceneRenderer::Clear(const gfx::Device& gfx) {
     gfx::DestroyMesh(gfx, particle_mesh);
-    gfx.DestroyImage(draw_img);
-    gfx.DestroyImage(depth_img);
+    draw_img.Destroy();
+    depth_img.Destroy();
     particles_pipeline.Clear(gfx.GetCoreCtx());
     box_pipeline.Clear(gfx.GetCoreCtx());
     render_buffers.position_buffer.Destroy();

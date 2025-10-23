@@ -85,7 +85,15 @@ Image Image::Create(const CoreCtx& ctx,
         .allocator = ctx.allocator,
     };
 
-    auto img_info = vk::util::ImageCreateInfo(format, usage, size);
+    u8 dims = 1;
+    if (size.height > 1) {
+        dims = 2;
+        if (size.depth > 1) {
+            dims = 3;
+        }
+    }
+
+    auto img_info = vk::util::ImageCreateInfo(format, usage, size, dims);
 
     if (mip) {
         // TODO: check this
@@ -105,7 +113,7 @@ Image Image::Create(const CoreCtx& ctx,
         aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
     }
 
-    auto view_info = vk::util::ImageViewCreateInfo(format, img.image, aspect_flag);
+    auto view_info = vk::util::ImageViewCreateInfo(format, img.image, aspect_flag, dims);
     view_info.subresourceRange.levelCount = img_info.mipLevels;
     VK_CHECK(vkCreateImageView(ctx.device, &view_info, NULL, &img.view));
 

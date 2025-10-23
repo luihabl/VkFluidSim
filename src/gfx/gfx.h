@@ -93,6 +93,8 @@ struct Device {
         staging.Destroy();
     }
 
+    void SetImageData(gfx::Image& img, void* data, u32 texel_size, bool mip = false) const;
+
     void SetTopTimestamp(VkCommandBuffer cmd, u32 id);
     void SetBottomTimestamp(VkCommandBuffer cmd, u32 id);
 

@@ -4,6 +4,7 @@
 #include <VkBootstrap.h>
 
 #include <cstdint>
+#include <cstring>
 #include <vulkan/vulkan.hpp>
 
 #include "SDL3/SDL_video.h"
@@ -246,4 +247,37 @@ void Device::Clear() {
 
     vmaDestroyAllocator(core.allocator);
 }
+void Device::SetImageData(gfx::Image& img, void* data, u32 texel_size, bool mip) const {
+    u32 data_size = img.extent.width * img.extent.height * img.extent.depth * texel_size;
+
+    auto upload_buffer = gfx::Buffer::Create(core, data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    memcpy(upload_buffer.Map(), data, data_size);
+
+    ImmediateSubmit([&](VkCommandBuffer cmd) {
+        vk::util::TransitionImage(cmd, img.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        auto copy_reg = VkBufferImageCopy{
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .imageSubresource.mipLevel = 0,
+            .imageSubresource.baseArrayLayer = 0,
+            .imageSubresource.layerCount = 1,
+            .imageExtent = img.extent,
+        };
+
+        vkCmdCopyBufferToImage(cmd, upload_buffer.buffer, img.image,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_reg);
+
+        // TODO: add mip map generation here
+
+        vk::util::TransitionImage(cmd, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    });
+
+    upload_buffer.Destroy();
+}
+
 }  // namespace gfx

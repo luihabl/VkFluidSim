@@ -108,12 +108,21 @@ inline auto PresentInfoKHR() {
     };
 }
 
-inline auto ImageCreateInfo(VkFormat format, VkImageUsageFlags flags, VkExtent3D extent) {
+inline auto ImageCreateInfo(VkFormat format,
+                            VkImageUsageFlags flags,
+                            VkExtent3D extent,
+                            u8 dimensions = 2) {
+    VkImageType type = VK_IMAGE_TYPE_2D;
+    if (dimensions == 3)
+        type = VK_IMAGE_TYPE_3D;
+    if (dimensions == 1)
+        type = VK_IMAGE_TYPE_1D;
+
     return VkImageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = NULL,
 
-        .imageType = VK_IMAGE_TYPE_2D,
+        .imageType = type,
         .format = format,
         .extent = extent,
 
@@ -127,12 +136,21 @@ inline auto ImageCreateInfo(VkFormat format, VkImageUsageFlags flags, VkExtent3D
     };
 }
 
-inline auto ImageViewCreateInfo(VkFormat fmt, VkImage img, VkImageAspectFlags aspect_flags) {
+inline auto ImageViewCreateInfo(VkFormat fmt,
+                                VkImage img,
+                                VkImageAspectFlags aspect_flags,
+                                u8 dimensions = 2) {
+    VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D;
+    if (dimensions == 3)
+        type = VK_IMAGE_VIEW_TYPE_3D;
+    if (dimensions == 1)
+        type = VK_IMAGE_VIEW_TYPE_1D;
+
     return VkImageViewCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = NULL,
 
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .viewType = type,
         .image = img,
         .format = fmt,
 

@@ -3,6 +3,9 @@
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 
+#include "mesh_bvh.h"
+#include "mesh_pseudonormals.h"
+
 namespace vfs {
 TriangleDistance DistancePointToTriangle(const glm::dvec3& p,
                                          const glm::dvec3& v0,
@@ -235,4 +238,70 @@ AABBDistance DistancePointToAABB(const glm::dvec3& p,
 
     return result;
 }
+
+SignedDistanceResult SignedDistanceToMesh(const MeshBVH& bvh,
+                                          const MeshPseudonormals& pseudonormals,
+                                          const glm::vec3& point) {
+    auto query_result = bvh.QueryClosestPoint(point);
+
+    const auto* mesh = pseudonormals.GetMesh();
+
+    glm::vec3 pseudonormal;
+
+    switch (query_result.closest_entity) {
+        case TriangleClosestEntity::V0: {
+            const auto& vertex_pn = pseudonormals.VertexPseudonormals();
+            auto vertex_id = mesh->indices[query_result.closest_triangle.vertex_start_idx + 0];
+            pseudonormal = vertex_pn[vertex_id];
+            break;
+        }
+        case TriangleClosestEntity::V1: {
+            const auto& vertex_pn = pseudonormals.VertexPseudonormals();
+            auto vertex_id = mesh->indices[query_result.closest_triangle.vertex_start_idx + 1];
+            pseudonormal = vertex_pn[vertex_id];
+            break;
+        }
+        case TriangleClosestEntity::V2: {
+            const auto& vertex_pn = pseudonormals.VertexPseudonormals();
+            auto vertex_id = mesh->indices[query_result.closest_triangle.vertex_start_idx + 2];
+            pseudonormal = vertex_pn[vertex_id];
+            break;
+        }
+        case TriangleClosestEntity::E01: {
+            const auto& edge_pn = pseudonormals.EdgePseudonormals();
+            pseudonormal = edge_pn[query_result.closest_triangle.vertex_start_idx / 3][0];
+            break;
+        }
+        case TriangleClosestEntity::E12: {
+            const auto& edge_pn = pseudonormals.EdgePseudonormals();
+            pseudonormal = edge_pn[query_result.closest_triangle.vertex_start_idx / 3][1];
+            break;
+        }
+        case TriangleClosestEntity::E02: {
+            const auto& edge_pn = pseudonormals.EdgePseudonormals();
+            pseudonormal = edge_pn[query_result.closest_triangle.vertex_start_idx / 3][2];
+            break;
+        }
+        case TriangleClosestEntity::F: {
+            const auto& triangle_pn = pseudonormals.TrianglePseudonormals();
+            pseudonormal = triangle_pn[query_result.closest_triangle.vertex_start_idx / 3];
+            break;
+        }
+    }
+
+    auto u = point - query_result.closest_point;
+    auto sign = glm::dot(u, pseudonormal) >= 0 ? 1.0 : -1.0;
+
+    auto result = SignedDistanceResult{};
+    result.distance_info = {
+        .sq_distance = query_result.min_distance_sq,
+        .entity = query_result.closest_entity,
+        .point = query_result.closest_point,
+    };
+
+    result.signed_distance = sign * std::sqrt(query_result.min_distance_sq);
+
+    return result;
+}
+
 }  // namespace vfs

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "gfx/common.h"
+#include "gfx/descriptor.h"
 #include "gfx/mesh.h"
+#include "pipelines/box_pipeline.h"
 #include "pipelines/mesh_pipeline.h"
 #include "pipelines/raymarch_pipeline.h"
 #include "scene.h"
@@ -28,6 +30,9 @@ private:
     void SetQueryPoint(const glm::vec3& point);
     void GenerateSDF();
 
+    glm::vec3 query_point;
+    MeshBVH::ClosestPointQueryResult query_result;
+
     // Meshes
     gfx::CPUMesh model_mesh;
     gfx::MeshDrawObj model_draw_obj;
@@ -45,8 +50,11 @@ private:
     // Draw pipelines
     MeshDrawPipeline mesh_pipeline;
     DensityRaymarchDrawPipeline raymarch_pipeline;
+    BoxDrawPipeline box_pipeline;
 
+    // gfx::Image sdf_image;
+    gfx::DescriptorManager descriptor_manager;
     VkSampler sdf_sampler;
-    gfx::Image sdf_image;
+    std::vector<gfx::DescriptorManager::DescriptorInfo> desc_info;
 };
 }  // namespace vfs

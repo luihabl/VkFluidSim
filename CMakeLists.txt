@@ -96,6 +96,8 @@ src/scenes/model_render_scene.cpp
 
 src/util/mesh_loader.cpp
 src/util/mesh_bvh.cpp
+src/util/mesh_sdf.cpp
+src/util/mesh_pseudonormals.cpp
 src/util/geometry.cpp
 
 src/simulation.cpp

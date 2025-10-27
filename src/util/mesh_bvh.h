@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/mesh.h"
+#include "util/geometry.h"
 
 namespace vfs {
 class MeshBVH {
@@ -35,7 +36,7 @@ public:
         BinSplit,
     };
 
-    void Init(gfx::CPUMesh* mesh, SplitType split = SplitType::BinSplit);
+    void Init(const gfx::CPUMesh& mesh, SplitType split = SplitType::BinSplit);
 
     void Build();
     const std::vector<Node>& GetNodes() { return nodes; }
@@ -44,11 +45,14 @@ public:
     struct ClosestPointQueryResult {
         f64 min_distance_sq{std::numeric_limits<f32>::max()};
         TriangleInfo closest_triangle;
+        TriangleClosestEntity closest_entity;
         glm::vec3 closest_point;
         u32 node_idx;
     };
 
-    ClosestPointQueryResult QueryClosestPoint(const glm::vec3& query_point);
+    ClosestPointQueryResult QueryClosestPoint(const glm::vec3& query_point) const;
+
+    const gfx::CPUMesh* GetMesh() const { return mesh; }
 
 private:
     struct Axis {
@@ -62,18 +66,21 @@ private:
     };
 
     SplitType split_type{SplitType::Midplane};
-    gfx::CPUMesh* mesh{nullptr};
+    const gfx::CPUMesh* mesh{nullptr};
     std::vector<Node> nodes;
     std::vector<TriangleInfo> triangles;
     static constexpr u32 max_depth = 10;
 
     void UpdateBounds(u32 node_idx);
-    std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> GetTriangleAtIdx(u32 idx);
+    std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> GetTriangleAtIdx(
+        u32 idx) const;
     const glm::vec3& GetCentroidAtIdx(u32 idx);
     void Split(u32 node_idx);
     Axis ChooseSplitPosition(const Node& node, float* cost = nullptr);
     float SurfaceAreaCost(const Node& node, int axis, float pos);
 
-    void ClosestNode(u32 node_idx, const glm::vec3& query_point, ClosestPointQueryResult& result);
+    void ClosestNode(u32 node_idx,
+                     const glm::vec3& query_point,
+                     ClosestPointQueryResult& result) const;
 };
 }  // namespace vfs

@@ -6,7 +6,12 @@
 namespace vfs {
 void DensityRaymarchDrawPipeline::Init(const gfx::CoreCtx& ctx,
                                        VkFormat draw_img_format,
-                                       VkFormat depth_img_format) {
+                                       VkFormat depth_img_format,
+                                       VkDescriptorSet set,
+                                       VkDescriptorSetLayout ds_layout) {
+    this->set = set;
+    this->ds_layout = ds_layout;
+
     auto gfx_shader = vk::util::LoadShaderModule(
         ctx, Platform::Info::ResourcePath("shaders/compiled/raymarch.slang.spv").c_str());
 
@@ -16,7 +21,7 @@ void DensityRaymarchDrawPipeline::Init(const gfx::CoreCtx& ctx,
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
     };
 
-    layout = vk::util::CreatePipelineLayout(ctx, {}, {{push_constant_range}});
+    layout = vk::util::CreatePipelineLayout(ctx, {{ds_layout}}, {{push_constant_range}});
 
     pipeline =
         vk::util::GraphicsPipelineBuilder(layout)
@@ -45,12 +50,13 @@ void DensityRaymarchDrawPipeline::Clear(const gfx::CoreCtx& ctx) {
 
 void DensityRaymarchDrawPipeline::Draw(VkCommandBuffer cmd,
                                        gfx::Device& gfx,
-                                       const gfx::Buffer& field,
-                                       const glm::ivec3& field_size,
+                                       const glm::vec3& field_size,
                                        const gfx::Image& draw_img,
                                        const gfx::MeshDrawObj& mesh,
                                        const gfx::Camera& camera) {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &set, 0, 0);
 
     const auto viewport = VkViewport{
         .x = 0,
@@ -74,7 +80,6 @@ void DensityRaymarchDrawPipeline::Draw(VkCommandBuffer cmd,
         .transform = mesh.transform.Matrix(),
         .view_proj = camera.GetViewProj(),
         .camera_pos = camera.GetPosition(),
-        .field = field.device_addr,
         .field_size = field_size,
     };
 

@@ -1,10 +1,12 @@
 
+[[vk::binding(0)]]
+Sampler3D sdf_sampler;
 
 struct PushConstants {
     float4x4 transform;
     float4x4 view_proj;
     float3 camera_pos;
-    float* field;
+    float3 field_size;
 }
 
 struct Vertex {
@@ -44,7 +46,11 @@ bool IsInsideAABB(float3 pos) {
 
 float DensityAtPosition(float3 pos) {
     if (pos.x >= -1 && pos.x <= 1 && pos.y >= -1 && pos.y <= 1 && pos.z >= -1 && pos.z <= 1) {
-        return 1.0;
+        let val = sdf_sampler.Sample(0.5f * (pos + 1));
+        float distance = abs(val.x);
+
+        return distance;
+
     } else {
         return 0.0f;
     }
@@ -54,19 +60,21 @@ float4 ComputeForwardLightRaymarch(float3 origin,
                                    float3 direction,
                                    PushConstants pc,
                                    VertexOutput in) {
-    let step = 0.01;
+    let step = 0.001;
     float light = 0.0f;
     float sign = 1.0;  // front ? 1 : -1;
+
+    let initial_pos = origin;
 
     for (int i = 0; i < 1000; i++) {
         if (!IsInsideAABB(origin)) {
             break;
         }
-        light += DensityAtPosition(origin);
+        light += 20 * step * DensityAtPosition(origin);
         origin += sign * direction * step;
     }
 
-    return 1 - exp(-light * 0.01);
+    return light;
 }
 
 [shader("fragment")]
@@ -89,6 +97,7 @@ FragmentOutput frag_main(VertexOutput input, uniform PushConstants pc) {
     // out.color ComputeLightRaymarch(input.world_pos, )
     out.color = ComputeForwardLightRaymarch(
         input.world_pos.xyz, normalize(input.world_pos.xyz - pc.camera_pos.xyz), pc, input);
+    out.color.w = 1.0f;
 
     // out.color = abs(normalize(input.world_pos));
     return out;

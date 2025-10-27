@@ -13,16 +13,19 @@ public:
         glm::mat4 transform;
         glm::mat4 view_proj;
         glm::vec3 camera_pos;
-        VkDeviceAddress field;
-        glm::ivec3 field_size;
+        glm::vec3 field_size;
     };
 
-    void Init(const gfx::CoreCtx& ctx, VkFormat draw_img_format, VkFormat depth_img_format);
+    void Init(const gfx::CoreCtx& ctx,
+              VkFormat draw_img_format,
+              VkFormat depth_img_format,
+              VkDescriptorSet set,
+              VkDescriptorSetLayout ds_layout);
+
     void Clear(const gfx::CoreCtx& ctx);
     void Draw(VkCommandBuffer cmd,
               gfx::Device& gfx,
-              const gfx::Buffer& field,
-              const glm::ivec3& field_size,
+              const glm::vec3& field_size,
               const gfx::Image& draw_img,
               const gfx::MeshDrawObj& mesh,
               const gfx::Camera& camera);
@@ -30,6 +33,8 @@ public:
 private:
     VkPipeline pipeline;
     VkPipelineLayout layout;
+    VkDescriptorSet set;
+    VkDescriptorSetLayout ds_layout;
 };
 
 }  // namespace vfs

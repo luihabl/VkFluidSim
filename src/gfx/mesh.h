@@ -11,8 +11,8 @@
 namespace gfx {
 
 struct BoundingBox {
-    glm::vec3 size;
-    glm::vec3 pos;
+    glm::vec3 size{0};
+    glm::vec3 pos{0};
 };
 
 // TODO: change this later

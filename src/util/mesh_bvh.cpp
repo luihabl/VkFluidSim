@@ -11,8 +11,8 @@
 
 namespace vfs {
 
-void MeshBVH::Init(gfx::CPUMesh* mesh, SplitType split) {
-    this->mesh = mesh;
+void MeshBVH::Init(const gfx::CPUMesh& mesh, SplitType split) {
+    this->mesh = &mesh;
     split_type = split;
 }
 
@@ -242,7 +242,7 @@ void MeshBVH::UpdateBounds(u32 node_idx) {
 }
 
 std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> MeshBVH::GetTriangleAtIdx(
-    u32 idx) {
+    u32 idx) const {
     const u32 t_idx = triangles[idx].vertex_start_idx;
 
     return {
@@ -277,7 +277,7 @@ float MeshBVH::Node::Cost() const {
     return box.Area() * (f32)triangle_count;
 }
 
-MeshBVH::ClosestPointQueryResult MeshBVH::QueryClosestPoint(const glm::vec3& query_point) {
+MeshBVH::ClosestPointQueryResult MeshBVH::QueryClosestPoint(const glm::vec3& query_point) const {
     auto result = ClosestPointQueryResult{};
     ClosestNode(0, query_point, result);
     return result;
@@ -285,7 +285,7 @@ MeshBVH::ClosestPointQueryResult MeshBVH::QueryClosestPoint(const glm::vec3& que
 
 void MeshBVH::ClosestNode(u32 node_idx,
                           const glm::vec3& query_point,
-                          ClosestPointQueryResult& result) {
+                          ClosestPointQueryResult& result) const {
     const auto& node = nodes[node_idx];
 
     // leaf node
@@ -296,8 +296,9 @@ void MeshBVH::ClosestNode(u32 node_idx,
 
             if (triangle_distance.sq_distance < result.min_distance_sq) {
                 result.min_distance_sq = triangle_distance.sq_distance;
-                result.closest_triangle = triangles[i];
+                result.closest_entity = triangle_distance.entity;
                 result.closest_point = triangle_distance.point;
+                result.closest_triangle = triangles[i];
                 result.node_idx = node_idx;
             }
         }

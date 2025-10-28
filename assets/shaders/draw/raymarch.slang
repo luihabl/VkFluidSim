@@ -44,33 +44,40 @@ bool IsInsideAABB(float3 pos) {
     return pos.x >= -1 && pos.x <= 1 && pos.y >= -1 && pos.y <= 1 && pos.z >= -1 && pos.z <= 1;
 }
 
-float DensityAtPosition(float3 pos) {
+float4 DensityAtPosition(float3 pos) {
     if (pos.x >= -1 && pos.x <= 1 && pos.y >= -1 && pos.y <= 1 && pos.z >= -1 && pos.z <= 1) {
         let val = sdf_sampler.Sample(0.5f * (pos + 1));
-        float distance = abs(val.x);
 
-        return distance;
+        float d = val.x;
 
-    } else {
-        return 0.0f;
+        let cintensity = 0.4;
+        let half_interval = 5;
+        if (d < 0 && d > -half_interval) {
+            return float4(0.0, 0.0, cintensity, 1.0);
+        } else if (d >= 0 && d < half_interval) {
+            return float4(0.0, cintensity, 0.0, 1.0);
+        }
     }
+
+    return float4(0.0f);
 }
 
 float4 ComputeForwardLightRaymarch(float3 origin,
                                    float3 direction,
                                    PushConstants pc,
                                    VertexOutput in) {
+    let n_steps = 10000;
     let step = 0.001;
-    float light = 0.0f;
+    float4 light = 0.0f;
     float sign = 1.0;  // front ? 1 : -1;
 
     let initial_pos = origin;
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < n_steps; i++) {
         if (!IsInsideAABB(origin)) {
             break;
         }
-        light += 20 * step * DensityAtPosition(origin);
+        light += step * DensityAtPosition(origin);
         origin += sign * direction * step;
     }
 
@@ -81,24 +88,7 @@ float4 ComputeForwardLightRaymarch(float3 origin,
 FragmentOutput frag_main(VertexOutput input, uniform PushConstants pc) {
     FragmentOutput out;
 
-    /*
-    TODO:
-        - Add 3d texture
-        - Convert position to uvw
-        - Try to fix the sampling when points are behind the screen
-
-    */
-
-    // let dir = out.world_pos
-
-    // let base_color = float3(1.0f);
-    // var light = dot(normalize(input.position.xyz), normalize(float3(1.0f, 1.0f, 0.0f)));
-    // out.color = float4(abs(input.world_pos.xyz), 1.0f);
-    // out.color ComputeLightRaymarch(input.world_pos, )
     out.color = ComputeForwardLightRaymarch(
         input.world_pos.xyz, normalize(input.world_pos.xyz - pc.camera_pos.xyz), pc, input);
-    out.color.w = 1.0f;
-
-    // out.color = abs(normalize(input.world_pos));
     return out;
 }

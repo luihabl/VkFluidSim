@@ -6,15 +6,6 @@
 namespace vfs {
 class MeshBVH {
 public:
-    struct AABB {
-        glm::vec3 pos_min{std::numeric_limits<float>::max()};
-        glm::vec3 pos_max{std::numeric_limits<float>::lowest()};
-
-        void Grow(const glm::vec3& p);
-        void Grow(const AABB& aabb);
-        float Area() const;
-    };
-
     struct Node {
         AABB box;
         u32 triangle_start{0};
@@ -23,11 +14,6 @@ public:
         u32 child_b{0};
 
         float Cost() const;
-    };
-
-    struct TriangleInfo {
-        u32 vertex_start_idx;
-        glm::vec3 centroid;
     };
 
     enum class SplitType {
@@ -41,14 +27,6 @@ public:
     void Build();
     const std::vector<Node>& GetNodes() { return nodes; }
     const std::vector<TriangleInfo>& GetTriangleInfo() { return triangles; }
-
-    struct ClosestPointQueryResult {
-        f64 min_distance_sq{std::numeric_limits<f32>::max()};
-        TriangleInfo closest_triangle;
-        TriangleClosestEntity closest_entity;
-        glm::vec3 closest_point;
-        u32 node_idx;
-    };
 
     ClosestPointQueryResult QueryClosestPoint(const glm::vec3& query_point) const;
 

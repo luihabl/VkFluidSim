@@ -17,9 +17,10 @@ public:
     void Clean();
 
     const MeshBVH& GetBVH() { return bvh; }
+    const MeshPseudonormals& GetPseudonormals() { return pseudonormals; }
     gfx::BoundingBox GetBox() { return box; }
     auto GetResolution() { return resolution; }
-    const std::vector<f32>& GetSDF() { return sdf_grid; }
+    const std::vector<f64>& GetSDF() { return sdf_grid; }
 
 private:
     const gfx::CPUMesh* mesh{nullptr};
@@ -29,7 +30,7 @@ private:
     // SDF grid (may be refactored into another class)
     gfx::BoundingBox box;
     glm::uvec3 resolution;
-    std::vector<f32> sdf_grid;
+    std::vector<f64> sdf_grid;
 };
 
 }  // namespace vfs

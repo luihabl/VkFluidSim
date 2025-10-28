@@ -9,7 +9,7 @@ void MeshPseudonormals::Init(const gfx::CPUMesh& mesh) {
 }
 
 void MeshPseudonormals::Build() {
-    u32 n_triangles = mesh->indices.size() / 3;
+    u32 n_triangles = mesh->position_indices.size() / 3;
     u32 n_vertices = mesh->vertices.size();
 
     triangle_pseudonormals.resize(n_triangles);
@@ -35,9 +35,9 @@ void MeshPseudonormals::Build() {
     };
 
     for (u32 i = 0; i < n_triangles; i++) {
-        const auto idx_a = mesh->indices[i * 3 + 0];
-        const auto idx_b = mesh->indices[i * 3 + 1];
-        const auto idx_c = mesh->indices[i * 3 + 2];
+        const auto idx_a = mesh->position_indices[i * 3 + 0];
+        const auto idx_b = mesh->position_indices[i * 3 + 1];
+        const auto idx_c = mesh->position_indices[i * 3 + 2];
 
         const auto& a = mesh->vertices[idx_a].pos;
         const auto& b = mesh->vertices[idx_b].pos;
@@ -69,14 +69,14 @@ void MeshPseudonormals::Build() {
     }
 
     // Normalize and consolidate
-    for (auto& pn : vertex_pseudonormals) {
-        pn = glm::normalize(pn);
+    for (auto& vn : vertex_pseudonormals) {
+        vn = glm::normalize(vn);
     }
 
     for (u32 i = 0; i < n_triangles; i++) {
-        const auto idx_a = mesh->indices[i * 3 + 0];
-        const auto idx_b = mesh->indices[i * 3 + 1];
-        const auto idx_c = mesh->indices[i * 3 + 2];
+        const auto idx_a = mesh->position_indices[i * 3 + 0];
+        const auto idx_b = mesh->position_indices[i * 3 + 1];
+        const auto idx_c = mesh->position_indices[i * 3 + 2];
 
         edge_pseudonormals[i][0] = glm::normalize(edge_normals.at(GetEdgeKey(idx_a, idx_b)));
         edge_pseudonormals[i][1] = glm::normalize(edge_normals.at(GetEdgeKey(idx_b, idx_c)));

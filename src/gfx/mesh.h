@@ -24,8 +24,14 @@ struct Vertex {
 
 struct CPUMesh {
     std::string name;
-    std::vector<u32> indices;
     std::vector<Vertex> vertices;
+
+    // The difference between indices and position_indices is that, the first will be a reference to
+    // the actual unique vertices defining the primitives (triangles) to be rendered. The second is
+    // a reference of unique vertex positions. This helps when processing the mesh with spatial
+    // algorithms.
+    std::vector<u32> indices;
+    std::vector<u32> position_indices;
 };
 
 struct GPUMesh {

@@ -9,6 +9,14 @@
 #include "gfx/common.h"
 #include "gfx/mesh.h"
 
+namespace {
+template <class T>
+inline void HashCombine(std::size_t& seed, const T& v) {
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+}  // namespace
+
 namespace vfs {
 std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
     std::vector<gfx::CPUMesh> meshes;
@@ -39,9 +47,13 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
 
     using h = std::hash<int>;
     auto hash = [](const tinyobj::index_t& n) {
-        return ((17 * 31 + h()(n.vertex_index)) * 31 + h()(n.normal_index)) * 31 +
-               h()(n.texcoord_index);
+        size_t seed = 0xCAFE;
+        HashCombine(seed, h()(n.vertex_index));
+        HashCombine(seed, h()(n.normal_index));
+        HashCombine(seed, h()(n.texcoord_index));
+        return seed;
     };
+
     auto equal = [](const tinyobj::index_t& l, const tinyobj::index_t& r) {
         return l.vertex_index == r.vertex_index && l.normal_index == r.normal_index &&
                l.texcoord_index == r.texcoord_index;
@@ -54,8 +66,14 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
         // TODO: Here we assume that we have only triangles. Later change this to consider quads
         // or polygons.
         std::unordered_map<tinyobj::index_t, int, decltype(hash), decltype(equal)> used_indices;
+        std::unordered_map<int, int> used_position_indices;
+
         for (u32 i = 0; i < shape.mesh.indices.size(); i++) {
             auto idx = shape.mesh.indices[i];
+
+            if (used_position_indices.contains(idx.vertex_index)) {
+                mesh.position_indices.push_back(used_position_indices[idx.vertex_index]);
+            }
 
             if (used_indices.contains(idx)) {
                 mesh.indices.push_back(used_indices[idx]);
@@ -64,6 +82,11 @@ std::vector<gfx::CPUMesh> LoadObjMesh(const std::string& path) {
 
             mesh.indices.push_back(mesh.vertices.size());
             used_indices[idx] = mesh.indices.back();
+
+            if (!used_position_indices.contains(idx.vertex_index)) {
+                mesh.position_indices.push_back(mesh.vertices.size());
+                used_position_indices[idx.vertex_index] = mesh.position_indices.back();
+            }
 
             auto vert = gfx::Vertex{};
 

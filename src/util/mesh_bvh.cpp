@@ -4,7 +4,6 @@
 #include <glm/ext/vector_common.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <limits>
 
 #include "geometry.h"
 #include "gfx/mesh.h"
@@ -17,13 +16,13 @@ void MeshBVH::Init(const gfx::CPUMesh& mesh, SplitType split) {
 }
 
 void MeshBVH::Build() {
-    u32 n_triangles = mesh->indices.size() / 3;
+    u32 n_triangles = mesh->position_indices.size() / 3;
     if (n_triangles == 0) {
         fmt::println("Empty mesh");
         return;
     }
 
-    if ((n_triangles * 3) != mesh->indices.size()) {
+    if ((n_triangles * 3) != mesh->position_indices.size()) {
         fmt::println("Mesh is not triangular");
         return;
     }
@@ -246,9 +245,9 @@ std::tuple<const glm::vec3&, const glm::vec3&, const glm::vec3&> MeshBVH::GetTri
     const u32 t_idx = triangles[idx].vertex_start_idx;
 
     return {
-        mesh->vertices[mesh->indices[t_idx + 0]].pos,
-        mesh->vertices[mesh->indices[t_idx + 1]].pos,
-        mesh->vertices[mesh->indices[t_idx + 2]].pos,
+        mesh->vertices[mesh->position_indices[t_idx + 0]].pos,
+        mesh->vertices[mesh->position_indices[t_idx + 1]].pos,
+        mesh->vertices[mesh->position_indices[t_idx + 2]].pos,
     };
 }
 
@@ -256,28 +255,11 @@ const glm::vec3& MeshBVH::GetCentroidAtIdx(u32 idx) {
     return triangles[idx].centroid;
 }
 
-void MeshBVH::AABB::Grow(const glm::vec3& p) {
-    pos_min = glm::min(pos_min, p);
-    pos_max = glm::max(pos_max, p);
-}
-
-void MeshBVH::AABB::Grow(const AABB& aabb) {
-    if (aabb.pos_min.x != std::numeric_limits<float>::max()) {
-        Grow(aabb.pos_min);
-        Grow(aabb.pos_max);
-    }
-}
-
-float MeshBVH::AABB::Area() const {
-    const auto e = pos_max - pos_min;
-    return e.x * e.y + e.y * e.z + e.z * e.x;
-}
-
 float MeshBVH::Node::Cost() const {
     return box.Area() * (f32)triangle_count;
 }
 
-MeshBVH::ClosestPointQueryResult MeshBVH::QueryClosestPoint(const glm::vec3& query_point) const {
+ClosestPointQueryResult MeshBVH::QueryClosestPoint(const glm::vec3& query_point) const {
     auto result = ClosestPointQueryResult{};
     ClosestNode(0, query_point, result);
     return result;
@@ -299,7 +281,6 @@ void MeshBVH::ClosestNode(u32 node_idx,
                 result.closest_entity = triangle_distance.entity;
                 result.closest_point = triangle_distance.point;
                 result.closest_triangle = triangles[i];
-                result.node_idx = node_idx;
             }
         }
     }

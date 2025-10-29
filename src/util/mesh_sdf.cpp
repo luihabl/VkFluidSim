@@ -4,9 +4,9 @@
 
 #include "util/geometry.h"
 
-namespace {
+namespace {  // k(z), j(y), i(x)
 u32 GetIndex3D(const glm::uvec3& size, const glm::uvec3& idx) {
-    return idx.z + size.z * idx.y + size.z * size.y * idx.x;
+    return idx.x + size.x * idx.y + size.x * size.y * idx.z;
 }
 }  // namespace
 

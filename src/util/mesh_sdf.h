@@ -11,8 +11,9 @@ namespace vfs {
 class MeshSDF {
 public:
     void Init(const gfx::CPUMesh& mesh,
-              gfx::BoundingBox bounding_box,
-              glm::uvec3 resolution = {15, 15, 15});
+              glm::uvec3 resolution,
+              gfx::BoundingBox bounding_box = {},
+              double tolerance = 0.05);
     void Build();
     void Clean();
 
@@ -31,6 +32,7 @@ private:
     gfx::BoundingBox box;
     glm::uvec3 resolution;
     std::vector<f64> sdf_grid;
+    f64 tolerance{0.0};
 };
 
 }  // namespace vfs

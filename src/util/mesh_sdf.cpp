@@ -11,10 +11,14 @@ u32 GetIndex3D(const glm::uvec3& size, const glm::uvec3& idx) {
 }  // namespace
 
 namespace vfs {
-void MeshSDF::Init(const gfx::CPUMesh& mesh, gfx::BoundingBox bounding_box, glm::uvec3 resolution) {
+void MeshSDF::Init(const gfx::CPUMesh& mesh,
+                   glm::uvec3 resolution,
+                   gfx::BoundingBox bounding_box,
+                   double tolerance) {
     this->box = bounding_box;
     this->resolution = resolution;
     this->mesh = &mesh;
+    this->tolerance = tolerance;
 
     bvh.Init(mesh);
     pseudonormals.Init(mesh);
@@ -23,6 +27,15 @@ void MeshSDF::Init(const gfx::CPUMesh& mesh, gfx::BoundingBox bounding_box, glm:
 void MeshSDF::Build() {
     bvh.Build();
     pseudonormals.Build();
+
+    if (box.pos == glm::vec3(0) && box.size == glm::vec3(0)) {
+        auto root_box = bvh.GetNodes().front().box;
+        auto size = root_box.pos_max - root_box.pos_min;
+        auto pos = root_box.pos_min;
+
+        this->box.size = size + 2.0f * (f32)tolerance;
+        this->box.pos = pos - (f32)tolerance;
+    }
 
     sdf_grid.resize(resolution.x * resolution.y * resolution.z, 0);
     auto step = box.size / (glm::vec3)(resolution - 1u);
@@ -35,7 +48,8 @@ void MeshSDF::Build() {
                 auto pos = step * glm::vec3(i, j, k) + box.pos;
 
                 auto signed_distance = SignedDistanceToMesh(bvh, pseudonormals, pos);
-                sdf_grid[GetIndex3D(resolution, {i, j, k})] = signed_distance.signed_distance;
+                sdf_grid[GetIndex3D(resolution, {i, j, k})] =
+                    signed_distance.signed_distance - tolerance;
             }
         }
     }

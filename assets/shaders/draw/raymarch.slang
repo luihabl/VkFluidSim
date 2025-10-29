@@ -40,23 +40,21 @@ VertexOutput vertex_main(Vertex vertex, uniform PushConstants pc) {
     return out;
 }
 
-bool IsInsideAABB(float3 pos) {
+bool IsInsideAABB(float3 pos, PushConstants pc) {
+    pos = pos / pc.field_size;
     return pos.x >= -1 && pos.x <= 1 && pos.y >= -1 && pos.y <= 1 && pos.z >= -1 && pos.z <= 1;
 }
 
-float4 DensityAtPosition(float3 pos) {
-    if (pos.x >= -1 && pos.x <= 1 && pos.y >= -1 && pos.y <= 1 && pos.z >= -1 && pos.z <= 1) {
-        let val = sdf_sampler.Sample(0.5f * (pos + 1));
+float4 DensityAtPosition(float3 pos, PushConstants pc) {
+    let val = sdf_sampler.Sample(0.5 * (pos / pc.field_size + 1));
 
-        float d = val.x;
+    float d = val.x;
 
-        let cintensity = 0.4;
-        let half_interval = 5;
-        if (d < 0 && d > -half_interval) {
-            return float4(0.0, 0.0, cintensity, 1.0);
-        } else if (d >= 0 && d < half_interval) {
-            return float4(0.0, cintensity, 0.0, 1.0);
-        }
+    let cintensity = 0.5;
+    if (d < 0) {
+        return float4(0.0, 0.0, cintensity, 1.0);
+    } else {
+        return float4(0.0, 0.5 * cintensity, 0.0, 1.0);
     }
 
     return float4(0.0f);
@@ -66,18 +64,18 @@ float4 ComputeForwardLightRaymarch(float3 origin,
                                    float3 direction,
                                    PushConstants pc,
                                    VertexOutput in) {
-    let n_steps = 10000;
-    let step = 0.001;
+    let n_steps = 100;
+    let step = 0.05;
     float4 light = 0.0f;
     float sign = 1.0;  // front ? 1 : -1;
 
     let initial_pos = origin;
 
     for (int i = 0; i < n_steps; i++) {
-        if (!IsInsideAABB(origin)) {
+        if (!IsInsideAABB(origin, pc)) {
             break;
         }
-        light += step * DensityAtPosition(origin);
+        light += step * DensityAtPosition(origin, pc);
         origin += sign * direction * step;
     }
 

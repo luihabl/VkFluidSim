@@ -76,8 +76,11 @@ void DensityRaymarchDrawPipeline::Draw(VkCommandBuffer cmd,
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
+    auto mesh_transform = mesh.transform;
+    mesh_transform.SetScale(field_size);
+
     auto pc = PushConstants{
-        .transform = mesh.transform.Matrix(),
+        .transform = mesh_transform.Matrix(),
         .view_proj = camera.GetViewProj(),
         .camera_pos = camera.GetPosition(),
         .field_size = field_size,

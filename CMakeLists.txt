@@ -99,6 +99,8 @@ src/util/mesh_bvh.cpp
 src/util/mesh_sdf.cpp
 src/util/mesh_pseudonormals.cpp
 src/util/geometry.cpp
+src/util/gaussian_quadrature.cpp
+src/util/discretization.cpp
 
 src/simulation.cpp
 )

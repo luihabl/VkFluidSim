@@ -1,6 +1,7 @@
 #include "mesh_sdf.h"
 
 #include <glm/ext.hpp>
+#include <glm/fwd.hpp>
 
 #include "util/geometry.h"
 
@@ -37,22 +38,11 @@ void MeshSDF::Build() {
         this->box.pos = pos - (f32)tolerance;
     }
 
-    sdf_grid.resize(resolution.x * resolution.y * resolution.z, 0);
-    auto step = box.size / (glm::vec3)(resolution - 1u);
-
-    // NOTE: this is being constructed for a rectangular grid, not necessarily what is best for an
-    // SDF. Make a way to define this more generally for a list of points for example.
-    for (u32 i = 0; i < resolution.x; i++) {
-        for (u32 j = 0; j < resolution.y; j++) {
-            for (u32 k = 0; k < resolution.z; k++) {
-                auto pos = step * glm::vec3(i, j, k) + box.pos;
-
-                auto signed_distance = SignedDistanceToMesh(bvh, pseudonormals, pos);
-                sdf_grid[GetIndex3D(resolution, {i, j, k})] =
-                    signed_distance.signed_distance - tolerance;
-            }
-        }
-    }
+    discrete_grid.Init(resolution, {.pos_min = box.pos, .pos_max = box.pos + box.size},
+                       [this](const glm::dvec3& x) {
+                           auto spos = SignedDistanceToMesh(bvh, pseudonormals, x);
+                           return spos.signed_distance - tolerance;
+                       });
 }
 
 void MeshSDF::Clean() {}

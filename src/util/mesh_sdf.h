@@ -3,6 +3,7 @@
 #include <glm/gtc/constants.hpp>
 
 #include "gfx/mesh.h"
+#include "util/discretization.h"
 #include "util/mesh_bvh.h"
 #include "util/mesh_pseudonormals.h"
 
@@ -21,7 +22,8 @@ public:
     const MeshPseudonormals& GetPseudonormals() { return pseudonormals; }
     gfx::BoundingBox GetBox() { return box; }
     auto GetResolution() { return resolution; }
-    const std::vector<f64>& GetSDF() { return sdf_grid; }
+    f64 Interpolate(const glm::vec3& x) const { return discrete_grid.Interpolate(x); }
+    const std::vector<f64>& GetSDF() { return discrete_grid.GetGrid(); }
 
 private:
     const gfx::CPUMesh* mesh{nullptr};
@@ -31,7 +33,7 @@ private:
     // SDF grid (may be refactored into another class)
     gfx::BoundingBox box;
     glm::uvec3 resolution;
-    std::vector<f64> sdf_grid;
+    LinearLagrangeDiscreteGrid discrete_grid;
     f64 tolerance{0.0};
 };
 

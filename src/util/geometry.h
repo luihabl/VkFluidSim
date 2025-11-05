@@ -12,6 +12,7 @@ struct AABB {
     void Grow(const glm::vec3& p);
     void Grow(const AABB& aabb);
     float Area() const;
+    bool Contains(const glm::vec3& p) const;
 };
 
 enum class TriangleClosestEntity { V0, V1, V2, E01, E12, E02, F };

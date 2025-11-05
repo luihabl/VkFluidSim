@@ -1,3 +1,4 @@
+import colormap;
 
 [[vk::binding(0)]]
 Sampler3D sdf_sampler;
@@ -50,14 +51,7 @@ float4 DensityAtPosition(float3 pos, PushConstants pc) {
 
     float d = val.x;
 
-    let cintensity = 0.5;
-    if (d < 0) {
-        return float4(0.0, 0.0, cintensity, 1.0);
-    } else {
-        return float4(0.0, 0.5 * cintensity, 0.0, 1.0);
-    }
-
-    return float4(0.0f);
+    return IDL::Mac_Style::colormap(d * 50.0) * 0.5;
 }
 
 float4 ComputeForwardLightRaymarch(float3 origin,

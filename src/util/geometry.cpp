@@ -3,6 +3,8 @@
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/vector_relational.hpp>
 
 #include "mesh_bvh.h"
 #include "mesh_pseudonormals.h"
@@ -24,6 +26,10 @@ void AABB::Grow(const AABB& aabb) {
 float AABB::Area() const {
     const auto e = pos_max - pos_min;
     return e.x * e.y + e.y * e.z + e.z * e.x;
+}
+
+bool AABB::Contains(const glm::vec3& p) const {
+    return glm::all(glm::greaterThanEqual(p, pos_min)) && glm::all(glm::lessThanEqual(p, pos_max));
 }
 
 TriangleDistance DistancePointToTriangle(const glm::dvec3& p,

@@ -7,7 +7,10 @@
 #include "pipelines/mesh_pipeline.h"
 #include "pipelines/raymarch_pipeline.h"
 #include "scene.h"
+#include "util/discretization.h"
 #include "util/mesh_bvh.h"
+#include "util/mesh_pseudonormals.h"
+#include "util/mesh_sdf.h"
 
 namespace vfs {
 
@@ -28,10 +31,11 @@ public:
 
 private:
     void SetQueryPoint(const glm::vec3& point);
-    void GenerateSDF();
+    void GenerateVolumeMap();
 
     glm::vec3 query_point;
-    MeshBVH::ClosestPointQueryResult query_result;
+    SignedDistanceResult signed_distance;
+    // MeshBVH::ClosestPointQueryResult query_result;
 
     // Meshes
     gfx::CPUMesh model_mesh;
@@ -40,9 +44,13 @@ private:
     gfx::CPUMesh box_mesh;
     gfx::MeshDrawObj box_draw_obj;
 
-    // SDF grid
-    MeshBVH model_bvh;
-    glm::vec3 sdf_min_pos, sdf_max_pos;
+    // Volume map
+    // MeshBVH model_bvh;
+    // MeshPseudonormals model_pseudonormals;
+    LinearLagrangeDiscreteGrid volume_map;
+
+    MeshSDF model_sdf;
+    double sdf_tolerance{0.05};
     glm::ivec3 sdf_n_cells;
     gfx::Buffer sdf_buffer;
     std::vector<f32> sdf_grid;

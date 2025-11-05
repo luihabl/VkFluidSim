@@ -2,6 +2,7 @@
 
 #include <glm/ext.hpp>
 #include <glm/fwd.hpp>
+#include <limits>
 
 #include "gfx/common.h"
 
@@ -36,6 +37,10 @@ double LinearLagrangeDiscreteGrid::GridVal(const glm::uvec3& idx) const {
 }
 
 double LinearLagrangeDiscreteGrid::Interpolate(const glm::vec3& pos) const {
+    if (!domain.Contains(pos)) {
+        return std::numeric_limits<double>::max();
+    }
+
     auto x = (glm::dvec3)(pos - domain.pos_min) / step;
     const auto cell = glm::floor(x);
     const auto chi = 2.0 * (x - cell) - 1.0;

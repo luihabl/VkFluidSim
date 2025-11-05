@@ -8,5 +8,5 @@
 namespace vfs {
 double GaussLegendreQuadrature3D(const AABB& domain,
                                  u32 n,
-                                 std::function<double(const glm::dvec3&)> integrand);
+                                 std::function<double(const glm::vec3&)> integrand);
 }  // namespace vfs

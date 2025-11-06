@@ -142,6 +142,7 @@ SPHModel::DataBuffers SPHModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const
         .position_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
         .velocity_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
         .density_buffer = CreateDataBuffer<float>(ctx, SPHModel::parameters.n_particles),
+        .accel_buffer = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles),
     };
 }
 
@@ -155,6 +156,7 @@ void SPHModel::CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const {
     CPY_BUFFER(position_buffer);
     CPY_BUFFER(velocity_buffer);
     CPY_BUFFER(density_buffer);
+    CPY_BUFFER(accel_buffer);
 }
 
 void SPHModel::AddBufferToBeReordered(const gfx::Buffer& buffer) {
@@ -189,6 +191,7 @@ void SPHModel::UpdateAllUniforms() {
         .positions = buffers.position_buffer.device_addr,
         .velocities = buffers.velocity_buffer.device_addr,
         .densities = buffers.density_buffer.device_addr,
+        .accelerations = buffers.accel_buffer.device_addr,
     };
 
     sim.GetDescManager().SetUniformData(model_buffers_id, &model_bufs);

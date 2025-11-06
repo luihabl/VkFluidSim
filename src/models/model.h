@@ -39,12 +39,14 @@ public:
         gfx::Buffer position_buffer;
         gfx::Buffer velocity_buffer;
         gfx::Buffer density_buffer;
+        gfx::Buffer accel_buffer;
     };
 
     struct ModelBuffers {
         VkDeviceAddress positions;
         VkDeviceAddress velocities;
         VkDeviceAddress densities;
+        VkDeviceAddress accelerations;
     };
 
     struct PushConstants {

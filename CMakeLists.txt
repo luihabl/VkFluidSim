@@ -93,6 +93,7 @@ src/compute/compute_pipeline.cpp
 src/scenes/dam_break_scene.cpp
 src/scenes/dam_break_wcsph_scene.cpp
 src/scenes/model_render_scene.cpp
+src/scenes/dam_break_with_objects_scene.cpp
 
 src/util/mesh_loader.cpp
 src/util/mesh_bvh.cpp

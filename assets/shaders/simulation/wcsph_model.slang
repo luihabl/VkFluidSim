@@ -27,10 +27,8 @@ void ExternalForces(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    sph_model::buffers.velocities[id] +=
-        CalculateExternalForces(sph_model::buffers.positions[id],
-                                sph_model::buffers.velocities[id]) *
-        k.dt;
+    sph_model::buffers.accelerations[id] = CalculateExternalForces(
+        sph_model::buffers.positions[id], sph_model::buffers.velocities[id]);
 }
 
 [shader("compute")]
@@ -136,8 +134,7 @@ void CalculatePressureForces(uint id: SV_DispatchThreadID, uniform PushConstants
     if (id >= k.n_particles)
         return;
 
-    let acc = CalculatePressureForce(id, k);
-    sph_model::buffers.velocities[id] += acc * k.dt;
+    sph_model::buffers.accelerations[id] += CalculatePressureForce(id, k);
 }
 
 float3 CalculateViscousForce(uint id, PushConstants k) {
@@ -198,18 +195,20 @@ void CalculateViscousForces(uint id: SV_DispatchThreadID, uniform PushConstants 
         return;
 
     let acc = CalculateViscousForce(id, k);
-    sph_model::buffers.velocities[id] += acc * k.dt;
+    sph_model::buffers.accelerations[id] += acc;
 }
 
-void ResolveCollisions(inout float3 pos, inout float3 vel, float dt) {
+float3 WallAcceleration(float3 pos, float3 vel) {
     let ll = sph_model::parameters.bounding_box.pos;
     let ur = ll + sph_model::parameters.bounding_box.size;
 
     let diff = min(pos - ll, float3(0.0)) - min(ur - pos, float3(0.0));
 
     if (abs(diff.x) > 1e-9 || abs(diff.y) > 1e-9 || abs(diff.z) > 1e-9) {
-        vel = vel - wcsph_model::parameters.wall_stiffness * diff * dt;
+        return -wcsph_model::parameters.wall_stiffness * diff;
     }
+
+    return float3(0.0);
 }
 
 [shader("compute")]
@@ -218,16 +217,9 @@ void UpdatePositions(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     if (id >= k.n_particles)
         return;
 
-    var pos = sph_model::buffers.positions[id];
-    var vel = sph_model::buffers.velocities[id];
+    sph_model::buffers.accelerations[id] +=
+        WallAcceleration(sph_model::buffers.positions[id], sph_model::buffers.velocities[id]);
 
-    pos += vel * k.dt;
-
-    // TODO: Remove this method, use a particle-based representation (read Green thesis to
-    // understand the different types of boundaries). Try to find an example of implementation of
-    // particle-based boundary.
-    ResolveCollisions(pos, vel, k.dt);
-
-    sph_model::buffers.positions[id] = pos;
-    sph_model::buffers.velocities[id] = vel;
+    sph_model::buffers.velocities[id] += sph_model::buffers.accelerations[id] * k.dt;
+    sph_model::buffers.positions[id] += sph_model::buffers.velocities[id] * k.dt;
 }

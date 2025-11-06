@@ -62,6 +62,7 @@ public namespace sph_model {
         public float3* positions;
         public float3* velocities;
         public float* densities;
+        public float3* accelerations;
     };
 
     [[vk::binding(4)]]

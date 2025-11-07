@@ -8,8 +8,6 @@
 #include "pipelines/raymarch_pipeline.h"
 #include "scene.h"
 #include "util/discretization.h"
-#include "util/mesh_bvh.h"
-#include "util/mesh_pseudonormals.h"
 #include "util/mesh_sdf.h"
 
 namespace vfs {
@@ -31,7 +29,6 @@ public:
 
 private:
     void SetQueryPoint(const glm::vec3& point);
-    void GenerateVolumeMap();
 
     glm::vec3 query_point;
     SignedDistanceResult signed_distance;

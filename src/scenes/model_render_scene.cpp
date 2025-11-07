@@ -13,9 +13,9 @@
 #include "platform.h"
 #include "scenes/scene.h"
 #include "simulation.h"
-#include "util/gaussian_quadrature.h"
 #include "util/geometry.h"
 #include "util/mesh_loader.h"
+#include "util/volume_map.h"
 
 namespace vfs {
 
@@ -54,7 +54,10 @@ void ModelRenderScene::Init() {
 
     // sdf_grid = model_sdf.GetSDF();
     sdf_grid.resize(model_sdf.GetSDF().size());
-    GenerateVolumeMap();
+
+    auto& sim = Simulation::Get();
+    const auto radius = sim.GetGlobalParameters().smooth_radius;
+    GenerateVolumeMap(model_sdf, sim.GetGlobalParameters().smooth_radius, volume_map);
 
     for (u32 i = 0; i < sdf_grid.size(); i++) {
         // sdf_grid[i] = (f32)model_sdf.GetSDF()[i];
@@ -182,81 +185,6 @@ u32 GetIndex3D(const glm::uvec3& size, const glm::uvec3& idx) {
     return idx.z + size.z * idx.y + size.z * size.y * idx.x;
 }
 }  // namespace
-
-void ModelRenderScene::GenerateVolumeMap() {
-    // model_bvh.Init(model_mesh);
-    // model_pseudonormals.Init(model_mesh);
-
-    // model_discrete_grid.Init({20, 20, 20}, const AABB& domain,
-    //                          std::function<double(const glm::dvec3&)> func)
-
-    fmt::println("Generating volume map");
-
-    auto& sim = Simulation::Get();
-    const auto radius = sim.GetGlobalParameters().smooth_radius;
-    auto sdf_box = model_sdf.GetBox();
-    const auto domain = AABB{.pos_min = sdf_box.pos, .pos_max = sdf_box.pos + sdf_box.size};
-
-    // TODO: move this to a separate util file
-    auto cubic_kernel_w = [radius](double r) {
-        const auto k = 8.0 / (M_PI * radius * radius * radius);
-
-        double res = 0.0;
-        const double q = r / radius;
-        if (q <= 1.0) {
-            if (q <= 0.5) {
-                const double q2 = q * q;
-                const double q3 = q2 * q;
-                res = k * (6.0 * q3 - 6.0 * q2 + 1.0);
-            } else {
-                res = k * (2.0 * pow(1.0 - q, 3.0));
-            }
-        }
-        return res;
-    };
-
-    auto cubic_kernel_w_zero = cubic_kernel_w(0);
-
-    auto volume_map_func = [&](const glm::vec3& x) -> double {
-        const double dist = model_sdf.Interpolate(x);
-        // const double dist =
-        //     SignedDistanceToMesh(model_sdf.GetBVH(), model_sdf.GetPseudonormals(), x)
-        //         .signed_distance;
-
-        if (dist > 2.0 * radius) {
-            return 0.0;
-        }
-
-        auto integrand = [&](const glm::vec3& xi) -> double {
-            if (glm::length2(xi) > radius * radius) {
-                return 0.0;
-            }
-
-            auto dist_i = model_sdf.Interpolate(x + xi);
-            // auto dist_i =
-            //     SignedDistanceToMesh(model_sdf.GetBVH(), model_sdf.GetPseudonormals(), x + xi)
-            //         .signed_distance;
-
-            if (dist_i <= 0.0) {
-                return 1.0;
-            }
-
-            else if (dist_i < radius) {
-                return cubic_kernel_w(dist_i) / cubic_kernel_w_zero;
-            }
-
-            else {
-                return 0;
-            }
-        };
-
-        return 0.8 * GaussLegendreQuadrature3D(domain, 16, integrand);
-    };
-
-    volume_map.Init(sdf_n_cells, domain, volume_map_func);
-
-    fmt::println("Done");
-}
 
 void ModelRenderScene::InitCustomDraw(VkFormat draw_img_fmt, VkFormat depth_img_format) {
     auto img = gfx::Image::Create(

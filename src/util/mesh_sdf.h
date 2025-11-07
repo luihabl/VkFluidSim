@@ -18,12 +18,12 @@ public:
     void Build();
     void Clean();
 
-    const MeshBVH& GetBVH() { return bvh; }
-    const MeshPseudonormals& GetPseudonormals() { return pseudonormals; }
-    gfx::BoundingBox GetBox() { return box; }
-    auto GetResolution() { return resolution; }
+    const MeshBVH& GetBVH() const { return bvh; }
+    const MeshPseudonormals& GetPseudonormals() const { return pseudonormals; }
+    gfx::BoundingBox GetBox() const { return box; }
+    auto GetResolution() const { return resolution; }
     f64 Interpolate(const glm::vec3& x) const { return discrete_grid.Interpolate(x); }
-    const std::vector<f64>& GetSDF() { return discrete_grid.GetGrid(); }
+    const std::vector<f64>& GetSDF() const { return discrete_grid.GetGrid(); }
 
 private:
     const gfx::CPUMesh* mesh{nullptr};

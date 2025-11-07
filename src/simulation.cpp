@@ -64,6 +64,11 @@ u32 Simulation::AddUniformDescriptor(const gfx::CoreCtx& ctx, u32 size) {
     return descriptors.size() - 1;
 }
 
+u32 Simulation::AddDescriptorInfo(gfx::DescriptorManager::DescriptorInfo&& info) {
+    descriptors.push_back(std::move(info));
+    return descriptors.size() - 1;
+}
+
 void Simulation::InitDescriptorManager(const gfx::CoreCtx& ctx) {
     desc_manager.Init(ctx, descriptors);
     GetDescManager().SetUniformData(global_parameter_id, &parameters);

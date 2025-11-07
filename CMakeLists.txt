@@ -85,6 +85,7 @@ src/pipelines/raymarch_pipeline.cpp
 src/models/model.cpp
 src/models/lague_model.cpp
 src/models/wcsph_model.cpp
+src/models/wcsph_with_boundary_model.cpp
 
 src/compute/sort.cpp
 src/compute/spatial_hash.cpp
@@ -102,6 +103,8 @@ src/util/mesh_pseudonormals.cpp
 src/util/geometry.cpp
 src/util/gaussian_quadrature.cpp
 src/util/discretization.cpp
+src/util/volume_map.cpp
+src/util/kernel.cpp
 
 src/simulation.cpp
 )

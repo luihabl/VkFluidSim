@@ -222,7 +222,8 @@ void ModelRenderScene::InitCustomDraw(VkFormat draw_img_fmt, VkFormat depth_img_
 
 void ModelRenderScene::CustomDraw(VkCommandBuffer cmd,
                                   const gfx::Image& draw_img,
-                                  const gfx::Camera& camera) {
+                                  const gfx::Camera& camera,
+                                  const gfx::Transform& global_transform) {
     // for (const auto& mesh : mesh_draw_objs) {
     //     // mesh_pipeline.Draw(cmd, gfx, draw_img, mesh, camera);
     //     raymarch_pipeline.Draw(cmd, gfx, sdf_buffer, sdf_n_cells, draw_img, mesh, camera);

@@ -24,7 +24,8 @@ public:
     void DrawDebugUI() override;
     void CustomDraw(VkCommandBuffer cmd,
                     const gfx::Image& draw_img,
-                    const gfx::Camera& camera) override;
+                    const gfx::Camera& camera,
+                    const gfx::Transform& global_transform = {}) override;
     void InitCustomDraw(VkFormat draw_img_fmt, VkFormat depth_img_format) override;
 
 private:

@@ -3,6 +3,7 @@ find_program(SLANGC slangc)
 set(SLANG_SHADERS
     simulation/lague_model.slang
     simulation/wcsph_model.slang
+    simulation/wcsph_with_boundary_model.slang
 
     simulation/spatial_hash/scan.slang
     simulation/spatial_hash/sort.slang

@@ -1,6 +1,7 @@
 #include "scene_renderer.h"
 
 #include "common.h"
+#include "gfx/transform.h"
 #include "gfx/vk_util.h"
 #include "scenes/scene.h"
 
@@ -63,13 +64,21 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
 
         auto pc = BoxDrawPipeline::PushConstants{
             .color = box.color,
-            .matrix = view_proj * transform.Matrix() * box.transform.Matrix(),
+            .matrix = view_proj * box.transform.Matrix(),
         };
 
         box_pipeline.Draw(cmd, gfx, draw_img, pc);
     }
 
-    scene->CustomDraw(cmd, draw_img, camera);
+    auto global_transform = gfx::Transform{};
+    if (scene->GetModel()) {
+        if (scene->GetModel()->GetBoundingBox().has_value()) {
+            glm::vec3 box_size = scene->GetModel()->GetBoundingBox().value().size;
+            global_transform.SetPosition(-box_size / 2.0f);
+        }
+    }
+
+    scene->CustomDraw(cmd, draw_img, camera, global_transform);
 
     if (scene && scene->GetModel()) {
         auto view_proj = camera.GetViewProj();
@@ -81,7 +90,7 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
 
             auto pc = BoxDrawPipeline::PushConstants{
                 .color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-                .matrix = view_proj * transform.Matrix() * box_transform.Matrix(),
+                .matrix = view_proj * box_transform.Matrix(),
             };
             box_pipeline.Draw(cmd, gfx, draw_img, pc);
         }
@@ -90,7 +99,7 @@ void SceneRenderer::Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camer
         auto vel_buffer = render_buffers.velocity_buffer.device_addr;
 
         auto pc_particles = Particle3DDrawPipeline::PushConstants{
-            .model_view = camera.GetView() * transform.Matrix() * sim_transform.Matrix(),
+            .model_view = camera.GetView() * sim_transform.Matrix(),
             .proj = camera.GetProj(),
             .positions = pos_buffer,
             .velocities = vel_buffer,

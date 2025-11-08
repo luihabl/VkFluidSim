@@ -64,8 +64,8 @@ u32 Simulation::AddUniformDescriptor(const gfx::CoreCtx& ctx, u32 size) {
     return descriptors.size() - 1;
 }
 
-u32 Simulation::AddDescriptorInfo(gfx::DescriptorManager::DescriptorInfo&& info) {
-    descriptors.push_back(std::move(info));
+u32 Simulation::AddDescriptorInfo(const gfx::DescriptorManager::DescriptorInfo& info) {
+    descriptors.push_back(info);
     return descriptors.size() - 1;
 }
 

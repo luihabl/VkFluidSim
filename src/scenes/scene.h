@@ -23,7 +23,8 @@ public:
     virtual void InitCustomDraw(VkFormat draw_img_fmt, VkFormat depth_img_format) {}
     virtual void CustomDraw(VkCommandBuffer cmd,
                             const gfx::Image& draw_img,
-                            const gfx::Camera& camera) {}
+                            const gfx::Camera& camera,
+                            const gfx::Transform& global_transform = {}) {}
 
     virtual void DrawDebugUI() {
         if (time_step_model)

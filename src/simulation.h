@@ -32,7 +32,7 @@ public:
     void DrawDebugUI();
 
     u32 AddUniformDescriptor(const gfx::CoreCtx& ctx, u32 size);
-    u32 AddDescriptorInfo(gfx::DescriptorManager::DescriptorInfo&& info);
+    u32 AddDescriptorInfo(const gfx::DescriptorManager::DescriptorInfo& info);
 
     void InitDescriptorManager(const gfx::CoreCtx& ctx);
     const gfx::DescriptorManager& GetDescManager() { return desc_manager; }

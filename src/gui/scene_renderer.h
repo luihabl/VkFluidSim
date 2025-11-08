@@ -15,7 +15,6 @@ public:
     void Init(const gfx::Device& gfx, SceneBase* scene, int w, int h);
     void Draw(gfx::Device& gfx, VkCommandBuffer cmd, const gfx::Camera& camera);
     void Clear(const gfx::Device& gfx);
-    gfx::Transform& GetTransform() { return transform; }
     const gfx::Image& GetDrawImage() const { return draw_img; }
 
 private:
@@ -25,7 +24,6 @@ private:
 
     gfx::Transform box_transform;
     gfx::Transform sim_transform;
-    gfx::Transform transform;
     gfx::GPUMesh particle_mesh;
     gfx::Image draw_img;
     gfx::Image depth_img;

@@ -143,7 +143,13 @@ void DescriptorManager::Init(const gfx::CoreCtx& ctx, std::span<DescriptorInfo> 
     desc_layout = layout_builder.Build(ctx, VK_SHADER_STAGE_ALL);
 
     desc_set = desc_pool.Alloc(ctx, desc_layout);
+
     std::vector<VkWriteDescriptorSet> write_desc_sets;
+    write_desc_sets.reserve(desc_info_ref.size());
+
+    std::vector<VkDescriptorImageInfo> img_info;
+    img_info.reserve(desc_info_ref.size());
+
     for (u32 i = 0; i < desc_info_ref.size(); i++) {
         switch (desc_info_ref[i].type) {
             case DescType::Uniform:
@@ -156,14 +162,13 @@ void DescriptorManager::Init(const gfx::CoreCtx& ctx, std::span<DescriptorInfo> 
             case DescType::CombinedImageSampler:
             case DescType::Sampler:
             case DescType::SampledImage: {
-                auto info = VkDescriptorImageInfo{
+                img_info.push_back({
                     .sampler = desc_info_ref[i].image.sampler,
                     .imageView = desc_info_ref[i].image.image.view,
                     .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                };
-
+                });
                 write_desc_sets.push_back(vk::util::WriteDescriptorSet(
-                    desc_set, GetDescType(desc_info_ref[i].type), i, &info));
+                    desc_set, GetDescType(desc_info_ref[i].type), i, &img_info.back()));
 
                 break;
             }

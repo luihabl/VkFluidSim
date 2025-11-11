@@ -1,6 +1,9 @@
 #include "volume_map.h"
 
+#include <glm/ext.hpp>
+
 #include "util/gaussian_quadrature.h"
+#include "util/geometry.h"
 #include "util/kernel.h"
 
 void vfs::GenerateVolumeMap(const MeshSDF& sdf,
@@ -8,6 +11,8 @@ void vfs::GenerateVolumeMap(const MeshSDF& sdf,
                             LinearLagrangeDiscreteGrid& volume_map) {
     const auto box = sdf.GetBox();
     const auto domain = AABB{.pos_min = box.pos, .pos_max = box.pos + box.size};
+    const auto integration_domain =
+        AABB{.pos_min = glm::vec3(-support_radius), .pos_max = glm::vec3(support_radius)};
     auto kernel = CubicSplineKernel(support_radius);
 
     auto volume_map_func = [&](const glm::vec3& x) -> double {
@@ -37,7 +42,7 @@ void vfs::GenerateVolumeMap(const MeshSDF& sdf,
             }
         };
 
-        return 0.8 * GaussLegendreQuadrature3D(domain, 16, integrand);
+        return 0.8 * GaussLegendreQuadrature3D(integration_domain, 16, integrand);
     };
 
     volume_map.Init(sdf.GetResolution(), domain, volume_map_func);

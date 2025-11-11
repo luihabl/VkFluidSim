@@ -13,8 +13,8 @@ class MeshSDF {
 public:
     void Init(const gfx::CPUMesh& mesh,
               glm::uvec3 resolution,
-              gfx::BoundingBox bounding_box = {},
-              double tolerance = 0.05);
+              double tolerance = 0.05,
+              double margin = 0.0);
     void Build();
     void Clean();
 
@@ -35,6 +35,7 @@ private:
     glm::uvec3 resolution;
     LinearLagrangeDiscreteGrid discrete_grid;
     f64 tolerance{0.0};
+    f64 margin{0.0};
 };
 
 }  // namespace vfs

@@ -1,5 +1,6 @@
 #include "gaussian_quadrature.h"
 
+#include <glm/ext.hpp>
 #include <glm/fwd.hpp>
 
 namespace {
@@ -2312,22 +2313,23 @@ double GaussLegendreQuadrature3D(const AABB& domain,
     auto x = glm::dvec3{};
 
     for (u32 i = 0; i < n; i++) {
-        auto w = weights[i];
+        auto wi = weights[i];
         x.x = points[i];
 
         for (u32 j = 0; j < n; j++) {
-            w *= weights[j];
+            auto wij = wi * weights[j];
             x.y = points[j];
 
             for (u32 k = 0; k < n; k++) {
-                w *= weights[k];
+                auto wijk = wij * weights[k];
                 x.z = points[k];
 
-                integral += w * integrand(c0 * x + c1);
+                integral += wijk * integrand(c0 * x + c1);
             }
         }
     }
 
+    integral *= glm::compMul(c0);
     return integral;
 }
 }  // namespace vfs

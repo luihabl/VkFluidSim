@@ -46,9 +46,10 @@ void ModelRenderScene::Init() {
     //     .size = glm::vec3(2.0f),
     // };
 
-    sdf_n_cells = glm::uvec3(20);
+    sdf_n_cells = glm::uvec3(30);
 
-    model_sdf.Init(model_mesh, sdf_n_cells, {}, 0.05);
+    model_sdf.Init(model_mesh, sdf_n_cells, 0.1,
+                   8.0 * Simulation::Get().GetGlobalParameters().smooth_radius);
 
     model_sdf.Build();
 
@@ -84,7 +85,7 @@ void ModelRenderScene::Init() {
 
     // fmt::println("Number of leaves: {}, number of triangles: {}", leaves, triangles);
 
-    SetQueryPoint(glm::vec3(0.780, -0.470, -0.130));
+    // SetQueryPoint(glm::vec3(0.780, -0.470, -0.130));
 
     // GenerateSDF();
 }

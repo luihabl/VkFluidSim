@@ -9,10 +9,10 @@ namespace vfs {
 
 enum SimKernel : u32 {
     KernelUpdatePositions = 0,
-    KernelExternalForces,
+    KernelExternalAccel,
     KernelCalculateDensities,
-    KernelCalculatePressureForces,
-    KernelCalculateViscousForces,
+    KernelCalculatePressureAccel,
+    KernelCalculateViscousAccel,
 };
 
 WCSPHWithBoundaryModel::WCSPHWithBoundaryModel(
@@ -57,10 +57,10 @@ void WCSPHWithBoundaryModel::Init(const gfx::CoreCtx& ctx) {
                            .kernels =
                                {
                                    "UpdatePositions",
-                                   "ExternalForces",
+                                   "ExternalAccel",
                                    "CalculateDensities",
-                                   "CalculatePressureForces",
-                                   "CalculateViscousForces",
+                                   "CalculatePressureAccel",
+                                   "CalculateViscousAccel",
                                },
                        });
 
@@ -83,7 +83,7 @@ void WCSPHWithBoundaryModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) 
         if (i > 0)
             ComputeToComputePipelineBarrier(cmd);
 
-        pipeline.Compute(cmd, KernelExternalForces, n_groups, &push);
+        pipeline.Compute(cmd, KernelExternalAccel, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
         RunSpatialHash(cmd, ctx);
@@ -92,10 +92,10 @@ void WCSPHWithBoundaryModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) 
         pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
-        pipeline.Compute(cmd, KernelCalculatePressureForces, n_groups, &push);
+        pipeline.Compute(cmd, KernelCalculatePressureAccel, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
-        pipeline.Compute(cmd, KernelCalculateViscousForces, n_groups, &push);
+        pipeline.Compute(cmd, KernelCalculateViscousAccel, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelUpdatePositions, n_groups, &push);

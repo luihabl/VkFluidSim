@@ -48,6 +48,7 @@ void DamBreakWithObjectsScene::Init() {
         .boundary_object =
             {
                 .transform = glm::inverse(monkey_transform.Matrix()),
+                .rotation = glm::mat4_cast(monkey_transform.Rotation()),
                 .box = model_sdf.GetBox(),
             },
     };
@@ -61,9 +62,10 @@ void DamBreakWithObjectsScene::Init() {
 std::vector<gfx::DescriptorManager::DescriptorInfo> DamBreakWithObjectsScene::InitVolumeMap() {
     auto& sim = Simulation::Get();
 
-    map_resolution = {20, 20, 20};
+    map_resolution = glm::uvec3(30);
 
-    model_sdf.Init(model_mesh, map_resolution, {}, 0.05);
+    model_sdf.Init(model_mesh, map_resolution, 0.0,
+                   8.0 * Simulation::Get().GetGlobalParameters().smooth_radius);
     model_sdf.Build();
 
     GenerateVolumeMap(model_sdf, sim.GetGlobalParameters().smooth_radius, volume_map);
@@ -111,7 +113,8 @@ std::vector<gfx::DescriptorManager::DescriptorInfo> DamBreakWithObjectsScene::In
         .magFilter = VK_FILTER_LINEAR,
     };
 
-    vkCreateSampler(gfx.GetCoreCtx().device, &sampler_create_info, nullptr, &linear_sampler_3d);
+    vkCreateSampler(gfx.GetCoreCtx().device, &sampler_create_info, nullptr, &sdf_linear_sampler_3d);
+    vkCreateSampler(gfx.GetCoreCtx().device, &sampler_create_info, nullptr, &vm_linear_sampler_3d);
 
     std::vector<gfx::DescriptorManager::DescriptorInfo> info;
 
@@ -121,7 +124,7 @@ std::vector<gfx::DescriptorManager::DescriptorInfo> DamBreakWithObjectsScene::In
             {
                 .image = sdf_img,
                 .layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .sampler = linear_sampler_3d,
+                .sampler = sdf_linear_sampler_3d,
             },
     });
 
@@ -131,7 +134,7 @@ std::vector<gfx::DescriptorManager::DescriptorInfo> DamBreakWithObjectsScene::In
             {
                 .image = volume_map_img,
                 .layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .sampler = linear_sampler_3d,
+                .sampler = vm_linear_sampler_3d,
             },
     });
 

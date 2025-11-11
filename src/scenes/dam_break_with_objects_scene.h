@@ -40,7 +40,8 @@ private:
 
     gfx::Image sdf_img;
     gfx::Image volume_map_img;
-    VkSampler linear_sampler_3d;
+    VkSampler sdf_linear_sampler_3d;
+    VkSampler vm_linear_sampler_3d;
 };
 
 }  // namespace vfs

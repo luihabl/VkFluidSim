@@ -16,6 +16,7 @@ class WCSPHWithBoundaryModel final : public SPHModel {
 public:
     struct BoundaryObjectInfo {
         glm::mat4x4 transform;
+        glm::mat4x4 rotation;
         gfx::BoundingBox box;
     };
 

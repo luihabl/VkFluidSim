@@ -50,15 +50,17 @@ float4 DensityAtPosition(float3 pos, PushConstants pc) {
     let val = sdf_sampler.Sample(0.5 * (pos / pc.field_size + 1));
 
     float d = val.x;
+    // if (d == 0)
+    //     return IDL::Mac_Style::colormap(d * 50.0) * 0.1;
 
-    return IDL::Mac_Style::colormap(d * 50.0) * 0.5;
+    return IDL::Mac_Style::colormap(d * 5) * d * 200.0;
 }
 
 float4 ComputeForwardLightRaymarch(float3 origin,
                                    float3 direction,
                                    PushConstants pc,
                                    VertexOutput in) {
-    let n_steps = 100;
+    let n_steps = 1000;
     let step = 0.05;
     float4 light = 0.0f;
     float sign = 1.0;  // front ? 1 : -1;

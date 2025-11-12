@@ -15,8 +15,13 @@ void vfs::GenerateVolumeMap(const MeshSDF& sdf,
         AABB{.pos_min = glm::vec3(-support_radius), .pos_max = glm::vec3(support_radius)};
     auto kernel = CubicSplineKernel(support_radius);
 
+    auto calc_sdf_distance = [&sdf](const glm::vec3& x) -> double {
+        // TODO: compare to sdf.Interpolate(x);
+        return SignedDistanceToMesh(sdf.GetBVH(), sdf.GetPseudonormals(), x).signed_distance;
+    };
+
     auto volume_map_func = [&](const glm::vec3& x) -> double {
-        const double dist = sdf.Interpolate(x);
+        const double dist = calc_sdf_distance(x);
 
         if (dist > 2.0 * support_radius) {
             return 0.0;
@@ -27,7 +32,7 @@ void vfs::GenerateVolumeMap(const MeshSDF& sdf,
                 return 0.0;
             }
 
-            auto dist_i = sdf.Interpolate(x + xi);
+            auto dist_i = calc_sdf_distance(x + xi);
 
             if (dist_i <= 0.0) {
                 return 1.0;

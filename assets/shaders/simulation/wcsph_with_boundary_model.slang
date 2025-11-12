@@ -112,12 +112,11 @@ void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
                             .xyz;
                     normal /= modn;
 
-                    let d = dist;  // max(dist + 0.125 * radius, 0.5 * radius);
+                    let d = max(dist + 0.125 * radius, 0.5 * radius);
                     let x_boundary = (pos - d * normal);
 
                     let xij = pos - x_boundary;
                     let xij_mod = length(xij);
-                    // let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 1, 0);
 
                     density += volume * sph_model::parameters.target_density *
                                kernel::CubicSpline(xij_mod);
@@ -222,7 +221,7 @@ float3 VolumeMapBoundaryAccel(uint id, PushConstants k) {
         let uvw = ToUVW(box, local_pos);
         let dist = sdf_sampler.Sample(uvw).x;
 
-        if (dist >= 0 && dist < radius) {
+        if (dist < radius) {
             let volume = volume_map_sampler.Sample(uvw).x;
 
             if (volume > 0) {
@@ -236,16 +235,14 @@ float3 VolumeMapBoundaryAccel(uint id, PushConstants k) {
                             .xyz;
                     normal /= modn;
 
-                    let d = dist;  // max(dist + 0.125 * radius, 0.5 * radius);
+                    let d = max(dist + 0.125 * radius, 0.5 * radius);
+
                     let x_boundary = (pos - d * normal);
 
                     let xij = pos - x_boundary;
                     let xij_mod = length(xij);
-                    let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 1, 0);
+                    let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 0, 0);
 
-                    // sph_model.buffers.accelerations[id] += normal * 100.0;
-                    // sph_model.buffers.velocities[id] = 0;
-                    // sph_model.buffers.positions[id] = x_boundary;
                     let di = sph_model::buffers.densities[id];
                     let pi = PressureFromDensityEOS(di);
                     let pdi = di > 0 ? pi / (di * di) : 0.0f;

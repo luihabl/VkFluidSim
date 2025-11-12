@@ -15,12 +15,13 @@
 namespace vfs {
 
 void DamBreakWithObjectsScene::Init() {
-    auto obj = LoadObjMesh(Platform::Info::ResourcePath("models/suzanne.obj").c_str());
+    auto obj = LoadObjMesh(Platform::Info::ResourcePath("models/box.obj").c_str());
     model_mesh = std::move(obj[0]);
 
     auto monkey_transform = gfx::Transform{};
-    monkey_transform.SetPosition({10, 1, 5});
+    monkey_transform.SetPosition({5.5, 2.9, 6.1});
     monkey_transform.SetRotation(glm::rotate(glm::radians(-90.0f), glm::vec3{0, 1, 0}));
+    monkey_transform.SetScale({4, 3, 0.5});
 
     model_draw_obj = {
         .mesh = gfx::UploadMesh(gfx, model_mesh),
@@ -29,7 +30,7 @@ void DamBreakWithObjectsScene::Init() {
 
     auto info = InitVolumeMap();
 
-    fluid_block_size = {50, 30, 98};
+    fluid_block_size = {50, 20, 98};
 
     auto base_parameters = SPHModel::Parameters{
         .time_scale = 1.0f,
@@ -37,7 +38,7 @@ void DamBreakWithObjectsScene::Init() {
         .iterations = 3,
         .n_particles = fluid_block_size.x * fluid_block_size.y * fluid_block_size.z,
         .target_density = 1000.0f,
-        .bounding_box = {.size{15.0f, 10.0f, 10.0f}},
+        .bounding_box = {.size{10.0f, 10.0f, 10.0f}},
     };
 
     auto model_parameters = WCSPHWithBoundaryModel::Parameters{
@@ -62,7 +63,7 @@ void DamBreakWithObjectsScene::Init() {
 std::vector<gfx::DescriptorManager::DescriptorInfo> DamBreakWithObjectsScene::InitVolumeMap() {
     auto& sim = Simulation::Get();
 
-    map_resolution = glm::uvec3(30);
+    map_resolution = glm::uvec3(50);
 
     model_sdf.Init(model_mesh, map_resolution, 0.0,
                    8.0 * Simulation::Get().GetGlobalParameters().smooth_radius);

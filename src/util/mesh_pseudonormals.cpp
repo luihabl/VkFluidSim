@@ -83,14 +83,23 @@ void MeshPseudonormals::Build() {
         edge_pseudonormals[i][2] = glm::normalize(edge_normals.at(GetEdgeKey(idx_a, idx_c)));
     }
 
+    u32 single_edge_count = 0;
+    u32 triple_edge_count = 0;
+
     for (const auto& [key, count] : edge_count) {
         if (count == 1) {
-            fmt::println("Warning: single edge found!");
+            single_edge_count++;
         }
 
         if (count > 2) {
-            fmt::println("Warning: triple edge found!");
+            triple_edge_count++;
         }
     }
+
+    if (single_edge_count > 0)
+        fmt::println("[Pseudonormals] warning: found {} single edges", single_edge_count);
+
+    if (triple_edge_count > 0)
+        fmt::println("[Pseudonormals] warning: found {} triple edges", triple_edge_count);
 }
 }  // namespace vfs

@@ -10,15 +10,19 @@ namespace vfs {
 enum SimKernel : u32 {
     KernelUpdatePositions = 0,
     KernelExternalAccel,
+    KernelCalculateBoundaryVolume,
     KernelCalculateDensities,
     KernelCalculatePressureAccel,
     KernelCalculateViscousAccel,
 };
 
-WCSPHWithBoundaryModel::WCSPHWithBoundaryModel(
-    const std::vector<gfx::DescriptorManager::DescriptorInfo>& desc_info,
-    const SPHModel::Parameters* base_par,
-    const Parameters* par)
+struct VolumeMapBuffers {
+    VkDeviceAddress boundary_density;
+    VkDeviceAddress boundary_gradient;
+};
+
+WCSPHWithBoundaryModel::WCSPHWithBoundaryModel(const SPHModel::Parameters* base_par,
+                                               const Parameters* par)
     : SPHModel(base_par) {
     if (par) {
         parameters = *par;
@@ -28,26 +32,32 @@ WCSPHWithBoundaryModel::WCSPHWithBoundaryModel(
             .stiffness = 1000,
             .expoent = 7,
             .viscosity_strenght = 0.01,
-            .boundary_object = {},
         };
     }
-
-    this->desc_info = desc_info;
 }
 
 void WCSPHWithBoundaryModel::Init(const gfx::CoreCtx& ctx) {
     SPHModel::Init(ctx);
+
+    boundary_density = CreateDataBuffer<float>(ctx, SPHModel::parameters.n_particles);
+    boundary_gradient = CreateDataBuffer<glm::vec3>(ctx, SPHModel::parameters.n_particles);
+
     InitBufferReorder(ctx);
 
     auto& sim = Simulation::Get();
     parameter_id = sim.AddUniformDescriptor(ctx, sizeof(Parameters));
-
-    for (const auto& info : desc_info) {
-        sim.AddDescriptorInfo(info);
-    }
+    vm_buf_id = sim.AddUniformDescriptor(ctx, sizeof(VolumeMapBuffers));
 
     sim.InitDescriptorManager(ctx);
+
     sim.GetDescManager().SetUniformData(parameter_id, &parameters);
+
+    auto volume_map_bufs = VolumeMapBuffers{
+        .boundary_density = boundary_density.device_addr,
+        .boundary_gradient = boundary_gradient.device_addr,
+    };
+
+    sim.GetDescManager().SetUniformData(vm_buf_id, &volume_map_bufs);
 
     pipeline.Init(ctx, {
                            .push_const_size = sizeof(SPHModel::PushConstants),
@@ -58,6 +68,7 @@ void WCSPHWithBoundaryModel::Init(const gfx::CoreCtx& ctx) {
                                {
                                    "UpdatePositions",
                                    "ExternalAccel",
+                                   "CalculateBoundaryVolume",
                                    "CalculateDensities",
                                    "CalculatePressureAccel",
                                    "CalculateViscousAccel",
@@ -87,6 +98,9 @@ void WCSPHWithBoundaryModel::Step(const gfx::CoreCtx& ctx, VkCommandBuffer cmd) 
         ComputeToComputePipelineBarrier(cmd);
 
         RunSpatialHash(cmd, ctx);
+        ComputeToComputePipelineBarrier(cmd);
+
+        pipeline.Compute(cmd, KernelCalculateBoundaryVolume, n_groups, &push);
         ComputeToComputePipelineBarrier(cmd);
 
         pipeline.Compute(cmd, KernelCalculateDensities, n_groups, &push);

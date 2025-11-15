@@ -5,10 +5,14 @@ import kernels.kernels_3d;
 
 namespace wcsph_model {
 
-    struct BoundaryObjInfo {
+    struct BoundaryObjectInfo {
         float4x4 transform;
         float4x4 rotation;
         BoundingBox box;
+
+        float* sdf_grid;
+        float* volume_map_grid;
+        uint3 resolution;
     }
 
     struct Parameters {
@@ -16,21 +20,68 @@ namespace wcsph_model {
         float stiffness;
         float expoent;
         float viscosity_strenght;
-        BoundaryObjInfo boundary_object;
+        BoundaryObjectInfo* boundary_objects;
+        uint n_boundary_objects;
     };
 
     [[vk::binding(n_global_bindings)]]
     ConstantBuffer<Parameters> parameters;
+
+    struct VolumeMapBuffers {
+        float* boundary_density;
+        float3* boundary_gradient;
+    };
+
+    [[vk::binding(n_global_bindings + 1)]]
+    ConstantBuffer<VolumeMapBuffers> volume_map_buffers;
 }
-
-[[vk::binding(n_global_bindings + 1)]]
-Sampler3D sdf_sampler;
-
-[[vk::binding(n_global_bindings + 2)]]
-Sampler3D volume_map_sampler;
 
 float ParticleVolume() {
     return 0.8 * pow(simulation::parameters.smooth_radius, 3) / 8.0;
+}
+
+float3 ToUVW(BoundingBox box, float3 pos) {
+    return (pos - box.pos) / box.size;
+}
+
+uint GetIndex3D(uint3 size, uint3 idx) {
+    return idx.x + size.x * idx.y + size.x * size.y * idx.z;
+}
+
+float SampleGrid(float* grid, uint3 n, float3 uvw) {
+    let x = ((float3)n - 1.0f) * uvw;
+    let cell = (uint3)floor(x);
+    let chi = 2.0 * (x - (float3)cell) - 1.0;
+
+    const uint3 offsets[8] = { uint3(0, 0, 0), uint3(0, 1, 0), uint3(0, 0, 1), uint3(0, 1, 1),
+                               uint3(1, 0, 0), uint3(1, 1, 0), uint3(1, 0, 1), uint3(1, 1, 1) };
+
+    var val = 0.0f;
+    for (uint i = 0; i < 8; i++) {
+        let factor = 1.0f + (2.0f * (float3)offsets[i] - 1.0f) * chi;
+        val += grid[GetIndex3D(n, cell + offsets[i])] * (factor.x * factor.y * factor.z);
+    }
+
+    return val / 8.0;
+}
+
+float3 GradientVector(float* grid, uint3 n, float3 x, BoundingBox box) {
+    let eps = 0.1 * simulation.parameters.smooth_radius;
+
+    let dx = float3(eps, 0, 0);
+    let dy = float3(0, eps, 0);
+    let dz = float3(0, 0, eps);
+
+    let v1x = SampleGrid(grid, n, ToUVW(box, x + dx));
+    let v0x = SampleGrid(grid, n, ToUVW(box, x - dx));
+
+    let v1y = SampleGrid(grid, n, ToUVW(box, x + dy));
+    let v0y = SampleGrid(grid, n, ToUVW(box, x - dy));
+
+    let v1z = SampleGrid(grid, n, ToUVW(box, x + dz));
+    let v0z = SampleGrid(grid, n, ToUVW(box, x - dz));
+
+    return float3(v1x - v0x, v1y - v0y, v1z - v0z) / (2.0 * eps);
 }
 
 float3 CalculateExternalAccel(float3 pos, float3 vel) {
@@ -46,6 +97,57 @@ void ExternalAccel(uint id: SV_DispatchThreadID, uniform PushConstants k) {
 
     sph_model::buffers.accelerations[id] =
         CalculateExternalAccel(sph_model::buffers.positions[id], sph_model::buffers.velocities[id]);
+}
+
+[shader("compute")]
+[numthreads(group_size, 1, 1)]
+void CalculateBoundaryVolume(uint id: SV_DispatchThreadID, uniform PushConstants k) {
+    wcsph_model.volume_map_buffers.boundary_density[id] = 0.0;
+    wcsph_model.volume_map_buffers.boundary_gradient[id] = float3(0.0);
+
+    let pos = sph_model::buffers.positions[id];
+
+    for (int i = 0; i < wcsph_model.parameters.n_boundary_objects; i++) {
+        let obj = wcsph_model.parameters.boundary_objects[i];
+
+        let box = obj.box;
+        let local_pos = mul(obj.transform, float4(pos, 1.0)).xyz;
+        let radius = simulation.parameters.smooth_radius;
+
+        let inside = !any((local_pos < box.pos) || (local_pos > (box.pos + box.size)));
+
+        if (inside) {
+            let uvw = ToUVW(box, local_pos);
+
+            let dist = SampleGrid(obj.sdf_grid, obj.resolution, uvw);
+
+            if (dist >= 0 && dist < radius) {
+                let volume = SampleGrid(obj.volume_map_grid, obj.resolution, uvw);
+                if (volume > 0) {
+                    var normal = GradientVector(obj.sdf_grid, obj.resolution, local_pos, box);
+
+                    let modn = length(normal);
+
+                    if (modn > 1e-9) {
+                        normal = mul(obj.rotation, float4(normal, 1.0)).xyz;
+                        normal /= modn;
+
+                        let d = max(dist + 0.125 * radius, 0.5 * radius);
+                        let x_boundary = (pos - d * normal);
+                        let xij = pos - x_boundary;
+                        let xij_mod = length(xij);
+                        let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 0, 0);
+
+                        wcsph_model.volume_map_buffers.boundary_density[id] +=
+                            volume * kernel::CubicSpline(xij_mod);
+
+                        wcsph_model.volume_map_buffers.boundary_gradient[id] +=
+                            volume * kernel::GradCubicSpline(xij_mod) * xij_norm;
+                    }
+                }
+            }
+        }
+    }
 }
 
 [shader("compute")]
@@ -88,42 +190,8 @@ void CalculateDensities(uint id: SV_DispatchThreadID, uniform PushConstants k) {
     }
 
     // Add boundary density
-    let box = wcsph_model.parameters.boundary_object.box;
-    let local_pos = mul(wcsph_model.parameters.boundary_object.transform, float4(pos, 1.0)).xyz;
-    let radius = simulation.parameters.smooth_radius;
-
-    let inside = !any((local_pos < box.pos) || (local_pos > (box.pos + box.size)));
-
-    float3 boundary_accel = 0;
-    if (inside) {
-        let uvw = ToUVW(box, local_pos);
-        let dist = sdf_sampler.Sample(uvw).x;
-
-        if (dist >= 0 && dist < radius) {
-            let volume = volume_map_sampler.Sample(uvw).x;
-            if (volume > 0) {
-                var normal = GradientVector(local_pos, box);
-
-                let modn = length(normal);
-
-                if (modn > 1e-9) {
-                    normal =
-                        mul(wcsph_model.parameters.boundary_object.rotation, float4(normal, 1.0))
-                            .xyz;
-                    normal /= modn;
-
-                    let d = max(dist + 0.125 * radius, 0.5 * radius);
-                    let x_boundary = (pos - d * normal);
-
-                    let xij = pos - x_boundary;
-                    let xij_mod = length(xij);
-
-                    density += volume * sph_model::parameters.target_density *
-                               kernel::CubicSpline(xij_mod);
-                }
-            }
-        }
-    }
+    density +=
+        sph_model::parameters.target_density * wcsph_model.volume_map_buffers.boundary_density[id];
 
     sph_model::buffers.densities[id] = density;
 }
@@ -182,82 +250,15 @@ float3 PressureAccel(uint id, PushConstants k) {
         }
     }
 
+    // Add boundary pressure
+    let pdj =
+        di > 0 ? pi / (sph_model::parameters.target_density * sph_model::parameters.target_density)
+               : 0.0f;
+
+    pressure_force += (pdi + pdj) * sph_model::parameters.target_density *
+                      wcsph_model.volume_map_buffers.boundary_gradient[id];
+
     return -pressure_force;
-}
-
-float3 ToUVW(BoundingBox box, float3 pos) {
-    return (pos - box.pos) / box.size;
-}
-
-float3 GradientVector(float3 x, BoundingBox box) {
-    let eps = 0.1 * simulation.parameters.smooth_radius;
-
-    let dx = float3(eps, 0, 0);
-    let dy = float3(0, eps, 0);
-    let dz = float3(0, 0, eps);
-
-    let v1x = sdf_sampler.Sample(ToUVW(box, x + dx)).x;
-    let v0x = sdf_sampler.Sample(ToUVW(box, x - dx)).x;
-
-    let v1y = sdf_sampler.Sample(ToUVW(box, x + dy)).x;
-    let v0y = sdf_sampler.Sample(ToUVW(box, x - dy)).x;
-
-    let v1z = sdf_sampler.Sample(ToUVW(box, x + dz)).x;
-    let v0z = sdf_sampler.Sample(ToUVW(box, x - dz)).x;
-
-    return float3(v1x - v0x, v1y - v0y, v1z - v0z) / (2.0 * eps);
-}
-
-float3 VolumeMapBoundaryAccel(uint id, PushConstants k) {
-    let box = wcsph_model.parameters.boundary_object.box;
-    let pos = sph_model.buffers.positions[id];
-    let local_pos = mul(wcsph_model.parameters.boundary_object.transform, float4(pos, 1.0)).xyz;
-    let radius = simulation.parameters.smooth_radius;
-
-    let inside = !any((local_pos < box.pos) || (local_pos > (box.pos + box.size)));
-
-    float3 boundary_accel = 0;
-    if (inside) {
-        let uvw = ToUVW(box, local_pos);
-        let dist = sdf_sampler.Sample(uvw).x;
-
-        if (dist < radius) {
-            let volume = volume_map_sampler.Sample(uvw).x;
-
-            if (volume > 0) {
-                var normal = GradientVector(local_pos, box);
-
-                let modn = length(normal);
-
-                if (modn > 1e-9) {
-                    normal =
-                        mul(wcsph_model.parameters.boundary_object.rotation, float4(normal, 1.0))
-                            .xyz;
-                    normal /= modn;
-
-                    let d = max(dist + 0.125 * radius, 0.5 * radius);
-
-                    let x_boundary = (pos - d * normal);
-
-                    let xij = pos - x_boundary;
-                    let xij_mod = length(xij);
-                    let xij_norm = xij_mod > 0 ? xij / xij_mod : float3(0, 0, 0);
-
-                    let di = sph_model::buffers.densities[id];
-                    let pi = PressureFromDensityEOS(di);
-                    let pdi = di > 0 ? pi / (di * di) : 0.0f;
-                    let pdj = di > 0 ? pi / (sph_model::parameters.target_density *
-                                             sph_model::parameters.target_density)
-                                     : 0.0f;
-
-                    boundary_accel = -(pdi + pdj) * kernel::GradCubicSpline(xij_mod) * xij_norm *
-                                     volume * sph_model::parameters.target_density;
-                }
-            }
-        }
-    }
-
-    return boundary_accel;
 }
 
 [shader("compute")]
@@ -267,7 +268,6 @@ void CalculatePressureAccel(uint id: SV_DispatchThreadID, uniform PushConstants 
         return;
 
     sph_model::buffers.accelerations[id] += PressureAccel(id, k);
-    sph_model::buffers.accelerations[id] += VolumeMapBoundaryAccel(id, k);
 }
 
 float3 ViscousAccel(uint id, PushConstants k) {

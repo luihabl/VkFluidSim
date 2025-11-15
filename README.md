@@ -18,12 +18,14 @@ CMake will download almost all dependencies, except the Vulkan SDK which must be
 
 - [x] Simulation of 3D scenes with SPH.
 - [x] Implementation of WCSPH model with viscosity.
+- [x] Load boundary files in OBJ format.
 - [x] Object and boundary interaction using [volume maps](https://animation.rwth-aachen.de/media/papers/67/2020-TVCG-ImplicitBoundaryHandling.pdf).
 - [ ] Configurable scene using a JSON file.
 - [ ] Improve volume map using higher order interpolation (e.g. with serendipity points).
 - [ ] Implicit fluid models, namely IISPH and DFSPH.
 - [ ] Rigid body dynamics of interactive boundary objects using XPDB.
 - [ ] Add surface tension model and other viscosity methods.
+- [ ] Load objects and scenes using glTF 2.
 - [ ] Solid and viscoelastic fluid models for simulating things like mud and terrain.
 
 ## Credits and refences

@@ -73,28 +73,20 @@ void DamBreakWithObjectsScene::CreateBoundaryObjectBuffer() {
 }
 
 void DamBreakWithObjectsScene::Init() {
-    auto transform = gfx::Transform{};
-    transform.SetPosition({5.5, 2.9, 6.1});
-    transform.SetRotation(glm::rotate(glm::radians(-90.0f), glm::vec3{0, 1, 0}));
-    transform.SetScale({4, 3, 0.5});
+    auto wall_transform = gfx::Transform{};
+    wall_transform.SetPosition({5.5, 2.9, 6.1});
+    wall_transform.SetRotation(glm::rotate(glm::radians(-90.0f), glm::vec3{0, 1, 0}));
+    wall_transform.SetScale({4, 3, 0.5});
+    AddBoundaryObject(Platform::Info::ResourcePath("models/box.obj"), wall_transform,
+                      glm::uvec3(30));
 
-    AddBoundaryObject(Platform::Info::ResourcePath("models/box.obj"), transform, glm::uvec3(30));
+    auto monkey_transform = gfx::Transform{};
+    monkey_transform.SetPosition({7.5, 1, 1});
+    monkey_transform.SetRotation(glm::rotate(glm::radians(-90.0f), glm::vec3{0, 1, 0}));
+    AddBoundaryObject(Platform::Info::ResourcePath("models/suzanne.obj"), monkey_transform,
+                      glm::uvec3(30));
+
     CreateBoundaryObjectBuffer();
-
-    // auto obj = LoadObjMesh(Platform::Info::ResourcePath("models/box.obj").c_str());
-    // model_mesh = std::move(obj[0]);
-
-    // auto monkey_transform = gfx::Transform{};
-    // monkey_transform.SetPosition({5.5, 2.9, 6.1});
-    // monkey_transform.SetRotation(glm::rotate(glm::radians(-90.0f), glm::vec3{0, 1, 0}));
-    // monkey_transform.SetScale({4, 3, 0.5});
-
-    // model_draw_obj = {
-    //     .mesh = gfx::UploadMesh(gfx, model_mesh),
-    //     .transform = monkey_transform,
-    // };
-
-    // auto info = InitVolumeMap();
 
     fluid_block_size = {50, 20, 98};
 

@@ -23,6 +23,8 @@ CMake will download almost all dependencies, except the Vulkan SDK which must be
 - [x] Object and boundary interaction using [volume maps](https://animation.rwth-aachen.de/media/papers/67/2020-TVCG-ImplicitBoundaryHandling.pdf).
 - [x] Configurable scene using a JSON file.
 - [ ] Improve volume map using higher order interpolation (e.g. with serendipity points).
+- [ ] Discard internal points in volume map keeping only a sparse grid.
+- [ ] Add inverted volume map to use it for outer boundaries.
 - [ ] Implicit fluid models, namely IISPH and DFSPH.
 - [ ] Rigid body dynamics of interactive boundary objects using XPDB.
 - [ ] Add surface tension model and other viscosity methods.

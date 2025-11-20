@@ -159,7 +159,8 @@ void SPHModel::CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const {
 #define CPY_BUFFER(name)                                                                         \
     {                                                                                            \
         auto cpy_info = VkBufferCopy{.dstOffset = 0, .srcOffset = 0, .size = buffers.name.size}; \
-        vkCmdCopyBuffer(cmd, buffers.name.buffer, dst.name.buffer, 1, &cpy_info);                \
+        if (buffers.name.buffer && dst.name.buffer)                                              \
+            vkCmdCopyBuffer(cmd, buffers.name.buffer, dst.name.buffer, 1, &cpy_info);            \
     }
 
     CPY_BUFFER(position_buffer);

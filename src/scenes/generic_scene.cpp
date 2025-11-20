@@ -123,6 +123,9 @@ void GenericScene::AddBoundaryObject(const std::string& path,
     boundary_objects.push_back(obj);
 }
 void GenericScene::CreateBoundaryObjectBuffer() {
+    if (boundary_objects.empty())
+        return;
+
     boundary_objects_gpu_buffer = gfx::CreateDataBuffer<WCSPHWithBoundaryModel::BoundaryObjectInfo>(
         gfx.GetCoreCtx(), boundary_objects.size());
 

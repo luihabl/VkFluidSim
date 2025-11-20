@@ -46,7 +46,8 @@ GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
             .size = vertex_buf_size,
         };
 
-        vkCmdCopyBuffer(cmd, staging.buffer, gpu_mesh.vertices.buffer, 1, &vertex_copy);
+        if (staging.buffer && gpu_mesh.vertices.buffer)
+            vkCmdCopyBuffer(cmd, staging.buffer, gpu_mesh.vertices.buffer, 1, &vertex_copy);
 
         auto index_copy = VkBufferCopy{
             .dstOffset = 0,
@@ -54,7 +55,8 @@ GPUMesh UploadMesh(const gfx::Device& gfx, const CPUMesh& mesh) {
             .size = index_buf_size,
         };
 
-        vkCmdCopyBuffer(cmd, staging.buffer, gpu_mesh.indices.buffer, 1, &index_copy);
+        if (staging.buffer && gpu_mesh.indices.buffer)
+            vkCmdCopyBuffer(cmd, staging.buffer, gpu_mesh.indices.buffer, 1, &index_copy);
     });
 
     staging.Destroy();

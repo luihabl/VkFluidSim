@@ -42,8 +42,8 @@ Buffer Buffer::Create(const CoreCtx& ctx,
     Buffer buffer{};
     buffer.size = (u32)size;
     buffer.allocator = ctx.allocator;
-    VK_CHECK(vmaCreateBuffer(ctx.allocator, &buffer_info, &vma_alloc_info, &buffer.buffer,
-                             &buffer.alloc, nullptr));
+    vmaCreateBuffer(ctx.allocator, &buffer_info, &vma_alloc_info, &buffer.buffer, &buffer.alloc,
+                    nullptr);
 
     buffer.desc_info = {
         .buffer = buffer.buffer,
@@ -51,7 +51,7 @@ Buffer Buffer::Create(const CoreCtx& ctx,
         .range = VK_WHOLE_SIZE,
     };
 
-    if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+    if (buffer.buffer && (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)) {
         buffer.device_addr = vk::util::GetBufferAddress(ctx.device, buffer);
     }
 

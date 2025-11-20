@@ -16,29 +16,15 @@
     "iterations": 3,
     "dt": 0.008333,
     "targetDensity": 1000.0,
-    "boundingBox": { "pos": [0, 0, 0], "size": [10, 10, 10] }
+    "boundingBox": { "pos": [0, 0, 0], "size": [10, 10, 8] }
   },
 
   "fluidBlocks": [
     {
-      "size": [50, 20, 40],
-      "pos": [0.0, 0.0, 2.0]
+      "size": [30, 50, 50],
+      "pos": [0.0, 0.0, 1.5]
     }
   ],
 
-  "boundaryObjects": [
-    {
-      "resourcePath": "models/box.obj",
-      "position": [5.5, 2.9, 6.1],
-      "rotation": { "angle": -90.0, "axis": [0, 1, 0] },
-      "scale": [4, 3, 0.5],
-      "volumeMapResolution": [30, 30, 30]
-    },
-    {
-      "resourcePath": "models/suzanne.obj",
-      "position": [7.5, 1, 1],
-      "rotation": { "angle": -90.0, "axis": [0, 1, 0] },
-      "volumeMapResolution": [30, 30, 30]
-    }
-  ]
+  "boundaryObjects": []
 }

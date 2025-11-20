@@ -72,7 +72,8 @@ struct Device {
                 .size = size,
             };
 
-            vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
+            if (staging.buffer && buf.buffer)
+                vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
         });
 
         staging.Destroy();

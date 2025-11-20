@@ -221,7 +221,8 @@ void BufferReorder::Reorder(VkCommandBuffer cmd, const gfx::CoreCtx& ctx) {
 void BufferReorder::Copyback(VkCommandBuffer cmd) {
     auto cpy_info = VkBufferCopy{.dstOffset = 0, .srcOffset = 0, .size = sort_targets.back().size};
     for (u32 i = 0; i < config.buffers.size(); i++) {
-        vkCmdCopyBuffer(cmd, sort_targets[i].buffer, config.buffers[i].buf, 1, &cpy_info);
+        if (sort_targets[i].buffer && config.buffers[i].buf)
+            vkCmdCopyBuffer(cmd, sort_targets[i].buffer, config.buffers[i].buf, 1, &cpy_info);
     }
 }
 

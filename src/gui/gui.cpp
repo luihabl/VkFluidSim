@@ -5,7 +5,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/trigonometric.hpp>
-#include <memory>
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_keycode.h"
@@ -13,7 +12,6 @@
 #include "gfx/common.h"
 #include "imgui.h"
 #include "platform.h"
-#include "scenes/dam_break_with_objects_scene.h"
 #include "simulation.h"
 #include "util/scene_loader.h"
 

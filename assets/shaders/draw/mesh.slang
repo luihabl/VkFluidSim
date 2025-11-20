@@ -37,7 +37,7 @@ FragmentOutput frag_main(VertexOutput input, uniform PushConstants pc) {
     FragmentOutput out;
 
     let base_color = float3(1.0f);
-    var light = dot(normalize(input.normal), normalize(float3(1.0f, 1.0f, 0.0f)));
-    out.color = float4(0.8 * base_color + 0.8 * light, 1.0f);
+    var light = dot(normalize(input.normal), normalize(float3(0.0f, 1.0f, 0.0f)));
+    out.color = float4(0.5 * base_color + 0.8 * light, 1.0f);
     return out;
 }

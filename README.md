@@ -1,6 +1,7 @@
 # Vulkan fluid simulation
 
 ![Fluid Simulation](assets/figs/screenshot_3d.png)
+![Fluid Simulation](assets/figs/screenshot_3d_2.png)
 
 This is a simple 3D SPH fluid simulation written in C++ and Vulkan. All the simulation is done through compute shaders and all the data buffers are kept in the GPU.
 

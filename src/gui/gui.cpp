@@ -15,6 +15,7 @@
 #include "platform.h"
 #include "scenes/dam_break_with_objects_scene.h"
 #include "simulation.h"
+#include "util/scene_loader.h"
 
 namespace vfs {
 
@@ -24,7 +25,7 @@ struct PushConstants3D {
     VkDeviceAddress velocities;
 };
 
-void GUI::Init(Platform& platform) {
+void GUI::Init(Platform& platform, const std::string& input_file) {
     gfx.Init({
         .name = "Vulkan fluid sim 3D",
         .window = platform.GetWindow(),
@@ -33,7 +34,8 @@ void GUI::Init(Platform& platform) {
 
     auto& sim = Simulation::Get();
     sim.Init(gfx.GetCoreCtx());
-    sim.SetScene(std::make_unique<DamBreakWithObjectsScene>(gfx));
+
+    sim.SetScene(LoadScene(gfx, platform.ResourcePath(input_file.c_str())));
 
     auto ext = gfx.GetSwapchainExtent();
     renderer.Init(gfx, sim.GetScene(), ext.width, ext.height);

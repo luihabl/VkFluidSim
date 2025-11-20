@@ -24,6 +24,13 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+  URI "gh:nlohmann/json@3.12.0"
+  OPTIONS "JSON_BuildTests OFF"
+)
+
+CPMAddPackage("gh:p-ranav/argparse@3.2")
+
+CPMAddPackage(
     NAME imgui
     GITHUB_REPOSITORY ocornut/imgui
     VERSION 1.92.1-docking
@@ -105,6 +112,7 @@ src/util/gaussian_quadrature.cpp
 src/util/discretization.cpp
 src/util/volume_map.cpp
 src/util/kernel.cpp
+src/util/scene_loader.cpp
 
 src/simulation.cpp
 )
@@ -123,6 +131,8 @@ PUBLIC
     GPUOpen::VulkanMemoryAllocator
     fmt::fmt
     tinyobjloader
+    nlohmann_json::nlohmann_json
+    argparse
 )
 
 target_compile_definitions(vfs PUBLIC

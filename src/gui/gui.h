@@ -3,7 +3,6 @@
 #include <glm/ext/scalar_constants.hpp>
 
 #include "gfx/gfx.h"
-#include "gfx/transform.h"
 #include "gui/imgui_setup.h"
 #include "gui/scene_renderer.h"
 #include "imgui_setup.h"
@@ -15,7 +14,7 @@ class GUI {
 public:
     using Event = SDL_Event;
 
-    void Init(Platform& platform);
+    void Init(Platform& platform, const std::string& input_file);
     void Update(Platform& platform);
     void HandleEvent(Platform& platform, const Event& e);
     void Clear();

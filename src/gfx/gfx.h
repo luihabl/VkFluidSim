@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <vulkan/vulkan.h>
 
+#include <algorithm>
 #include <array>
 #include <glm/glm.hpp>
 #include <span>
@@ -42,12 +43,22 @@ struct Device {
     void ImmediateSubmit(std::function<void(VkCommandBuffer)>&& function) const;
 
     template <typename T>
-    void SetDataVal(const gfx::Buffer& buf, const T& value) const {
-        auto staging = gfx::Buffer::Create(core, buf.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    void SetDataVal(const gfx::Buffer& buf, const T& value, u32 offset = 0, i64 count = -1) const {
+        u32 size = buf.size;
+        if (size == 0 || count == 0)
+            return;
+
+        offset = std::min(offset, static_cast<u32>(size / sizeof(T) - 1));
+
+        if (count >= 0) {
+            size = std::min(size, static_cast<u32>(count * sizeof(T)));
+        }
+
+        auto staging = gfx::Buffer::Create(core, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                            VMA_MEMORY_USAGE_CPU_ONLY);
         void* data = staging.Map();
 
-        size_t n = buf.size / sizeof(T);
+        size_t n = size / sizeof(T);
         auto* dp = (T*)data;
 
         for (int i = 0; i < n; i++) {
@@ -56,9 +67,9 @@ struct Device {
 
         ImmediateSubmit([&](VkCommandBuffer cmd) {
             auto cpy_info = VkBufferCopy{
-                .dstOffset = 0,
+                .dstOffset = offset * sizeof(T),
                 .srcOffset = 0,
-                .size = buf.size,
+                .size = size,
             };
 
             vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);
@@ -68,12 +79,25 @@ struct Device {
     }
 
     template <typename T>
-    void SetDataVec(const gfx::Buffer& buf, const std::vector<T>& value) const {
-        auto staging = gfx::Buffer::Create(core, buf.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    void SetDataVec(const gfx::Buffer& buf,
+                    const std::vector<T>& value,
+                    u32 offset = 0,
+                    i64 count = -1) const {
+        u32 size = buf.size;
+        if (size == 0 || count == 0)
+            return;
+
+        offset = std::min(offset, static_cast<u32>(size / sizeof(T) - 1));
+
+        if (count >= 0) {
+            size = std::min(size, static_cast<u32>(count * sizeof(T)));
+        }
+
+        auto staging = gfx::Buffer::Create(core, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                            VMA_MEMORY_USAGE_CPU_ONLY);
         void* data = staging.Map();
 
-        size_t n = buf.size / sizeof(T);
+        size_t n = size / sizeof(T);
         auto* dp = (T*)data;
 
         for (int i = 0; i < n; i++) {
@@ -82,9 +106,9 @@ struct Device {
 
         ImmediateSubmit([&](VkCommandBuffer cmd) {
             auto cpy_info = VkBufferCopy{
-                .dstOffset = 0,
+                .dstOffset = offset * sizeof(T),
                 .srcOffset = 0,
-                .size = buf.size,
+                .size = size,
             };
 
             vkCmdCopyBuffer(cmd, staging.buffer, buf.buffer, 1, &cpy_info);

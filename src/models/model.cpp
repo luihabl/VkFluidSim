@@ -116,25 +116,34 @@ void SPHModel::SetBoundingBoxSize(const glm::vec3& size) {
 
 void SPHModel::SetParticlesInBox(const gfx::Device& gfx,
                                  const gfx::BoundingBox& box,
+                                 u32 offset,
+                                 i64 count,
                                  ParticleInBoxMode mode) {
     std::vector<glm::vec3> pos;
 
+    if (count == 0)
+        return;
+
+    u32 n = count > 0 ? count : parameters.n_particles;
+
     if (mode == ParticleInBoxMode::Random) {
-        pos = SpawnRandomParticlesInBox(box, parameters.n_particles);
+        pos = SpawnRandomParticlesInBox(box, n);
     } else if (mode == ParticleInBoxMode::Compact) {
-        pos = SpawnCompactParticlesInBox(box, parameters.n_particles, parameters.target_density);
+        pos = SpawnCompactParticlesInBox(box, n, parameters.target_density);
     }
 
-    auto vel = std::vector<glm::vec3>(parameters.n_particles, glm::vec3(0.0f));
-    SetParticleState(gfx, pos, vel);
+    auto vel = std::vector<glm::vec3>(n, glm::vec3(0.0f));
+    SetParticleState(gfx, pos, vel, offset, count);
 }
 
 void SPHModel::SetParticleState(const gfx::Device& gfx,
                                 const std::vector<glm::vec3>& pos,
-                                const std::vector<glm::vec3>& vel) {
-    gfx.SetDataVec(buffers.position_buffer, pos);
-    gfx.SetDataVec(buffers.velocity_buffer, vel);
-    gfx.SetDataVal(buffers.density_buffer, 0.0f);
+                                const std::vector<glm::vec3>& vel,
+                                u32 offset,
+                                i64 count) {
+    gfx.SetDataVec(buffers.position_buffer, pos, offset, count);
+    gfx.SetDataVec(buffers.velocity_buffer, vel, offset, count);
+    gfx.SetDataVal(buffers.density_buffer, 0.0f, offset, count);
 }
 
 SPHModel::DataBuffers SPHModel::CreateDataBuffers(const gfx::CoreCtx& ctx) const {

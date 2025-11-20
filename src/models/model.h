@@ -71,10 +71,14 @@ public:
 
     void SetParticlesInBox(const gfx::Device& gfx,
                            const gfx::BoundingBox& box,
+                           u32 offset = 0,
+                           i64 count = -1,
                            ParticleInBoxMode mode = ParticleInBoxMode::Compact);
     void SetParticleState(const gfx::Device& gfx,
                           const std::vector<glm::vec3>& pos,
-                          const std::vector<glm::vec3>& vel);
+                          const std::vector<glm::vec3>& vel,
+                          u32 offset = 0,
+                          i64 count = -1);
     void SetBoundingBoxSize(const glm::vec3& size);
 
     void CopyDataBuffers(VkCommandBuffer cmd, DataBuffers& dst) const;
